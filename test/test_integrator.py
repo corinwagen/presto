@@ -56,7 +56,6 @@ class TestLangevinHull(unittest.TestCase):
         forces = integrator.map_forces_to_points(positions, simplices, pf+df+rf)
         self.assertEqual(forces.shape[0], 150)
         self.assertEqual(forces.shape[1], 3)
-        print(forces)
 
 if __name__ == '__main__':
     unittest.main()
