@@ -16,11 +16,13 @@ class VelocityVerletIntegrator(Integrator):
     def __init__(self):
         pass
 
-    def update_positions(positions, velocities, masses, forces, timestep):
+    @classmethod
+    def update_positions(cls, positions, velocities, masses, forces, timestep):
         accel = forces / masses.reshape(-1,1)
         return positions + velocities * timestep + accelerations * (timestep ** 2) * 0.5
 
-    def update_velocities(old_velocities, masses, old_forces, new_forces, timestep):
+    @classmethod
+    def update_velocities(cls, old_velocities, masses, old_forces, new_forces, timestep):
         old_accel = old_forces / masses.reshape(-1,1)
         new_accel = new_forces / masses.reshape(-1,1)
         return old_velocities + (old_accel + new_accel) * 0.5 * timestep
@@ -29,36 +31,42 @@ class LangevinHullIntegrator(Integrator):
     def __init__(self):
         pass
 
-    def update_positions(positions, velocities, masses, timestep, pressure, temp, viscosity):
-        simplices = self.compute_hull(positions)
+    @classmethod
+    def update_positions(cls, positions, velocities, masses, timestep, pressure, temp, viscosity):
+        simplices = cls.compute_hull(positions)
 
-        s_forces = self.pressure_forces(simplices, pressure) + self.drag_forces(simplices, velocity, viscosity) + self.random_forces(simplices, viscosity, timestep, temp)
+        s_forces = cls.pressure_forces(simplices, pressure) + cls.drag_forces(simplices, velocity, viscosity) + cls.random_forces(simplices, viscosity, timestep, temp)
 
-        p_forces = self.map_forces_to_points(positions, simplices, forces)
+        p_forces = cls.map_forces_to_points(positions, simplices, forces)
 
         return VelocityVerletIntegrator().update_positions(positions, velocities, masses, p_forces)
 
-    def compute_hull(self, positions):
+    @classmethod
+    def compute_hull(cls, positions):
         hull = ConvexHull(positions)
         simplex_vertices = np.array(hull.vertices)
         simplices = [Simplex(idxs, positions[idxs]) for idxs in simplex_vertices]
         return simplices
 
-    def pressure_forces(self, simplices, pressure):
+    @classmethod
+    def pressure_forces(cls, simplices, pressure):
         areas = np.array([s.area() for s in simplices])
         normals = np.array([s.normal() for s in simplices])
         return np.multiply(normals, (pressure * areas).reshape(-1,1))
 
-    def drag_forces(self, simplices, velocities, viscosity):
+    @classmethod
+    def drag_forces(cls, simplices, velocities, viscosity):
         return np.array([s.resistance_tensor(viscosity) @ s.velocity(velocities) for s in simplices])
 
-    def random_forces(self, simplices, viscosity, timestep, temp):
+    @classmethod
+    def random_forces(cls, simplices, viscosity, timestep, temp):
         variance = 2 * kB * temp / timestep
         S = (np.linalg.cholesky(s.resistance_tensor(viscosity)) for s in simplices)
         Z = np.random.normal(scale=variance, size=(len(simplices), 3))
         return np.array([s @ z for (s,z) in zip(S,Z)])
 
-    def map_forces_to_points(self, positions, simplices, forces):
+    @classmethod
+    def map_forces_to_points(cls, positions, simplices, forces):
         p_forces = np.zeros_like(positions)
         for f, s in zip(forces, simplices):
             num = len(s.indices)
