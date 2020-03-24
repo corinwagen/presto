@@ -2,6 +2,7 @@
 
 import numpy as np
 import h5py
+import cctk
 
 # parameters
 n_atoms = 1000
@@ -11,9 +12,9 @@ hdf5_filename = "trajectory.hdf5"
 class Frame():
     def __init__(self):
         self.energy = np.random.random()
-        self.positions = np.random.random(size=(n_atoms,3))
-        self.velocities = np.random.random(size=(n_atoms,3))
-        self.forces = np.random.random(size=(n_atoms,3))
+        self.positions = np.random.random(size=(n_atoms,3)).view(cctk.OneIndexedArray)
+        self.velocities = np.random.random(size=(n_atoms,3)).view(cctk.OneIndexedArray)
+        self.forces = np.random.random(size=(n_atoms,3)).view(cctk.OneIndexedArray)
 
 # this class makes fake Trajectories
 class Trajectory():
