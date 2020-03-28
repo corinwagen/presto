@@ -12,99 +12,96 @@ class Integrator():
     def update_velocities():
         pass
 
-class VelocityVerletIntegrator(Integrator):
-    def __init__(self):
+    def update_accelerations():
         pass
 
-    @classmethod
-    def update_positions(cls, positions, velocities, masses, forces, timestep):
-        accel = forces / masses.reshape(-1,1)
-        return positions + velocities * timestep + accelerations * (timestep ** 2) * 0.5
+class VelocityVerletIntegrator(Integrator):
+    """
+    Attributes:
+        timestep (float): timestep in fs
+    """
+    def __init__(self, timestep):
+        self.timestep = timestep
 
     @classmethod
-    def update_velocities(cls, old_velocities, masses, old_forces, new_forces, timestep):
+    def update_positions(cls, positions, velocities, masses, forces):
+        accel = forces / masses.reshape(-1,1)
+        return positions + velocities * self.timestep + accelerations * (self.timestep ** 2) * 0.5
+
+    @classmethod
+    def update_velocities(cls, old_velocities, masses, old_forces, new_forces):
         old_accel = old_forces / masses.reshape(-1,1)
         new_accel = new_forces / masses.reshape(-1,1)
-        return old_velocities + (old_accel + new_accel) * 0.5 * timestep
+        return old_velocities + (old_accel + new_accel) * 0.5 * self.timestep
 
-class LangevinHullIntegrator(Integrator):
-    def __init__(self):
+    @classmethod
+    def update_accelerations(cls, forces, masses):
+        return forces / masses.reshape(-1,1)
+
+class ThreeLayerIntegrator(VelocityVerletIntegrator):
+    """
+    Defines an integrator (NVT ensemble). This integrator will confine atoms to a spherical region with radius ``r2``.
+    Layer 1 - Newtonian dynamics
+    Layer 2 - Langevin dynamics
+    Layer 3 - Langevin dynamics plus elastic restoring force
+
+    Attributes:
+        r1 (float): radius between Layer 1 and Layer 2
+        r2 (float): radius between Layer 2 and Layer 3
+        viscosity (float): solvent viscosity
+        timestep (float): simulation timestep in fs
+    """
+
+    def __init__(self, r1, r2, viscosity, timestep):
+        assert r1 < r2, "r1 must be smaller than r2"
+        self.r1 = r1
+        self.r2 = r2
+        self.viscosity = viscosity
+        self.timestep = timestep
+
+    def update_positions(self, positions, velocities, masses, radii, forces):
+        """
+        Args:
+            positions (np.ndarray)
+            velocities (np.ndarray)
+            masses (np.ndarray)
+            radii (np.ndarray): VDW radii of atoms
+            forces (np.ndarray)
+        """
+        positions = positions.view(np.ndarray)
+        layer = np.ones_like(positions)
+        for idx, v in np.ndenumerate(positions):
+            rad = np.linalg.norm(v)
+            if rad > self.r2:
+                layer[idx] = 3
+            elif rad > self.r1:
+                layer[idx] = 2
+
+        drag_forces = self.drag_forces(velocities, layer)
+        random_forces = self.random_forces(positions, layer)
+        elastic_forces = self.elastic_forces(positions, layer)
+
+        super().update_positions(positions, velocities, masses, forces + drag_forces + random_forces + elastic_forces)
+
+    def update_velocities(self, old_velocities, masses, old_forces, new_forces, timestep):
         pass
 
-    @classmethod
-    def update_positions(cls, positions, velocities, masses, timestep, pressure, temp, viscosity):
-        simplices = cls.compute_hull(positions)
+    def drag_forces(self, velocities, radii, layer, maxiter=50):
+        xi = 6 * math.pi * self.viscosity * radii
+        old_drag = np.zeros_like(radii)
+        pred_vel = velocities
+        for n in range(1, maxiter):
+            drag = -1 * xi * velocities
+            drag[layer == 1] = 0
 
-        s_forces = cls.pressure_forces(simplices, pressure) + cls.drag_forces(simplices, velocity, viscosity) + cls.random_forces(simplices, viscosity, timestep, temp)
+    def random_forces(self, positions, layer):
+        xi = 6 * math.pi * self.viscosity * radii
+        forces = np.random.normal(scale=xi, size=(len(positions), 3))
+        forces[layer == 1] = 0
+        forces += -np.mean(forces, axis=0)
+        forces += -np.mean(np.cross(forces, positions), axis=0)
+        return(forces)
 
-        p_forces = cls.map_forces_to_points(positions, simplices, forces)
+    def elastic_forces(self, positions, layer):
+        pass
 
-        return VelocityVerletIntegrator().update_positions(positions, velocities, masses, p_forces)
-
-    @classmethod
-    def compute_hull(cls, positions):
-        hull = ConvexHull(positions)
-        simplex_vertices = np.array(hull.vertices)
-        simplices = [Simplex(idxs, positions[idxs]) for idxs in simplex_vertices]
-        return simplices
-
-    @classmethod
-    def pressure_forces(cls, simplices, pressure):
-        areas = np.array([s.area() for s in simplices])
-        normals = np.array([s.normal() for s in simplices])
-        return np.multiply(normals, (pressure * areas).reshape(-1,1))
-
-    @classmethod
-    def drag_forces(cls, simplices, velocities, viscosity):
-        return np.array([s.resistance_tensor(viscosity) @ s.velocity(velocities) for s in simplices])
-
-    @classmethod
-    def random_forces(cls, simplices, viscosity, timestep, temp):
-        variance = 2 * kB * temp / timestep
-        S = (np.linalg.cholesky(s.resistance_tensor(viscosity)) for s in simplices)
-        Z = np.random.normal(scale=variance, size=(len(simplices), 3))
-        return np.array([s @ z for (s,z) in zip(S,Z)])
-
-    @classmethod
-    def map_forces_to_points(cls, positions, simplices, forces):
-        p_forces = np.zeros_like(positions)
-        for f, s in zip(forces, simplices):
-            num = len(s.indices)
-            p_forces[s.indices] += f / num
-        return p_forces
-
-class Simplex():
-    def __init__(self, indices, vertices):
-        self.indices = indices
-        self.vertices = vertices.astype('d')
-
-    def __str__(self):
-        return f"Simplex object with coordinates:\n {str(self.vertices)}"
-
-    def centroid(self):
-        return np.mean(self.vertices, axis=0)
-
-    def normal(self):
-        n = np.cross(self.vertices[2]-self.vertices[1], self.vertices[2]-self.vertices[0])
-        return n/np.linalg.norm(n)
-
-    def area(self):
-        return np.linalg.norm(np.cross(self.vertices[2]-self.vertices[1], self.vertices[2]-self.vertices[0]))/2
-
-    def velocity(self, velocities):
-        return np.sum(velocities[self.indices], axis=0)/len(self.indices)
-
-    def resistance_tensor(self, viscosity):
-        X = np.zeros(shape=(3,3))
-        for i in range(0,2):
-            new_v = copy.deepcopy(self.vertices)
-            new_v[i] = self.centroid()
-
-            new_s = Simplex(None, new_v)
-            r_lf = self.centroid() - new_s.centroid()
-
-            k = new_s.area() / (math.pi * 8 * np.linalg.norm(r_lf) * viscosity)
-            T_lf = k * (np.eye(3) + r_lf @ r_lf.T / (np.linalg.norm(r_lf) ** 2))
-            X += T_lf
-
-        return np.linalg.inv(X)
