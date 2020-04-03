@@ -6,13 +6,7 @@ from pyhull.convex_hull import ConvexHull
 kB = constants.Boltzmann
 
 class Integrator():
-    def update_positions():
-        pass
-
-    def update_velocities():
-        pass
-
-    def update_accelerations():
+    def next():
         pass
 
 class VelocityVerletIntegrator(Integrator):
@@ -23,20 +17,32 @@ class VelocityVerletIntegrator(Integrator):
     def __init__(self, timestep):
         self.timestep = timestep
 
-    @classmethod
-    def update_positions(cls, positions, velocities, masses, forces):
-        accel = forces / masses.reshape(-1,1)
-        return positions + velocities * self.timestep + accelerations * (self.timestep ** 2) * 0.5
+    def next(self, frame, forwards=True):
+        calculator = frame.trajectory.calculator
 
-    @classmethod
-    def update_velocities(cls, old_velocities, masses, old_forces, new_forces):
-        old_accel = old_forces / masses.reshape(-1,1)
-        new_accel = new_forces / masses.reshape(-1,1)
-        return old_velocities + (old_accel + new_accel) * 0.5 * self.timestep
+        new_x = self.update_positions(frame, forwards)
+        new_a = self.update_accelerations(frame, new_x, forwards)
+        new_v = self.update_velocities(frame, new_a, forwards)
 
-    @classmethod
-    def update_accelerations(cls, forces, masses):
+        return new_x, new_v, new_a
+
+    def update_positions(self, frame, forwards):
+        timestep = self.timestep
+        if forwards == False:
+            timestep = timestep * -1
+        return frame.positions + frame.velocities * self.timestep + frame.accelerations * (timestep ** 2) * 0.5
+
+    def update_accelerations(self, frame, new_x, forwards):
+        calculator = frame.trajectory.calculator
+        forces = calculator.evaluate(new_x, frame.trajectory.atomic_numbers)
+        masses = frame.trajectory.masses
         return forces / masses.reshape(-1,1)
+
+    def update_velocities(self, frame, new_a, forwards):
+        timestep = self.timestep
+        if forwards == False:
+            timestep = timestep * -1
+        return frame.velocities + (frame.accelerations + new_a) * 0.5 * timestep
 
 class ThreeLayerIntegrator(VelocityVerletIntegrator):
     """
@@ -96,6 +102,8 @@ class ThreeLayerIntegrator(VelocityVerletIntegrator):
 
     def random_forces(self, positions, layer):
         xi = 6 * math.pi * self.viscosity * radii
+        variance =  2.0 * xi * kb * T_target / dt #### need to work out units here
+
         forces = np.random.normal(scale=xi, size=(len(positions), 3))
         forces[layer == 1] = 0
         forces += -np.mean(forces, axis=0)
