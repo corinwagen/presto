@@ -4,41 +4,40 @@ import ctypes
 
 import xtb
 
-class Calculation():
+from presto import constants
+
+class Calculator():
     """
-    Attributes:
-        molecule (cctk.Molecule): molecule to calculate
-        params (dict): custom params for calculation
-        energy (float):
-        forces (cctk.OneIndexedArray)
-        tail (str): tail of output, for troubleshooting
     """
 
-    def __init__(self, molecule, params=None):
-        assert isinstance(molecule, cctk.Molecule), "need a valid molecule!"
-
-        self.molecule = molecule
-        self.params = params
+    def __init__():
+        pass
 
     def evaluate(self):
         pass
 
 
-class XTBCalculation(Calculation):
+class XTBCalculator(Calculator):
     """
     """
-    def evaluate(self):
+    def evaluate(self, positions, atomic_numbers):
         """
+        Args:
+            positions (cctk.OneIndexedArray):
+            atomic_numbers (cctk.OneIndexedArray):
+            params (dict): custom params for calculation
+
+        Returns:
+            energy (float):
+            forces (cctk.OneIndexedArray)
         """
 
         #### np.int8 converts to ctypes.c_bytes, whereas np.intc converts to ctypes.c_int
-        num_atoms = self.molecule.num_atoms()
-        numbers = self.molecule.atomic_numbers.view(np.ndarray).astype(ctypes.c_int)
+        numbers = atomic_numbers.view(np.ndarray).astype(ctypes.c_int)
+        num_atoms = len(numbers)
 
-        positions = self.molecule.geometry.view(np.ndarray)
-        positions = positions / 0.529177 # Å to Bohr
+        positions = positions.view(np.ndarray) * constants.ANGSTROMS_TO_BOHR
         positions = positions.astype(ctypes.c_double)
-
 
         calc = xtb.interface.XTBLibrary()
         options = {
@@ -65,5 +64,16 @@ class XTBCalculation(Calculation):
         grad = output["gradient"]
         energy = output["energy"]
 
-        self.energy = energy
-        self.forces = np.array(grad).view(cctk.OneIndexedArray)
+        energy = energy
+        forces = np.array(grad).view(cctk.OneIndexedArray)
+        return energy, forces
+
+class GaussianCalculator(Calculator):
+
+    def evaluate(self, molecule):
+        pass
+
+class ONIONCalculator(Calculator):
+
+    def evaluate(self, molecule):
+        pass
