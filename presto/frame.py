@@ -1,6 +1,8 @@
 import numpy as np
 import math, copy, cctk
 
+import presto
+
 class Frame():
     """
     Represents one frame in a trajectory.
@@ -16,7 +18,9 @@ class Frame():
         bath_temperature (float):
     """
 
-    def __init__(self, x, v, a, active_atoms):
+    def __init__(self, trajectory, x, v, a, active_atoms):
+        assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
+
         assert len(x) == len(v), "length of positions not same as length of velocities!"
         assert len(x) == len(a), "length of positions not same as length of accelerations!"
 
@@ -24,6 +28,7 @@ class Frame():
         assert isinstance(v, cctk.OneIndexedArray), "velocities is not a one-indexed array!"
         assert isinstance(a, cctk.OneIndexedArray), "accelerations is not a one-indexed array!"
 
+        self.trajectory = trajectory
         self.positions = x
         self.velocities = v
         self.accelerations = a
@@ -45,8 +50,8 @@ class Frame():
 
         T = sum{ m_i * v_i ** 2 / (kB * Nf) }
         """
-        v = [np.linalg.norm(x) for x in velocities[active_atoms]]
-        m = trajectory.masses[active_atoms].reshape(-1,1)
+        v = [np.linalg.norm(x) for x in self.velocities[self.active_atoms]]
+        m = self.trajectory.masses[self.active_atoms].reshape(-1,1)
         K = m * np.power(v, 2)
         return np.mean(K) / (3 * presto.constants.BOLTZMANN_CONSTANT)
 

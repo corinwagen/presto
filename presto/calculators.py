@@ -10,7 +10,7 @@ class Calculator():
     """
     """
 
-    def __init__():
+    def __init__(self):
         pass
 
     def evaluate(self):
