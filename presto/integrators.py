@@ -11,11 +11,9 @@ class Integrator():
 
 class VelocityVerletIntegrator(Integrator):
     """
-    Attributes:
-        timestep (float): timestep in fs
     """
-    def __init__(self, timestep):
-        self.timestep = timestep
+    def __init__(self):
+        pass
 
     def next(self, frame, forwards=True):
         calculator = frame.trajectory.calculator

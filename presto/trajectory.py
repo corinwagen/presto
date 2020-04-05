@@ -1,14 +1,15 @@
 import numpy as np
 import math, copy, cctk
 
+import presto
+
 class Trajectory():
     """
 
     Attributes:
         timestep (float): in fs
 
-        solute_atoms (np.ndarray): list of 1-indexed atom numbers
-        solvent_atoms (np.ndarray): list of 1-indexed atom numbers
+        high_atoms (np.ndarray): list of 1-indexed atom numbers
         active_atoms (np.ndarray): list of 1-indexed atom numbers
 
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
@@ -20,8 +21,19 @@ class Trajectory():
 
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, timestep, atomic_numbers, high_atoms, active_atoms, calculator, integrator):
+        assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
+        assert isinstance(calculator, presto.calculators.Calculator)
+        assert isinstance(integrator, presto.integrators.Integrator)
+
+        self.atomic_numbers = atomic_numbers
+        self.calculator = calculator
+        self.integrator = integrator
+
+        assert timestep > 0, "can't have timestep ≤ 0!"
+        self.timestep = float(timestep)
+
+        self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
 
     def run(self, checkpoint_filename, checkpoint_interval):
         ####
