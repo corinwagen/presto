@@ -28,6 +28,10 @@ class Frame():
         assert isinstance(v, cctk.OneIndexedArray), "velocities is not a one-indexed array!"
         assert isinstance(a, cctk.OneIndexedArray), "accelerations is not a one-indexed array!"
 
+        assert (x.ndim == 2) and (x.shape[1] ==  3), "positions must be an n x 3 ndarray"
+        assert (v.ndim == 2) and (v.shape[1] ==  3), "velocities must be an n x 3 ndarray"
+        assert (a.ndim == 2) and (a.shape[1] ==  3), "accelerations must be an n x 3 ndarray"
+
         self.trajectory = trajectory
         self.positions = x
         self.velocities = v
@@ -37,12 +41,12 @@ class Frame():
     def next(self):
         integrator = self.trajectory.integrator
         new_x, new_v, new_a = integrator.next(self)
-        return Frame(new_x, new_v, new_a)
+        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms)
 
     def prev(self):
         integrator = self.trajectory.integrator
         new_x, new_v, new_a = integrator.next(self, forwards=False)
-        return Frame(new_x, new_v, new_a)
+        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms)
 
     def temperature(self):
         """
