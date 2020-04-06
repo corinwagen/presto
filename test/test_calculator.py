@@ -16,10 +16,11 @@ class TestXTBCalculator(unittest.TestCase):
 
         self.assertEqual(mol.num_atoms(), 12)
 
-        calc = presto.calculations.XTBCalculation(molecule=mol)
-        calc.evaluate()
+        calc = presto.calculators.XTBCalculator()
+        energy, forces = calc.evaluate(mol.atomic_numbers, mol.geometry)
+        print(energy)
 
-        self.assertTrue((calc.energy + 20.107812115939) < 0.0001)
+        self.assertTrue((energy + 20.107812115939) < 0.0001)
 
     def test_xtb(self):
         #Adapted from https://github.com/grimme-lab/xtb/blob/master/python/xtb/test/test_interface.py

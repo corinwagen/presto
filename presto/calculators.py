@@ -20,7 +20,7 @@ class Calculator():
 class XTBCalculator(Calculator):
     """
     """
-    def evaluate(self, positions, atomic_numbers):
+    def evaluate(self, atomic_numbers, positions):
         """
         Args:
             positions (cctk.OneIndexedArray):
@@ -36,7 +36,7 @@ class XTBCalculator(Calculator):
         numbers = atomic_numbers.view(np.ndarray).astype(ctypes.c_int)
         num_atoms = len(numbers)
 
-        positions = positions.view(np.ndarray) * constants.ANGSTROMS_TO_BOHR
+        positions = positions.view(np.ndarray) * constants.BOHR_PER_ANGSTROM
         positions = positions.astype(ctypes.c_double)
 
         calc = xtb.interface.XTBLibrary()
@@ -65,7 +65,7 @@ class XTBCalculator(Calculator):
         energy = output["energy"]
 
         energy = energy
-        forces = np.array(grad).view(cctk.OneIndexedArray)
+        forces = np.array(grad).view(cctk.OneIndexedArray) * constants.AMU_A2_FS2_PER_HARTREE_BOHR
         return energy, forces
 
 class GaussianCalculator(Calculator):
