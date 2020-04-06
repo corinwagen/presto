@@ -10,13 +10,35 @@ if __name__ == '__main__':
     unittest.main()
 
 class TestFrame(unittest.TestCase):
-    def test_temp(self):
+    def gen_test_frame(self):
         zs = cctk.OneIndexedArray([2])
         traj = presto.trajectory.Trajectory(0.5, zs, [], [1], presto.calculators.XTBCalculator(), presto.integrators.VelocityVerletIntegrator())
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
 
-        e0 = cctk.OneIndexedArray([0,0,0])
-        e1 = cctk.OneIndexedArray([1,0,0])
+        e0 = cctk.OneIndexedArray([[0,0,0]])
+        e1 = cctk.OneIndexedArray([[1,0,0]])
         frame = presto.frame.Frame(traj, e0, e1, e0, [1])
         self.assertTrue(isinstance(frame, presto.frame.Frame))
+        return frame
+
+    def test_temp(self):
+        frame = self.gen_test_frame()
         self.assertEqual(int(frame.temperature()), 1604675)
+
+    def test_next(self):
+        frame = self.gen_test_frame()
+        f2 = frame.next()
+        self.assertTrue(isinstance(f2, presto.frame.Frame))
+        self.assertListEqual(list(f2.positions[1]), [0.5, 0, 0])
+
+        f3 = f2.next()
+        self.assertListEqual(list(f3.positions[1]), [1, 0, 0])
+
+        f4 = f3.next()
+        self.assertListEqual(list(f4.positions[1]), [1.5, 0, 0])
+
+        f5 = f4.next()
+        self.assertListEqual(list(f5.positions[1]), [2, 0, 0])
+
+        f0 = frame.prev()
+        self.assertListEqual(list(f0.positions[1]), [-0.5, 0, 0])

@@ -130,3 +130,6 @@ dmypy.json
 
 # serialized files
 *.hdf5
+
+# temp files
+*.swp
