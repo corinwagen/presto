@@ -28,8 +28,8 @@ class XTBCalculator(Calculator):
             params (dict): custom params for calculation
 
         Returns:
-            energy (float):
-            forces (cctk.OneIndexedArray)
+            energy (float): in Hartree
+            forces (cctk.OneIndexedArray): in amu Å per fs**2
         """
 
         #### np.int8 converts to ctypes.c_bytes, whereas np.intc converts to ctypes.c_int
@@ -63,9 +63,8 @@ class XTBCalculator(Calculator):
 
         grad = output["gradient"]
         energy = output["energy"]
-
-        energy = energy
         forces = np.array(grad).view(cctk.OneIndexedArray) * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+
         return energy, forces
 
 class GaussianCalculator(Calculator):
