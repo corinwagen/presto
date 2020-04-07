@@ -56,6 +56,7 @@ class ReactionTrajectory():
         forward_frames (list of presto.Frame):
         reverse_frames (list of presto.Frame):
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted
+        max_time (float): how long to run forward and reverse trajectories
     """
 
     def run(self, **kwargs):
@@ -69,5 +70,12 @@ class EquilibrationTrajectory():
         stop_time (float): when to stop equilibrating
     """
 
-    def run(self, **kwargs):
+    def __init__(self, bath_scheduler, stop_time):
+        assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
+        assert stop_time > 0, "stop_time needs to be positive!"
+
+        self.stop_time = stop_time
+        self.bath_scheduler = bath_scheduler
+
+    def run(self):
         super().run(self, **kwargs)

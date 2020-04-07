@@ -18,7 +18,7 @@ class Frame():
         bath_temperature (float):
     """
 
-    def __init__(self, trajectory, x, v, a, active_atoms):
+    def __init__(self, trajectory, x, v, a, active_atoms, bath_temperature=298):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -32,11 +32,15 @@ class Frame():
         assert (v.ndim == 2) and (v.shape[1] ==  3), "velocities must be an n x 3 ndarray"
         assert (a.ndim == 2) and (a.shape[1] ==  3), "accelerations must be an n x 3 ndarray"
 
+        assert (isinstance(bath_temperature, float)) or (isinstance(bath_temperature, int)), "bath temperature needs to be numeric!"
+        assert bath_temperature >= 0, "bath temperature must be positive or 0"
+
         self.trajectory = trajectory
         self.positions = x
         self.velocities = v
         self.accelerations = a
         self.active_atoms = active_atoms
+        self.bath_temperature = bath_temperature
 
     def next(self):
         integrator = self.trajectory.integrator
