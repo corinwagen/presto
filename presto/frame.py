@@ -15,6 +15,7 @@ class Frame():
 
         active_atoms (list): list of indices
 
+        energy (float):
         bath_temperature (float):
     """
 
@@ -41,16 +42,30 @@ class Frame():
         self.accelerations = a
         self.active_atoms = active_atoms
         self.bath_temperature = bath_temperature
+        self.energy = None
 
-    def next(self):
-        integrator = self.trajectory.integrator
-        new_x, new_v, new_a = integrator.next(self)
-        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms)
+    def next(self, temp=None, forwards=True):
+        """
+        Computes next frame using ``self.trajectory.integrator``.
 
-    def prev(self):
+        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
+        """
+        if temp is None:
+            temp = self.bath_temperature
+        assert isinstance(temp, float) or isinstance(temp, int), "temp must be numeric!"
+
         integrator = self.trajectory.integrator
-        new_x, new_v, new_a = integrator.next(self, forwards=False)
-        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms)
+        energy, new_x, new_v, new_a = integrator.next(self, forwards=forwards)
+        self.energy = energy
+        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms, temp)
+
+    def prev(self, temp=None):
+        """
+        Computes previous frame using ``self.trajectory.integrator``.
+
+        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
+        """
+        return self.next(temp, forwards=False)
 
     def temperature(self):
         """
@@ -61,5 +76,10 @@ class Frame():
         v = [np.linalg.norm(x) for x in self.velocities[self.active_atoms]]
         m = self.trajectory.masses[self.active_atoms].reshape(-1,1)
         K = m * np.power(v, 2)
-        return np.mean(K) / (3 * presto.constants.BOLTZMANN_CONSTANT)
+        return float(np.mean(K)) / (3 * presto.constants.BOLTZMANN_CONSTANT)
 
+    def inactive_mask(self):
+        inactive_mask = np.ones(shape=len(self.positions)).view(cctk.OneIndexedArray)
+        inactive_mask[self.active_atoms] = 0
+        inactive_mask  = inactive_mask.astype(bool)
+        return inactive_mask
