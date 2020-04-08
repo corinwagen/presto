@@ -12,7 +12,15 @@ if __name__ == '__main__':
 class TestFrame(unittest.TestCase):
     def gen_test_frame(self):
         zs = cctk.OneIndexedArray([2])
-        traj = presto.trajectory.Trajectory(0.5, zs, [], [1], presto.calculators.XTBCalculator(), presto.integrators.VelocityVerletIntegrator())
+        traj = presto.trajectory.Trajectory(
+            timestep=0.5,
+            atomic_numbers=zs,
+            high_atoms=np.array([]),
+            active_atoms=np.array([1]),
+            calculator=presto.calculators.XTBCalculator(),
+            integrator=presto.integrators.VelocityVerletIntegrator(),
+        )
+
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
 
         e0 = cctk.OneIndexedArray([[0,0,0]])

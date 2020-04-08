@@ -19,10 +19,10 @@ class VelocityVerletIntegrator(Integrator):
         calculator = frame.trajectory.calculator
 
         new_x = self.update_positions(frame, forwards)
-        new_a = self.update_accelerations(frame, new_x, forwards)
+        energy, new_a = self.update_accelerations(frame, new_x, forwards)
         new_v = self.update_velocities(frame, new_a, forwards)
 
-        return new_x, new_v, new_a
+        return energy, new_x, new_v, new_a
 
     def update_positions(self, frame, forwards):
         timestep = frame.trajectory.timestep
@@ -32,9 +32,10 @@ class VelocityVerletIntegrator(Integrator):
 
     def update_accelerations(self, frame, new_x, forwards):
         calculator = frame.trajectory.calculator
-        _, forces = calculator.evaluate(frame.trajectory.atomic_numbers, new_x)
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, new_x)
+        forces[frame.inactive_mask()] = 0
         masses = frame.trajectory.masses
-        return forces / masses.reshape(-1,1)
+        return energy, forces / masses.reshape(-1,1)
 
     def update_velocities(self, frame, new_a, forwards):
         timestep = frame.trajectory.timestep
