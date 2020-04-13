@@ -78,7 +78,24 @@ class Frame():
         K = m * np.power(v, 2)
         return float(np.mean(K)) / (3 * presto.constants.BOLTZMANN_CONSTANT)
 
+    def pressure(self):
+        """
+        Computes the pressure based on the following formula:
+
+        P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
+        """
+        m = self.trajectory.masses[self.active_atoms]
+        tot = 0
+        for i in len(self.positions):
+            tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.forces[i] / m[i])
+
+        return tot/3 * self.volume()
+
+
     def inactive_mask(self):
+        """
+        Returns an ``np.ndarray`` of the same length as ``positions`` where every active atom is ``False`` and every inactive atom is ``True``.
+        """
         inactive_mask = np.ones(shape=len(self.positions)).view(cctk.OneIndexedArray)
         inactive_mask[self.active_atoms] = 0
         inactive_mask  = inactive_mask.astype(bool)
