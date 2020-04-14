@@ -141,14 +141,22 @@ class EquilibrationTrajectory(Trajectory):
         random_gaussian[inactive_mask] = 0
         velocities = random_gaussian * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
 
+        #### subtract out center-of-mass translational motion
+        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+        correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
+        correction_tran[inactive_mask] = 0
+        velocities = velocities - correction_tran
+        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+        assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
         velocities = velocities.view(cctk.OneIndexedArray)
         accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-
         self.forward_frames  = [presto.frame.Frame(self, positions, velocities, accelerations, self.active_atoms, self.bath_scheduler(0))]
 
     def propagate(self, checkpoint_filename, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         for t in np.arange(self.timestep, self.stop_time, self.timestep):
+            print(t)
             self.forward_frames.append(self.forward_frames[-1].next(temp=self.bath_scheduler(t)))
             if len(self.forward_frames) % checkpoint_interval == 0:
                 self.save(checkpoint_filename)
