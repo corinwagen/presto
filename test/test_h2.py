@@ -23,7 +23,7 @@ class TestHydrogen(unittest.TestCase):
             calculator=presto.calculators.XTBCalculator(),
             integrator=presto.integrators.VelocityVerletIntegrator(),
             bath_scheduler=boring_scheduler,
-            stop_time = 25,
+            stop_time = 10,
         )
 
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
@@ -35,7 +35,9 @@ class TestHydrogen(unittest.TestCase):
         self.assertTrue(np.array_equal(traj.forward_frames[0].positions, start.geometry))
 
         temps = [f.temperature() for f in traj.forward_frames]
+        dists = [f.molecule().get_distance(1,2) for f in traj.forward_frames]
         energies = [f.energy for f in traj.forward_frames]
         print(temps)
         print(energies)
+        print(dists)
 
