@@ -100,3 +100,6 @@ class Frame():
         inactive_mask[self.active_atoms] = 0
         inactive_mask  = inactive_mask.astype(bool)
         return inactive_mask
+
+    def molecule(self):
+        return cctk.Molecule(self.trajectory.atomic_numbers, self.positions)
