@@ -100,3 +100,11 @@ class Frame():
         inactive_mask[self.active_atoms] = 0
         inactive_mask  = inactive_mask.astype(bool)
         return inactive_mask
+
+    def __str__(self):
+        temp = f"E={self.energy}, temp={self.bath_temperature}\n"
+        n_atoms = len(self.positions)
+        for atom in range(1,n_atoms+1):
+            x,v,a = self.positions[atom],self.velocities[atom],self.accelerations[atom]
+            temp += f"{atom:3d} [ {x[1]:8.3f} {x[2]:8.3f} {x[3]:8.3f} ] [ {v[1]:8.3f} {v[2]:8.3f} {v[3]:8.3f} ] [ {a[1]:10.2E} {a[2]:10.2E} {a[3]:10.2E} ]\n"
+        return temp[:-1]

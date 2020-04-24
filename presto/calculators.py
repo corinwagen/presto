@@ -61,7 +61,7 @@ class XTBCalculator(Calculator):
             magnetic_moment=0,
         )
 
-        grad = output["gradient"]
+        grad = -output["gradient"]
         energy = output["energy"]
         forces = np.array(grad).view(cctk.OneIndexedArray) *  constants.AMU_A2_FS2_PER_HARTREE_BOHR
 

@@ -133,10 +133,16 @@ class EquilibrationTrajectory(Trajectory):
         """
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
 
+        # move centroid to origin
+        centroid = np.mean(positions, axis=0)
+        positions = positions - centroid
+
+        # determine active atoms
         inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)
         inactive_mask[self.active_atoms] = 0
         inactive_mask  = inactive_mask.astype(bool)
 
+        # add random velocity to everything
         random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
         random_gaussian[inactive_mask] = 0
         velocities = random_gaussian * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
@@ -156,7 +162,7 @@ class EquilibrationTrajectory(Trajectory):
     def propagate(self, checkpoint_filename, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         for t in np.arange(self.timestep, self.stop_time, self.timestep):
-            print(t)
+            #print(t)
             self.forward_frames.append(self.forward_frames[-1].next(temp=self.bath_scheduler(t)))
             if len(self.forward_frames) % checkpoint_interval == 0:
                 self.save(checkpoint_filename)

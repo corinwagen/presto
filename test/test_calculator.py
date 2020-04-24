@@ -81,6 +81,7 @@ class TestXTBCalculator(unittest.TestCase):
             magnetic_moment=0,
         )
 
+        print(results["energy"])
         self.assertTrue((results["energy"] + 42.170585 ) < 0.001)
 
 if __name__ == '__main__':
