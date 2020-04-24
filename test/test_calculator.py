@@ -29,6 +29,7 @@ class TestXTBCalculator(unittest.TestCase):
             [6, 7, 6, 7, 6, 6, 6, 8, 7, 6, 8, 7, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             dtype=c_int,
         )
+
         positions = np.array(
             [
                 [2.02799738646442, 0.09231312124713, -0.14310895950963],
