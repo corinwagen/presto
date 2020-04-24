@@ -3,9 +3,8 @@ Base units for *presto*:
     distance:   Angstroms
     energy:     kcal/mol
     time:       femtoseconds
-    force:      kcal/(mol*Å)
     temp:       Kelvin
-    mass:       kcal
+    mass:       amu
 
 Forces from most computational chemistry software come in Hartrees/Bohr.
 
