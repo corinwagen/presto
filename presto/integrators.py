@@ -28,10 +28,6 @@ class VelocityVerletIntegrator(Integrator):
         timestep = frame.trajectory.timestep
         if forwards == False:
             timestep = timestep * -1
-        print("UPDATING POSITIONS")
-        print(f"x = {frame.positions}")
-        print(f"v = {frame.velocities} * {timestep}")
-        print(f"a = 0.5 * {frame.accelerations} * {timestep ** 2}")
         return frame.positions + frame.velocities * timestep + frame.accelerations * (timestep ** 2) * 0.5
 
     def update_accelerations(self, frame, new_x, forwards):
@@ -39,20 +35,12 @@ class VelocityVerletIntegrator(Integrator):
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, new_x)
         forces[frame.inactive_mask()] = 0
         masses = frame.trajectory.masses
-        print("UPDATING ACCEL")
-        print(f"f = {forces}")
-        print(f"m = {masses}")
-        print(f"a = {forces / masses.reshape(-1,1)}")
         return energy, forces / masses.reshape(-1,1)
 
     def update_velocities(self, frame, new_a, forwards):
         timestep = frame.trajectory.timestep
         if forwards == False:
             timestep = timestep * -1
-        print("UPDATING VELOCITIES")
-        print(f"v = {frame.velocities}")
-        print(f"a0 = {frame.accelerations}")
-        print(f"a1 = {new_a}")
         return frame.velocities + (frame.accelerations + new_a) * 0.5 * timestep
 
 class ThreeLayerIntegrator(VelocityVerletIntegrator):
@@ -99,9 +87,6 @@ class ThreeLayerIntegrator(VelocityVerletIntegrator):
         elastic_forces = self.elastic_forces(positions, layer)
 
         super().update_positions(positions, velocities, masses, forces + drag_forces + random_forces + elastic_forces)
-
-    def update_velocities(self, old_velocities, masses, old_forces, new_forces, timestep):
-        pass
 
     def drag_forces(self, velocities, radii, layer, maxiter=50):
         xi = 6 * math.pi * self.viscosity * radii
