@@ -9,7 +9,7 @@ Base units for *presto*:
 Forces from most computational chemistry software come in Hartrees/Bohr.
 
 x kcal      4184 J      1 kg m^2 s^-2     10^20 Å^2         1 s^2       1000 g      1 amu
--------  * -------- *  --------------- * ----------- * ------------- * -------- *  --------- = 0.0004184 * x amu Å fs^-2
+-------  * -------- *  --------------- * ----------- * ------------- * -------- *  --------- = 0.0004184 * x amu Å fs^-2 * mol * A / K
 mol * Å     1 kcal           1 J             m^2        10^30 fs^2      1 kg        1 g/mol
 
 """

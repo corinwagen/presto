@@ -86,11 +86,13 @@ class Frame():
         """
         m = self.trajectory.masses[self.active_atoms]
         tot = 0
-        for i in len(self.positions):
-            tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.forces[i] / m[i])
+        for i in range(1, len(self.positions) + 1):
+            tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.accelerations[i] *  m[i])
 
         return tot/3 * self.volume()
 
+    def volume(self):
+        return self.molecule().volume()
 
     def inactive_mask(self):
         """
@@ -103,3 +105,11 @@ class Frame():
 
     def molecule(self):
         return cctk.Molecule(self.trajectory.atomic_numbers, self.positions)
+
+    def __str__(self):
+        temp = f"E={self.energy}, temp={self.bath_temperature}\n"
+        n_atoms = len(self.positions)
+        for atom in range(1,n_atoms+1):
+            x,v,a = self.positions[atom],self.velocities[atom],self.accelerations[atom]
+            temp += f"{atom:3d} [ {x[1]:8.3f} {x[2]:8.3f} {x[3]:8.3f} ] [ {v[1]:8.3f} {v[2]:8.3f} {v[3]:8.3f} ] [ {a[1]:10.2E} {a[2]:10.2E} {a[3]:10.2E} ]\n"
+        return temp[:-1]
