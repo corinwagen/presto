@@ -102,6 +102,11 @@ class TestTrajectory(unittest.TestCase):
         energies = [f.energy for f in traj.forward_frames][10:-1]
         pressures = [f.pressure() for f in traj.forward_frames][10:]
 
+        print(len(traj.forward_frames))
+        print(temps)
+        print(np.std(temps))
+        print(np.std(energies)*627.509)
+
         print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
         print(f"PRESSURE:\t\t{np.mean(pressures):.2f} (± {np.std(pressures):.2f})")
         print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
