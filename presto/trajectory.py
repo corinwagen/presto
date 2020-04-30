@@ -1,6 +1,7 @@
 import numpy as np
-import math, copy, cctk
+import math, copy, cctk, os
 
+import h5py
 import presto
 
 class Trajectory():
@@ -50,9 +51,11 @@ class Trajectory():
             self.initialize(positions)
 
         if self.finished:
-            return
-
-        self.propagate(checkpoint_filename, checkpoint_interval)
+            return self
+        else:
+            self.propagate(checkpoint_filename, checkpoint_interval)
+            self.save(checkpoint_filename)
+            return self
 
     def initialize(self):
         """
@@ -69,14 +72,108 @@ class Trajectory():
         pass
 
     def has_checkpoint(self, filename):
-        return False
+        if os.path.exists(filename):
+            with h5py.File(filename, "r+") as h5:
+                all_energies = h5.get("all_energies")
+                if len(all_energies) > 0:
+                    return True
+                else:
+                    return False
+        else:
+            return False
 
-    def load_from_checkpoint(self):
-        pass
+    def load_from_checkpoint(self, filename):
+        assert self.has_checkpoint(filename), "can't load without checkpoint file"
+        with h5py.File(filename, "r") as h5:
+            assert self.timestep == h5.attrs['timestep']
+            assert np.array_equal(self.high_atoms, h5.attrs['high_atoms'])
+            assert np.array_equal(self.active_atoms, h5.attrs['active_atoms'])
+            assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
+            self.finished = h5.attrs['finished']
+
+            all_energies = h5.get("all_energies")
+            all_positions = h5.get("all_positions")
+            all_velocities= h5.get("all_velocities")
+            all_accels = h5.get("all_accelerations")
+
+            assert len(all_positions) == len(all_energies)
+            assert len(all_velocities) == len(all_energies)
+            assert len(all_accels) == len(all_energies)
+
+            self.forward_frames = []
+            for i, e in enumerate(all_energies):
+                self.forward_frames.append(presto.frame.Frame(
+                    self,
+                    all_positions[i].view(cctk.OneIndexedArray),
+                    all_velocities[i].view(cctk.OneIndexedArray),
+                    all_accels[i].view(cctk.OneIndexedArray),
+                    energy=e,
+                    bath_temperature=self.bath_scheduler(self.timestep*i)
+                ))
+
+        return
 
     def save(self, filename):
-        print(f"saving data in {filename}")
-        pass
+        if self.has_checkpoint(filename):
+            print("reading existing file")
+            with h5py.File(filename, "r+") as h5:
+                n_atoms = len(self.atomic_numbers)
+                h5.attrs['finished'] = self.finished
+                all_energies = h5.get("all_energies")
+
+                old_n_frames = len(all_energies)
+                now_n_frames = len(self.frames())
+                new_n_frames = now_n_frames - old_n_frames
+
+                if new_n_frames == 0:
+                    return
+                assert new_n_frames > 0, "we can't write negative frames"
+                print(f"loaded {old_n_frames}, writing {new_n_frames} to give {now_n_frames}")
+
+                new_energies = np.asarray([frame.energy for frame in self.frames()[-new_n_frames-1:]])
+                all_energies.resize((now_n_frames,))
+                all_energies[-new_n_frames-1:] = new_energies
+
+                new_positions = np.stack([frame.positions for frame in self.frames()[-new_n_frames:]])
+                all_positions = h5.get("all_positions")
+                all_positions.resize((now_n_frames,n_atoms,3))
+                all_positions[-new_n_frames:] = new_positions
+
+                new_velocities= np.stack([frame.velocities for frame in self.frames()[-new_n_frames:]])
+                all_velocities = h5.get("all_velocities")
+                all_velocities.resize((now_n_frames,n_atoms,3))
+                all_velocities[-new_n_frames:] = new_velocities
+
+                new_accels = np.stack([frame.accelerations for frame in self.frames()[-new_n_frames:]])
+                all_accels = h5.get("all_accelerations")
+                all_accels.resize((now_n_frames,n_atoms,3))
+                all_accels[-new_n_frames:] = new_accels
+        else:
+            print("writing to new file")
+            with h5py.File(filename, "w") as h5:
+                # store general data about the trajectory
+                h5.attrs['timestep'] = self.timestep
+                h5.attrs['high_atoms'] = self.high_atoms
+                h5.attrs['active_atoms'] = self.active_atoms
+                h5.attrs['atomic_numbers'] = self.atomic_numbers
+                h5.attrs['finished'] = self.finished
+                n_atoms = len(self.atomic_numbers)
+
+                energies = np.asarray([frame.energy for frame in self.frames()])
+                h5.create_dataset("all_energies", data=energies, maxshape=(None,),
+                            compression="gzip", compression_opts=9)
+
+                all_positions = np.stack([frame.positions for frame in self.frames()])
+                h5.create_dataset("all_positions", data=all_positions, maxshape=(None,n_atoms,3),
+                                compression="gzip", compression_opts=9)
+
+                all_velocities = np.stack([frame.velocities for frame in self.frames()])
+                h5.create_dataset("all_velocities", data=all_velocities, maxshape=(None,n_atoms,3),
+                                compression="gzip", compression_opts=9)
+
+                all_accels= np.stack([frame.accelerations for frame in self.frames()])
+                h5.create_dataset("all_accelerations", data=all_accels, maxshape=(None,n_atoms,3),
+                                compression="gzip", compression_opts=9)
 
     def write_movie(self, filename):
         pass
@@ -119,6 +216,9 @@ class EquilibrationTrajectory(Trajectory):
         self.stop_time = stop_time
         self.bath_scheduler = bath_scheduler
 
+    def frames(self):
+        return self.forward_frames
+
     def initialize(self, positions):
         """
         Generates initial frame object for initialization trajectory.
@@ -157,13 +257,13 @@ class EquilibrationTrajectory(Trajectory):
 
         velocities = velocities.view(cctk.OneIndexedArray)
         accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-        self.forward_frames  = [presto.frame.Frame(self, positions, velocities, accelerations, self.active_atoms, self.bath_scheduler(0))]
+        self.forward_frames  = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
 
     def propagate(self, checkpoint_filename, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        for t in np.arange(self.timestep, self.stop_time, self.timestep):
-            #print(t)
+        for t in np.arange(self.timestep * len(self.forward_frames), self.stop_time, self.timestep):
             self.forward_frames.append(self.forward_frames[-1].next(temp=self.bath_scheduler(t)))
             if len(self.forward_frames) % checkpoint_interval == 0:
                 self.save(checkpoint_filename)
-
+        self.finished = True
+        return

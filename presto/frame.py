@@ -13,13 +13,11 @@ class Frame():
         velocities (cctk.OneIndexedArray):
         accelerations (cctk.OneIndexedArray):
 
-        active_atoms (list): list of indices
-
         energy (float):
         bath_temperature (float):
     """
 
-    def __init__(self, trajectory, x, v, a, active_atoms, bath_temperature=298):
+    def __init__(self, trajectory, x, v, a, bath_temperature=298, energy=0.0):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -40,9 +38,8 @@ class Frame():
         self.positions = x
         self.velocities = v
         self.accelerations = a
-        self.active_atoms = active_atoms
         self.bath_temperature = bath_temperature
-        self.energy = None
+        self.energy = energy
 
     def next(self, temp=None, forwards=True):
         """
@@ -57,7 +54,7 @@ class Frame():
         integrator = self.trajectory.integrator
         energy, new_x, new_v, new_a = integrator.next(self, forwards=forwards)
         self.energy = energy
-        return Frame(self.trajectory, new_x, new_v, new_a, self.active_atoms, temp)
+        return Frame(self.trajectory, new_x, new_v, new_a, temp)
 
     def prev(self, temp=None):
         """
@@ -73,8 +70,8 @@ class Frame():
 
         T = sum{ m_i * v_i ** 2 / (kB * Nf) }
         """
-        v = [np.linalg.norm(x) for x in self.velocities[self.active_atoms]]
-        m = self.trajectory.masses[self.active_atoms].reshape(-1,1)
+        v = [np.linalg.norm(x) for x in self.velocities[self.trajectory.active_atoms]]
+        m = self.trajectory.masses[self.trajectory.active_atoms].reshape(-1,1)
         K = m * np.power(v, 2)
         return float(np.mean(K)) / (3 * presto.constants.BOLTZMANN_CONSTANT)
 
@@ -84,7 +81,7 @@ class Frame():
 
         P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
         """
-        m = self.trajectory.masses[self.active_atoms]
+        m = self.trajectory.masses[self.trajectory.active_atoms]
         tot = 0
         for i in range(1, len(self.positions) + 1):
             tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.accelerations[i] *  m[i])
@@ -99,7 +96,7 @@ class Frame():
         Returns an ``np.ndarray`` of the same length as ``positions`` where every active atom is ``False`` and every inactive atom is ``True``.
         """
         inactive_mask = np.ones(shape=len(self.positions)).view(cctk.OneIndexedArray)
-        inactive_mask[self.active_atoms] = 0
+        inactive_mask[self.trajectory.active_atoms] = 0
         inactive_mask  = inactive_mask.astype(bool)
         return inactive_mask
 
