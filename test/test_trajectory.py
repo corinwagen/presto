@@ -77,7 +77,7 @@ class TestTrajectory(unittest.TestCase):
         def boring_scheduler(time):
             return 298
 
-        start = cctk.XYZFile.read_file("test/static/30_dcm.xyz").molecule
+        start = cctk.XYZFile.read_file("test/static/250_et2o.xyz").molecule
         traj = presto.trajectory.EquilibrationTrajectory(
             timestep=0.5,
             atomic_numbers=start.atomic_numbers,
@@ -86,7 +86,7 @@ class TestTrajectory(unittest.TestCase):
             calculator=presto.calculators.XTBCalculator(),
             integrator=presto.integrators.VelocityVerletIntegrator(),
             bath_scheduler=boring_scheduler,
-            stop_time = 50,
+            stop_time = 100,
         )
 
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
@@ -110,5 +110,7 @@ class TestTrajectory(unittest.TestCase):
         print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
         print(f"PRESSURE:\t\t{np.mean(pressures):.2f} (± {np.std(pressures):.2f})")
         print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
+
+        traj.write_movie("movie.pdb")
 
         print("done")
