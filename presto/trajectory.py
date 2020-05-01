@@ -115,7 +115,6 @@ class Trajectory():
 
     def save(self, filename):
         if self.has_checkpoint(filename):
-            print("reading existing file")
             with h5py.File(filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
@@ -128,7 +127,6 @@ class Trajectory():
                 if new_n_frames == 0:
                     return
                 assert new_n_frames > 0, "we can't write negative frames"
-                print(f"loaded {old_n_frames}, writing {new_n_frames} to give {now_n_frames}")
 
                 new_energies = np.asarray([frame.energy for frame in self.frames()[-new_n_frames-1:]])
                 all_energies.resize((now_n_frames,))
@@ -149,7 +147,6 @@ class Trajectory():
                 all_accels.resize((now_n_frames,n_atoms,3))
                 all_accels[-new_n_frames:] = new_accels
         else:
-            print("writing to new file")
             with h5py.File(filename, "w") as h5:
                 # store general data about the trajectory
                 h5.attrs['timestep'] = self.timestep
@@ -176,7 +173,14 @@ class Trajectory():
                                 compression="gzip", compression_opts=9)
 
     def write_movie(self, filename):
-        pass
+        ensemble = self.as_ensemble()
+        cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
+
+    def as_ensemble(self):
+        ensemble = cctk.ConformationalEnsemble()
+        for frame in self.forward_frames[:-1]:
+            ensemble.add_molecule(frame.molecule(), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
+        return ensemble
 
     def spawn(self):
         pass
