@@ -41,6 +41,14 @@ class Frame():
         self.bath_temperature = bath_temperature
         self.energy = energy
 
+    def __str__(self):
+        temp = f"E={self.energy}, temp={self.bath_temperature}\n"
+        n_atoms = len(self.positions)
+        for atom in range(1,n_atoms+1):
+            x,v,a = self.positions[atom],self.velocities[atom],self.accelerations[atom]
+            temp += f"{atom:3d} [ {x[1]:8.3f} {x[2]:8.3f} {x[3]:8.3f} ] [ {v[1]:8.3f} {v[2]:8.3f} {v[3]:8.3f} ] [ {a[1]:10.2E} {a[2]:10.2E} {a[3]:10.2E} ]\n"
+        return temp[:-1]
+
     def next(self, temp=None, forwards=True):
         """
         Computes next frame using ``self.trajectory.integrator``.
@@ -103,10 +111,24 @@ class Frame():
     def molecule(self):
         return cctk.Molecule(self.trajectory.atomic_numbers, self.positions)
 
-    def __str__(self):
-        temp = f"E={self.energy}, temp={self.bath_temperature}\n"
-        n_atoms = len(self.positions)
-        for atom in range(1,n_atoms+1):
-            x,v,a = self.positions[atom],self.velocities[atom],self.accelerations[atom]
-            temp += f"{atom:3d} [ {x[1]:8.3f} {x[2]:8.3f} {x[3]:8.3f} ] [ {v[1]:8.3f} {v[2]:8.3f} {v[3]:8.3f} ] [ {a[1]:10.2E} {a[2]:10.2E} {a[3]:10.2E} ]\n"
-        return temp[:-1]
+    def remove_com_motion(self):
+        # move centroid to origin
+        centroid = np.mean(self.positions, axis=0)
+        self.positions = self.positions - centroid
+
+        #### subtract out center-of-mass translational motion
+        com_translation = np.sum(self.trajectory.masses.reshape(-1,1) * self.velocities, axis=0)
+        correction_tran = np.tile(com_translation / np.sum(self.trajectory.masses), (len(self.velocities),1))
+        self.velocities = self.velocities - correction_tran
+        assert np.linalg.norm(np.sum(self.trajectory.masses.reshape(-1,1) * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
+        ### subtract out center-of-mass rotational motion - this was really difficult for me to figure out :'(
+        com_rotation = np.sum(np.cross(self.velocities, self.trajectory.masses.reshape(-1,1) * self.positions), axis=0)
+        correction_r = np.cross(self.positions, np.tile(com_rotation / np.sum(self.trajectory.masses), (len(self.velocities),1))) / np.linalg.norm(self.positions, axis=1).reshape(-1,1) ** 2
+        self.velocities = self.velocities - correction_r
+        assert np.linalg.norm(np.sum(self.trajectory.masses.reshape(-1,1) * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+        assert np.linalg.norm(np.sum(self.trajectory.masses.reshape(-1,1) * np.cross(self.velocities, self.positions), axis=0)) < 0.0001, "didn't remove COM rotation well enough!"
+
+        return self
+
+

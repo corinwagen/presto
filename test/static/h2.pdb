@@ -1,0 +1,1596 @@
+MODEL 1
+HETATM    1  H     *     0       0.250   0.000   0.000  1.00  0.00           H 
+HETATM    2  H     *     0      -0.250   0.000   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 2
+HETATM    1  H     *     0       0.247  -0.010   0.003  1.00  0.00           H 
+HETATM    2  H     *     0      -0.247   0.010   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 3
+HETATM    1  H     *     0       0.300  -0.021   0.007  1.00  0.00           H 
+HETATM    2  H     *     0      -0.300   0.021  -0.007  1.00  0.00           H 
+ENDMDL
+MODEL 4
+HETATM    1  H     *     0       0.375  -0.035   0.011  1.00  0.00           H 
+HETATM    2  H     *     0      -0.375   0.035  -0.011  1.00  0.00           H 
+ENDMDL
+MODEL 5
+HETATM    1  H     *     0       0.451  -0.048   0.015  1.00  0.00           H 
+HETATM    2  H     *     0      -0.451   0.048  -0.015  1.00  0.00           H 
+ENDMDL
+MODEL 6
+HETATM    1  H     *     0       0.522  -0.061   0.019  1.00  0.00           H 
+HETATM    2  H     *     0      -0.522   0.061  -0.019  1.00  0.00           H 
+ENDMDL
+MODEL 7
+HETATM    1  H     *     0       0.584  -0.073   0.022  1.00  0.00           H 
+HETATM    2  H     *     0      -0.584   0.073  -0.022  1.00  0.00           H 
+ENDMDL
+MODEL 8
+HETATM    1  H     *     0       0.638  -0.084   0.026  1.00  0.00           H 
+HETATM    2  H     *     0      -0.638   0.084  -0.026  1.00  0.00           H 
+ENDMDL
+MODEL 9
+HETATM    1  H     *     0       0.682  -0.093   0.029  1.00  0.00           H 
+HETATM    2  H     *     0      -0.682   0.093  -0.029  1.00  0.00           H 
+ENDMDL
+MODEL 10
+HETATM    1  H     *     0       0.719  -0.102   0.031  1.00  0.00           H 
+HETATM    2  H     *     0      -0.719   0.102  -0.031  1.00  0.00           H 
+ENDMDL
+MODEL 11
+HETATM    1  H     *     0       0.747  -0.109   0.034  1.00  0.00           H 
+HETATM    2  H     *     0      -0.747   0.109  -0.034  1.00  0.00           H 
+ENDMDL
+MODEL 12
+HETATM    1  H     *     0       0.767  -0.115   0.036  1.00  0.00           H 
+HETATM    2  H     *     0      -0.767   0.115  -0.036  1.00  0.00           H 
+ENDMDL
+MODEL 13
+HETATM    1  H     *     0       0.780  -0.120   0.037  1.00  0.00           H 
+HETATM    2  H     *     0      -0.780   0.120  -0.037  1.00  0.00           H 
+ENDMDL
+MODEL 14
+HETATM    1  H     *     0       0.784  -0.124   0.038  1.00  0.00           H 
+HETATM    2  H     *     0      -0.784   0.124  -0.038  1.00  0.00           H 
+ENDMDL
+MODEL 15
+HETATM    1  H     *     0       0.782  -0.127   0.039  1.00  0.00           H 
+HETATM    2  H     *     0      -0.782   0.127  -0.039  1.00  0.00           H 
+ENDMDL
+MODEL 16
+HETATM    1  H     *     0       0.772  -0.128   0.039  1.00  0.00           H 
+HETATM    2  H     *     0      -0.772   0.128  -0.039  1.00  0.00           H 
+ENDMDL
+MODEL 17
+HETATM    1  H     *     0       0.754  -0.128   0.040  1.00  0.00           H 
+HETATM    2  H     *     0      -0.754   0.128  -0.040  1.00  0.00           H 
+ENDMDL
+MODEL 18
+HETATM    1  H     *     0       0.729  -0.127   0.039  1.00  0.00           H 
+HETATM    2  H     *     0      -0.729   0.127  -0.039  1.00  0.00           H 
+ENDMDL
+MODEL 19
+HETATM    1  H     *     0       0.695  -0.125   0.038  1.00  0.00           H 
+HETATM    2  H     *     0      -0.695   0.125  -0.038  1.00  0.00           H 
+ENDMDL
+MODEL 20
+HETATM    1  H     *     0       0.653  -0.121   0.037  1.00  0.00           H 
+HETATM    2  H     *     0      -0.653   0.121  -0.037  1.00  0.00           H 
+ENDMDL
+MODEL 21
+HETATM    1  H     *     0       0.603  -0.115   0.035  1.00  0.00           H 
+HETATM    2  H     *     0      -0.603   0.115  -0.035  1.00  0.00           H 
+ENDMDL
+MODEL 22
+HETATM    1  H     *     0       0.544  -0.108   0.033  1.00  0.00           H 
+HETATM    2  H     *     0      -0.544   0.108  -0.033  1.00  0.00           H 
+ENDMDL
+MODEL 23
+HETATM    1  H     *     0       0.477  -0.099   0.030  1.00  0.00           H 
+HETATM    2  H     *     0      -0.477   0.099  -0.030  1.00  0.00           H 
+ENDMDL
+MODEL 24
+HETATM    1  H     *     0       0.402  -0.088   0.027  1.00  0.00           H 
+HETATM    2  H     *     0      -0.402   0.088  -0.027  1.00  0.00           H 
+ENDMDL
+MODEL 25
+HETATM    1  H     *     0       0.325  -0.077   0.024  1.00  0.00           H 
+HETATM    2  H     *     0      -0.325   0.077  -0.024  1.00  0.00           H 
+ENDMDL
+MODEL 26
+HETATM    1  H     *     0       0.257  -0.069   0.021  1.00  0.00           H 
+HETATM    2  H     *     0      -0.257   0.069  -0.021  1.00  0.00           H 
+ENDMDL
+MODEL 27
+HETATM    1  H     *     0       0.228  -0.070   0.022  1.00  0.00           H 
+HETATM    2  H     *     0      -0.228   0.070  -0.022  1.00  0.00           H 
+ENDMDL
+MODEL 28
+HETATM    1  H     *     0       0.260  -0.091   0.028  1.00  0.00           H 
+HETATM    2  H     *     0      -0.260   0.091  -0.028  1.00  0.00           H 
+ENDMDL
+MODEL 29
+HETATM    1  H     *     0       0.324  -0.122   0.038  1.00  0.00           H 
+HETATM    2  H     *     0      -0.324   0.122  -0.038  1.00  0.00           H 
+ENDMDL
+MODEL 30
+HETATM    1  H     *     0       0.394  -0.156   0.048  1.00  0.00           H 
+HETATM    2  H     *     0      -0.394   0.156  -0.048  1.00  0.00           H 
+ENDMDL
+MODEL 31
+HETATM    1  H     *     0       0.460  -0.188   0.058  1.00  0.00           H 
+HETATM    2  H     *     0      -0.460   0.188  -0.058  1.00  0.00           H 
+ENDMDL
+MODEL 32
+HETATM    1  H     *     0       0.519  -0.217   0.067  1.00  0.00           H 
+HETATM    2  H     *     0      -0.519   0.217  -0.067  1.00  0.00           H 
+ENDMDL
+MODEL 33
+HETATM    1  H     *     0       0.570  -0.244   0.075  1.00  0.00           H 
+HETATM    2  H     *     0      -0.570   0.244  -0.075  1.00  0.00           H 
+ENDMDL
+MODEL 34
+HETATM    1  H     *     0       0.614  -0.266   0.082  1.00  0.00           H 
+HETATM    2  H     *     0      -0.614   0.266  -0.082  1.00  0.00           H 
+ENDMDL
+MODEL 35
+HETATM    1  H     *     0       0.649  -0.285   0.088  1.00  0.00           H 
+HETATM    2  H     *     0      -0.649   0.285  -0.088  1.00  0.00           H 
+ENDMDL
+MODEL 36
+HETATM    1  H     *     0       0.676  -0.301   0.093  1.00  0.00           H 
+HETATM    2  H     *     0      -0.676   0.301  -0.093  1.00  0.00           H 
+ENDMDL
+MODEL 37
+HETATM    1  H     *     0       0.697  -0.314   0.097  1.00  0.00           H 
+HETATM    2  H     *     0      -0.697   0.314  -0.097  1.00  0.00           H 
+ENDMDL
+MODEL 38
+HETATM    1  H     *     0       0.710  -0.323   0.100  1.00  0.00           H 
+HETATM    2  H     *     0      -0.710   0.323  -0.100  1.00  0.00           H 
+ENDMDL
+MODEL 39
+HETATM    1  H     *     0       0.716  -0.329   0.101  1.00  0.00           H 
+HETATM    2  H     *     0      -0.716   0.329  -0.101  1.00  0.00           H 
+ENDMDL
+MODEL 40
+HETATM    1  H     *     0       0.716  -0.332   0.102  1.00  0.00           H 
+HETATM    2  H     *     0      -0.716   0.332  -0.102  1.00  0.00           H 
+ENDMDL
+MODEL 41
+HETATM    1  H     *     0       0.708  -0.332   0.102  1.00  0.00           H 
+HETATM    2  H     *     0      -0.708   0.332  -0.102  1.00  0.00           H 
+ENDMDL
+MODEL 42
+HETATM    1  H     *     0       0.694  -0.329   0.101  1.00  0.00           H 
+HETATM    2  H     *     0      -0.694   0.329  -0.101  1.00  0.00           H 
+ENDMDL
+MODEL 43
+HETATM    1  H     *     0       0.672  -0.322   0.099  1.00  0.00           H 
+HETATM    2  H     *     0      -0.672   0.322  -0.099  1.00  0.00           H 
+ENDMDL
+MODEL 44
+HETATM    1  H     *     0       0.644  -0.312   0.096  1.00  0.00           H 
+HETATM    2  H     *     0      -0.644   0.312  -0.096  1.00  0.00           H 
+ENDMDL
+MODEL 45
+HETATM    1  H     *     0       0.608  -0.298   0.092  1.00  0.00           H 
+HETATM    2  H     *     0      -0.608   0.298  -0.092  1.00  0.00           H 
+ENDMDL
+MODEL 46
+HETATM    1  H     *     0       0.564  -0.281   0.087  1.00  0.00           H 
+HETATM    2  H     *     0      -0.564   0.281  -0.087  1.00  0.00           H 
+ENDMDL
+MODEL 47
+HETATM    1  H     *     0       0.513  -0.260   0.080  1.00  0.00           H 
+HETATM    2  H     *     0      -0.513   0.260  -0.080  1.00  0.00           H 
+ENDMDL
+MODEL 48
+HETATM    1  H     *     0       0.454  -0.234   0.072  1.00  0.00           H 
+HETATM    2  H     *     0      -0.454   0.234  -0.072  1.00  0.00           H 
+ENDMDL
+MODEL 49
+HETATM    1  H     *     0       0.387  -0.205   0.063  1.00  0.00           H 
+HETATM    2  H     *     0      -0.387   0.205  -0.063  1.00  0.00           H 
+ENDMDL
+MODEL 50
+HETATM    1  H     *     0       0.317  -0.174   0.054  1.00  0.00           H 
+HETATM    2  H     *     0      -0.317   0.174  -0.054  1.00  0.00           H 
+ENDMDL
+MODEL 51
+HETATM    1  H     *     0       0.249  -0.144   0.044  1.00  0.00           H 
+HETATM    2  H     *     0      -0.249   0.144  -0.044  1.00  0.00           H 
+ENDMDL
+MODEL 52
+HETATM    1  H     *     0       0.203  -0.128   0.039  1.00  0.00           H 
+HETATM    2  H     *     0      -0.203   0.128  -0.039  1.00  0.00           H 
+ENDMDL
+MODEL 53
+HETATM    1  H     *     0       0.208  -0.142   0.044  1.00  0.00           H 
+HETATM    2  H     *     0      -0.208   0.142  -0.044  1.00  0.00           H 
+ENDMDL
+MODEL 54
+HETATM    1  H     *     0       0.253  -0.184   0.057  1.00  0.00           H 
+HETATM    2  H     *     0      -0.253   0.184  -0.057  1.00  0.00           H 
+ENDMDL
+MODEL 55
+HETATM    1  H     *     0       0.309  -0.235   0.072  1.00  0.00           H 
+HETATM    2  H     *     0      -0.309   0.235  -0.072  1.00  0.00           H 
+ENDMDL
+MODEL 56
+HETATM    1  H     *     0       0.365  -0.285   0.088  1.00  0.00           H 
+HETATM    2  H     *     0      -0.365   0.285  -0.088  1.00  0.00           H 
+ENDMDL
+MODEL 57
+HETATM    1  H     *     0       0.415  -0.332   0.102  1.00  0.00           H 
+HETATM    2  H     *     0      -0.415   0.332  -0.102  1.00  0.00           H 
+ENDMDL
+MODEL 58
+HETATM    1  H     *     0       0.460  -0.373   0.115  1.00  0.00           H 
+HETATM    2  H     *     0      -0.460   0.373  -0.115  1.00  0.00           H 
+ENDMDL
+MODEL 59
+HETATM    1  H     *     0       0.497  -0.408   0.126  1.00  0.00           H 
+HETATM    2  H     *     0      -0.497   0.408  -0.126  1.00  0.00           H 
+ENDMDL
+MODEL 60
+HETATM    1  H     *     0       0.527  -0.438   0.135  1.00  0.00           H 
+HETATM    2  H     *     0      -0.527   0.438  -0.135  1.00  0.00           H 
+ENDMDL
+MODEL 61
+HETATM    1  H     *     0       0.552  -0.463   0.142  1.00  0.00           H 
+HETATM    2  H     *     0      -0.552   0.463   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 62
+HETATM    1  H     *     0       0.570  -0.482   0.148  1.00  0.00           H 
+HETATM    2  H     *     0      -0.570   0.482  -0.148  1.00  0.00           H 
+ENDMDL
+MODEL 63
+HETATM    1  H     *     0       0.582  -0.497   0.153  1.00  0.00           H 
+HETATM    2  H     *     0      -0.582   0.497  -0.153  1.00  0.00           H 
+ENDMDL
+MODEL 64
+HETATM    1  H     *     0       0.588  -0.506   0.156  1.00  0.00           H 
+HETATM    2  H     *     0      -0.588   0.506  -0.156  1.00  0.00           H 
+ENDMDL
+MODEL 65
+HETATM    1  H     *     0       0.589  -0.511   0.157  1.00  0.00           H 
+HETATM    2  H     *     0      -0.589   0.511  -0.157  1.00  0.00           H 
+ENDMDL
+MODEL 66
+HETATM    1  H     *     0       0.584  -0.510   0.157  1.00  0.00           H 
+HETATM    2  H     *     0      -0.584   0.510  -0.157  1.00  0.00           H 
+ENDMDL
+MODEL 67
+HETATM    1  H     *     0       0.573  -0.505   0.156  1.00  0.00           H 
+HETATM    2  H     *     0      -0.573   0.505  -0.156  1.00  0.00           H 
+ENDMDL
+MODEL 68
+HETATM    1  H     *     0       0.557  -0.495   0.152  1.00  0.00           H 
+HETATM    2  H     *     0      -0.557   0.495  -0.152  1.00  0.00           H 
+ENDMDL
+MODEL 69
+HETATM    1  H     *     0       0.535  -0.480   0.148  1.00  0.00           H 
+HETATM    2  H     *     0      -0.535   0.480  -0.148  1.00  0.00           H 
+ENDMDL
+MODEL 70
+HETATM    1  H     *     0       0.506  -0.459   0.141  1.00  0.00           H 
+HETATM    2  H     *     0      -0.506   0.459  -0.141  1.00  0.00           H 
+ENDMDL
+MODEL 71
+HETATM    1  H     *     0       0.472  -0.433   0.133  1.00  0.00           H 
+HETATM    2  H     *     0      -0.472   0.433  -0.133  1.00  0.00           H 
+ENDMDL
+MODEL 72
+HETATM    1  H     *     0       0.432  -0.400   0.123  1.00  0.00           H 
+HETATM    2  H     *     0      -0.432   0.400  -0.123  1.00  0.00           H 
+ENDMDL
+MODEL 73
+HETATM    1  H     *     0       0.385  -0.362   0.112  1.00  0.00           H 
+HETATM    2  H     *     0      -0.385   0.362  -0.112  1.00  0.00           H 
+ENDMDL
+MODEL 74
+HETATM    1  H     *     0       0.331  -0.319   0.098  1.00  0.00           H 
+HETATM    2  H     *     0      -0.331   0.319  -0.098  1.00  0.00           H 
+ENDMDL
+MODEL 75
+HETATM    1  H     *     0       0.274  -0.270   0.083  1.00  0.00           H 
+HETATM    2  H     *     0      -0.274   0.270  -0.083  1.00  0.00           H 
+ENDMDL
+MODEL 76
+HETATM    1  H     *     0       0.215  -0.222   0.068  1.00  0.00           H 
+HETATM    2  H     *     0      -0.215   0.222  -0.068  1.00  0.00           H 
+ENDMDL
+MODEL 77
+HETATM    1  H     *     0       0.168  -0.184   0.057  1.00  0.00           H 
+HETATM    2  H     *     0      -0.168   0.184  -0.057  1.00  0.00           H 
+ENDMDL
+MODEL 78
+HETATM    1  H     *     0       0.153  -0.181   0.056  1.00  0.00           H 
+HETATM    2  H     *     0      -0.153   0.181  -0.056  1.00  0.00           H 
+ENDMDL
+MODEL 79
+HETATM    1  H     *     0       0.175  -0.224   0.069  1.00  0.00           H 
+HETATM    2  H     *     0      -0.175   0.224  -0.069  1.00  0.00           H 
+ENDMDL
+MODEL 80
+HETATM    1  H     *     0       0.213  -0.285   0.088  1.00  0.00           H 
+HETATM    2  H     *     0      -0.213   0.285  -0.088  1.00  0.00           H 
+ENDMDL
+MODEL 81
+HETATM    1  H     *     0       0.252  -0.350   0.108  1.00  0.00           H 
+HETATM    2  H     *     0      -0.252   0.350  -0.108  1.00  0.00           H 
+ENDMDL
+MODEL 82
+HETATM    1  H     *     0       0.289  -0.410   0.126  1.00  0.00           H 
+HETATM    2  H     *     0      -0.289   0.410  -0.126  1.00  0.00           H 
+ENDMDL
+MODEL 83
+HETATM    1  H     *     0       0.321  -0.464   0.143  1.00  0.00           H 
+HETATM    2  H     *     0      -0.321   0.464  -0.143  1.00  0.00           H 
+ENDMDL
+MODEL 84
+HETATM    1  H     *     0       0.348  -0.510   0.157  1.00  0.00           H 
+HETATM    2  H     *     0      -0.348   0.510  -0.157  1.00  0.00           H 
+ENDMDL
+MODEL 85
+HETATM    1  H     *     0       0.370  -0.550   0.169  1.00  0.00           H 
+HETATM    2  H     *     0      -0.370   0.550  -0.169  1.00  0.00           H 
+ENDMDL
+MODEL 86
+HETATM    1  H     *     0       0.388  -0.583   0.179  1.00  0.00           H 
+HETATM    2  H     *     0      -0.388   0.583  -0.179  1.00  0.00           H 
+ENDMDL
+MODEL 87
+HETATM    1  H     *     0       0.401  -0.609   0.187  1.00  0.00           H 
+HETATM    2  H     *     0      -0.401   0.609  -0.187  1.00  0.00           H 
+ENDMDL
+MODEL 88
+HETATM    1  H     *     0       0.410  -0.628   0.193  1.00  0.00           H 
+HETATM    2  H     *     0      -0.410   0.628  -0.193  1.00  0.00           H 
+ENDMDL
+MODEL 89
+HETATM    1  H     *     0       0.415  -0.642   0.198  1.00  0.00           H 
+HETATM    2  H     *     0      -0.415   0.642  -0.198  1.00  0.00           H 
+ENDMDL
+MODEL 90
+HETATM    1  H     *     0       0.415  -0.649   0.200  1.00  0.00           H 
+HETATM    2  H     *     0      -0.415   0.649  -0.200  1.00  0.00           H 
+ENDMDL
+MODEL 91
+HETATM    1  H     *     0       0.412  -0.649   0.200  1.00  0.00           H 
+HETATM    2  H     *     0      -0.412   0.649  -0.200  1.00  0.00           H 
+ENDMDL
+MODEL 92
+HETATM    1  H     *     0       0.405  -0.644   0.198  1.00  0.00           H 
+HETATM    2  H     *     0      -0.405   0.644  -0.198  1.00  0.00           H 
+ENDMDL
+MODEL 93
+HETATM    1  H     *     0       0.394  -0.632   0.195  1.00  0.00           H 
+HETATM    2  H     *     0      -0.394   0.632  -0.195  1.00  0.00           H 
+ENDMDL
+MODEL 94
+HETATM    1  H     *     0       0.379  -0.614   0.189  1.00  0.00           H 
+HETATM    2  H     *     0      -0.379   0.614  -0.189  1.00  0.00           H 
+ENDMDL
+MODEL 95
+HETATM    1  H     *     0       0.359  -0.589   0.181  1.00  0.00           H 
+HETATM    2  H     *     0      -0.359   0.589  -0.181  1.00  0.00           H 
+ENDMDL
+MODEL 96
+HETATM    1  H     *     0       0.336  -0.557   0.172  1.00  0.00           H 
+HETATM    2  H     *     0      -0.336   0.557  -0.172  1.00  0.00           H 
+ENDMDL
+MODEL 97
+HETATM    1  H     *     0       0.308  -0.518   0.160  1.00  0.00           H 
+HETATM    2  H     *     0      -0.308   0.518  -0.160  1.00  0.00           H 
+ENDMDL
+MODEL 98
+HETATM    1  H     *     0       0.276  -0.472   0.145  1.00  0.00           H 
+HETATM    2  H     *     0      -0.276   0.472  -0.145  1.00  0.00           H 
+ENDMDL
+MODEL 99
+HETATM    1  H     *     0       0.239  -0.418   0.129  1.00  0.00           H 
+HETATM    2  H     *     0      -0.239   0.418  -0.129  1.00  0.00           H 
+ENDMDL
+MODEL 100
+HETATM    1  H     *     0       0.199  -0.358   0.110  1.00  0.00           H 
+HETATM    2  H     *     0      -0.199   0.358  -0.110  1.00  0.00           H 
+ENDMDL
+MODEL 101
+HETATM    1  H     *     0       0.157  -0.295   0.091  1.00  0.00           H 
+HETATM    2  H     *     0      -0.157   0.295  -0.091  1.00  0.00           H 
+ENDMDL
+MODEL 102
+HETATM    1  H     *     0       0.119  -0.238   0.073  1.00  0.00           H 
+HETATM    2  H     *     0      -0.119   0.238  -0.073  1.00  0.00           H 
+ENDMDL
+MODEL 103
+HETATM    1  H     *     0       0.095  -0.210   0.065  1.00  0.00           H 
+HETATM    2  H     *     0      -0.095   0.210  -0.065  1.00  0.00           H 
+ENDMDL
+MODEL 104
+HETATM    1  H     *     0       0.097  -0.239   0.074  1.00  0.00           H 
+HETATM    2  H     *     0      -0.097   0.239  -0.074  1.00  0.00           H 
+ENDMDL
+MODEL 105
+HETATM    1  H     *     0       0.112  -0.303   0.093  1.00  0.00           H 
+HETATM    2  H     *     0      -0.112   0.303  -0.093  1.00  0.00           H 
+ENDMDL
+MODEL 106
+HETATM    1  H     *     0       0.131  -0.375   0.116  1.00  0.00           H 
+HETATM    2  H     *     0      -0.131   0.375  -0.116  1.00  0.00           H 
+ENDMDL
+MODEL 107
+HETATM    1  H     *     0       0.149  -0.445   0.137  1.00  0.00           H 
+HETATM    2  H     *     0      -0.149   0.445  -0.137  1.00  0.00           H 
+ENDMDL
+MODEL 108
+HETATM    1  H     *     0       0.165  -0.509   0.157  1.00  0.00           H 
+HETATM    2  H     *     0      -0.165   0.509  -0.157  1.00  0.00           H 
+ENDMDL
+MODEL 109
+HETATM    1  H     *     0       0.178  -0.564   0.174  1.00  0.00           H 
+HETATM    2  H     *     0      -0.178   0.564  -0.174  1.00  0.00           H 
+ENDMDL
+MODEL 110
+HETATM    1  H     *     0       0.189  -0.611   0.188  1.00  0.00           H 
+HETATM    2  H     *     0      -0.189   0.611  -0.188  1.00  0.00           H 
+ENDMDL
+MODEL 111
+HETATM    1  H     *     0       0.197  -0.650   0.200  1.00  0.00           H 
+HETATM    2  H     *     0      -0.197   0.650  -0.200  1.00  0.00           H 
+ENDMDL
+MODEL 112
+HETATM    1  H     *     0       0.203  -0.681   0.210  1.00  0.00           H 
+HETATM    2  H     *     0      -0.203   0.681  -0.210  1.00  0.00           H 
+ENDMDL
+MODEL 113
+HETATM    1  H     *     0       0.207  -0.705   0.217  1.00  0.00           H 
+HETATM    2  H     *     0      -0.207   0.705  -0.217  1.00  0.00           H 
+ENDMDL
+MODEL 114
+HETATM    1  H     *     0       0.208  -0.722   0.222  1.00  0.00           H 
+HETATM    2  H     *     0      -0.208   0.722   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 115
+HETATM    1  H     *     0       0.208  -0.732   0.225  1.00  0.00           H 
+HETATM    2  H     *     0      -0.208   0.732  -0.225  1.00  0.00           H 
+ENDMDL
+MODEL 116
+HETATM    1  H     *     0       0.205  -0.734   0.226  1.00  0.00           H 
+HETATM    2  H     *     0      -0.205   0.734  -0.226  1.00  0.00           H 
+ENDMDL
+MODEL 117
+HETATM    1  H     *     0       0.201  -0.730   0.225  1.00  0.00           H 
+HETATM    2  H     *     0      -0.201   0.730  -0.225  1.00  0.00           H 
+ENDMDL
+MODEL 118
+HETATM    1  H     *     0       0.194  -0.718   0.221  1.00  0.00           H 
+HETATM    2  H     *     0      -0.194   0.718  -0.221  1.00  0.00           H 
+ENDMDL
+MODEL 119
+HETATM    1  H     *     0       0.186  -0.699   0.215  1.00  0.00           H 
+HETATM    2  H     *     0      -0.186   0.699  -0.215  1.00  0.00           H 
+ENDMDL
+MODEL 120
+HETATM    1  H     *     0       0.175  -0.673   0.207  1.00  0.00           H 
+HETATM    2  H     *     0      -0.175   0.673  -0.207  1.00  0.00           H 
+ENDMDL
+MODEL 121
+HETATM    1  H     *     0       0.163  -0.639   0.197  1.00  0.00           H 
+HETATM    2  H     *     0      -0.163   0.639  -0.197  1.00  0.00           H 
+ENDMDL
+MODEL 122
+HETATM    1  H     *     0       0.149  -0.598   0.184  1.00  0.00           H 
+HETATM    2  H     *     0      -0.149   0.598  -0.184  1.00  0.00           H 
+ENDMDL
+MODEL 123
+HETATM    1  H     *     0       0.132  -0.548   0.169  1.00  0.00           H 
+HETATM    2  H     *     0      -0.132   0.548  -0.169  1.00  0.00           H 
+ENDMDL
+MODEL 124
+HETATM    1  H     *     0       0.114  -0.489   0.151  1.00  0.00           H 
+HETATM    2  H     *     0      -0.114   0.489  -0.151  1.00  0.00           H 
+ENDMDL
+MODEL 125
+HETATM    1  H     *     0       0.093  -0.423   0.130  1.00  0.00           H 
+HETATM    2  H     *     0      -0.093   0.423  -0.130  1.00  0.00           H 
+ENDMDL
+MODEL 126
+HETATM    1  H     *     0       0.072  -0.352   0.108  1.00  0.00           H 
+HETATM    2  H     *     0      -0.072   0.352  -0.108  1.00  0.00           H 
+ENDMDL
+MODEL 127
+HETATM    1  H     *     0       0.051  -0.282   0.087  1.00  0.00           H 
+HETATM    2  H     *     0      -0.051   0.282  -0.087  1.00  0.00           H 
+ENDMDL
+MODEL 128
+HETATM    1  H     *     0       0.034  -0.233   0.072  1.00  0.00           H 
+HETATM    2  H     *     0      -0.034   0.233  -0.072  1.00  0.00           H 
+ENDMDL
+MODEL 129
+HETATM    1  H     *     0       0.024  -0.238   0.073  1.00  0.00           H 
+HETATM    2  H     *     0      -0.024   0.238  -0.073  1.00  0.00           H 
+ENDMDL
+MODEL 130
+HETATM    1  H     *     0       0.020  -0.294   0.091  1.00  0.00           H 
+HETATM    2  H     *     0      -0.020   0.294  -0.091  1.00  0.00           H 
+ENDMDL
+MODEL 131
+HETATM    1  H     *     0       0.016  -0.367   0.113  1.00  0.00           H 
+HETATM    2  H     *     0      -0.016   0.367  -0.113  1.00  0.00           H 
+ENDMDL
+MODEL 132
+HETATM    1  H     *     0       0.013  -0.441   0.136  1.00  0.00           H 
+HETATM    2  H     *     0      -0.013   0.441  -0.136  1.00  0.00           H 
+ENDMDL
+MODEL 133
+HETATM    1  H     *     0       0.010  -0.509   0.157  1.00  0.00           H 
+HETATM    2  H     *     0      -0.010   0.509  -0.157  1.00  0.00           H 
+ENDMDL
+MODEL 134
+HETATM    1  H     *     0       0.006  -0.569   0.175  1.00  0.00           H 
+HETATM    2  H     *     0      -0.006   0.569  -0.175  1.00  0.00           H 
+ENDMDL
+MODEL 135
+HETATM    1  H     *     0       0.002  -0.620   0.191  1.00  0.00           H 
+HETATM    2  H     *     0      -0.002   0.620  -0.191  1.00  0.00           H 
+ENDMDL
+MODEL 136
+HETATM    1  H     *     0      -0.001  -0.663   0.204  1.00  0.00           H 
+HETATM    2  H     *     0       0.001   0.663  -0.204  1.00  0.00           H 
+ENDMDL
+MODEL 137
+HETATM    1  H     *     0      -0.005  -0.697   0.215  1.00  0.00           H 
+HETATM    2  H     *     0       0.005   0.697  -0.215  1.00  0.00           H 
+ENDMDL
+MODEL 138
+HETATM    1  H     *     0      -0.009  -0.724   0.223  1.00  0.00           H 
+HETATM    2  H     *     0       0.009   0.724  -0.223  1.00  0.00           H 
+ENDMDL
+MODEL 139
+HETATM    1  H     *     0      -0.012  -0.743   0.229  1.00  0.00           H 
+HETATM    2  H     *     0       0.012   0.743  -0.229  1.00  0.00           H 
+ENDMDL
+MODEL 140
+HETATM    1  H     *     0      -0.016  -0.755   0.233  1.00  0.00           H 
+HETATM    2  H     *     0       0.016   0.755  -0.233  1.00  0.00           H 
+ENDMDL
+MODEL 141
+HETATM    1  H     *     0      -0.019  -0.760   0.234  1.00  0.00           H 
+HETATM    2  H     *     0       0.019   0.760  -0.234  1.00  0.00           H 
+ENDMDL
+MODEL 142
+HETATM    1  H     *     0      -0.022  -0.757   0.233  1.00  0.00           H 
+HETATM    2  H     *     0       0.022   0.757  -0.233  1.00  0.00           H 
+ENDMDL
+MODEL 143
+HETATM    1  H     *     0      -0.025  -0.747   0.230  1.00  0.00           H 
+HETATM    2  H     *     0       0.025   0.747  -0.230  1.00  0.00           H 
+ENDMDL
+MODEL 144
+HETATM    1  H     *     0      -0.027  -0.729   0.225  1.00  0.00           H 
+HETATM    2  H     *     0       0.027   0.729  -0.225  1.00  0.00           H 
+ENDMDL
+MODEL 145
+HETATM    1  H     *     0      -0.030  -0.704   0.217  1.00  0.00           H 
+HETATM    2  H     *     0       0.030   0.704  -0.217  1.00  0.00           H 
+ENDMDL
+MODEL 146
+HETATM    1  H     *     0      -0.032  -0.671   0.207  1.00  0.00           H 
+HETATM    2  H     *     0       0.032   0.671  -0.207  1.00  0.00           H 
+ENDMDL
+MODEL 147
+HETATM    1  H     *     0      -0.033  -0.630   0.194  1.00  0.00           H 
+HETATM    2  H     *     0       0.033   0.630  -0.194  1.00  0.00           H 
+ENDMDL
+MODEL 148
+HETATM    1  H     *     0      -0.035  -0.581   0.179  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.581  -0.179  1.00  0.00           H 
+ENDMDL
+MODEL 149
+HETATM    1  H     *     0      -0.035  -0.523   0.161  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.523  -0.161  1.00  0.00           H 
+ENDMDL
+MODEL 150
+HETATM    1  H     *     0      -0.035  -0.457   0.141  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.457  -0.141  1.00  0.00           H 
+ENDMDL
+MODEL 151
+HETATM    1  H     *     0      -0.035  -0.384   0.118  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.384  -0.118  1.00  0.00           H 
+ENDMDL
+MODEL 152
+HETATM    1  H     *     0      -0.035  -0.310   0.095  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.310   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 153
+HETATM    1  H     *     0      -0.035  -0.247   0.076  1.00  0.00           H 
+HETATM    2  H     *     0       0.035   0.247  -0.076  1.00  0.00           H 
+ENDMDL
+MODEL 154
+HETATM    1  H     *     0      -0.042  -0.227   0.070  1.00  0.00           H 
+HETATM    2  H     *     0       0.042   0.227  -0.070  1.00  0.00           H 
+ENDMDL
+MODEL 155
+HETATM    1  H     *     0      -0.060  -0.265   0.082  1.00  0.00           H 
+HETATM    2  H     *     0       0.060   0.265  -0.082  1.00  0.00           H 
+ENDMDL
+MODEL 156
+HETATM    1  H     *     0      -0.084  -0.331   0.102  1.00  0.00           H 
+HETATM    2  H     *     0       0.084   0.331  -0.102  1.00  0.00           H 
+ENDMDL
+MODEL 157
+HETATM    1  H     *     0      -0.109  -0.402   0.124  1.00  0.00           H 
+HETATM    2  H     *     0       0.109   0.402   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 158
+HETATM    1  H     *     0      -0.133  -0.469   0.144  1.00  0.00           H 
+HETATM    2  H     *     0       0.133   0.469  -0.144  1.00  0.00           H 
+ENDMDL
+MODEL 159
+HETATM    1  H     *     0      -0.155  -0.528   0.163  1.00  0.00           H 
+HETATM    2  H     *     0       0.155   0.528   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 160
+HETATM    1  H     *     0      -0.174  -0.579   0.178  1.00  0.00           H 
+HETATM    2  H     *     0       0.174   0.579  -0.178  1.00  0.00           H 
+ENDMDL
+MODEL 161
+HETATM    1  H     *     0      -0.191  -0.622   0.192  1.00  0.00           H 
+HETATM    2  H     *     0       0.191   0.622  -0.192  1.00  0.00           H 
+ENDMDL
+MODEL 162
+HETATM    1  H     *     0      -0.206  -0.658   0.202  1.00  0.00           H 
+HETATM    2  H     *     0       0.206   0.658  -0.202  1.00  0.00           H 
+ENDMDL
+MODEL 163
+HETATM    1  H     *     0      -0.218  -0.685   0.211  1.00  0.00           H 
+HETATM    2  H     *     0       0.218   0.685  -0.211  1.00  0.00           H 
+ENDMDL
+MODEL 164
+HETATM    1  H     *     0      -0.228  -0.705   0.217  1.00  0.00           H 
+HETATM    2  H     *     0       0.228   0.705  -0.217  1.00  0.00           H 
+ENDMDL
+MODEL 165
+HETATM    1  H     *     0      -0.236  -0.718   0.221  1.00  0.00           H 
+HETATM    2  H     *     0       0.236   0.718  -0.221  1.00  0.00           H 
+ENDMDL
+MODEL 166
+HETATM    1  H     *     0      -0.241  -0.724   0.223  1.00  0.00           H 
+HETATM    2  H     *     0       0.241   0.724  -0.223  1.00  0.00           H 
+ENDMDL
+MODEL 167
+HETATM    1  H     *     0      -0.244  -0.723   0.223  1.00  0.00           H 
+HETATM    2  H     *     0       0.244   0.723  -0.223  1.00  0.00           H 
+ENDMDL
+MODEL 168
+HETATM    1  H     *     0      -0.245  -0.716   0.220  1.00  0.00           H 
+HETATM    2  H     *     0       0.245   0.716  -0.220  1.00  0.00           H 
+ENDMDL
+MODEL 169
+HETATM    1  H     *     0      -0.243  -0.701   0.216  1.00  0.00           H 
+HETATM    2  H     *     0       0.243   0.701  -0.216  1.00  0.00           H 
+ENDMDL
+MODEL 170
+HETATM    1  H     *     0      -0.239  -0.679   0.209  1.00  0.00           H 
+HETATM    2  H     *     0       0.239   0.679  -0.209  1.00  0.00           H 
+ENDMDL
+MODEL 171
+HETATM    1  H     *     0      -0.232  -0.650   0.200  1.00  0.00           H 
+HETATM    2  H     *     0       0.232   0.650  -0.200  1.00  0.00           H 
+ENDMDL
+MODEL 172
+HETATM    1  H     *     0      -0.223  -0.613   0.189  1.00  0.00           H 
+HETATM    2  H     *     0       0.223   0.613  -0.189  1.00  0.00           H 
+ENDMDL
+MODEL 173
+HETATM    1  H     *     0      -0.211  -0.568   0.175  1.00  0.00           H 
+HETATM    2  H     *     0       0.211   0.568  -0.175  1.00  0.00           H 
+ENDMDL
+MODEL 174
+HETATM    1  H     *     0      -0.195  -0.516   0.159  1.00  0.00           H 
+HETATM    2  H     *     0       0.195   0.516  -0.159  1.00  0.00           H 
+ENDMDL
+MODEL 175
+HETATM    1  H     *     0      -0.177  -0.456   0.140  1.00  0.00           H 
+HETATM    2  H     *     0       0.177   0.456  -0.140  1.00  0.00           H 
+ENDMDL
+MODEL 176
+HETATM    1  H     *     0      -0.156  -0.388   0.119  1.00  0.00           H 
+HETATM    2  H     *     0       0.156   0.388  -0.119  1.00  0.00           H 
+ENDMDL
+MODEL 177
+HETATM    1  H     *     0      -0.134  -0.316   0.097  1.00  0.00           H 
+HETATM    2  H     *     0       0.134   0.316  -0.097  1.00  0.00           H 
+ENDMDL
+MODEL 178
+HETATM    1  H     *     0      -0.113  -0.249   0.077  1.00  0.00           H 
+HETATM    2  H     *     0       0.113   0.249  -0.077  1.00  0.00           H 
+ENDMDL
+MODEL 179
+HETATM    1  H     *     0      -0.104  -0.208   0.064  1.00  0.00           H 
+HETATM    2  H     *     0       0.104   0.208  -0.064  1.00  0.00           H 
+ENDMDL
+MODEL 180
+HETATM    1  H     *     0      -0.122  -0.221   0.068  1.00  0.00           H 
+HETATM    2  H     *     0       0.122   0.221  -0.068  1.00  0.00           H 
+ENDMDL
+MODEL 181
+HETATM    1  H     *     0      -0.160  -0.271   0.083  1.00  0.00           H 
+HETATM    2  H     *     0       0.160   0.271  -0.083  1.00  0.00           H 
+ENDMDL
+MODEL 182
+HETATM    1  H     *     0      -0.205  -0.332   0.102  1.00  0.00           H 
+HETATM    2  H     *     0       0.205   0.332  -0.102  1.00  0.00           H 
+ENDMDL
+MODEL 183
+HETATM    1  H     *     0      -0.249  -0.391   0.121  1.00  0.00           H 
+HETATM    2  H     *     0       0.249   0.391  -0.121  1.00  0.00           H 
+ENDMDL
+MODEL 184
+HETATM    1  H     *     0      -0.289  -0.445   0.137  1.00  0.00           H 
+HETATM    2  H     *     0       0.289   0.445  -0.137  1.00  0.00           H 
+ENDMDL
+MODEL 185
+HETATM    1  H     *     0      -0.325  -0.492   0.151  1.00  0.00           H 
+HETATM    2  H     *     0       0.325   0.492  -0.151  1.00  0.00           H 
+ENDMDL
+MODEL 186
+HETATM    1  H     *     0      -0.356  -0.531   0.164  1.00  0.00           H 
+HETATM    2  H     *     0       0.356   0.531  -0.164  1.00  0.00           H 
+ENDMDL
+MODEL 187
+HETATM    1  H     *     0      -0.382  -0.564   0.174  1.00  0.00           H 
+HETATM    2  H     *     0       0.382   0.564  -0.174  1.00  0.00           H 
+ENDMDL
+MODEL 188
+HETATM    1  H     *     0      -0.404  -0.589   0.181  1.00  0.00           H 
+HETATM    2  H     *     0       0.404   0.589  -0.181  1.00  0.00           H 
+ENDMDL
+MODEL 189
+HETATM    1  H     *     0      -0.421  -0.608   0.187  1.00  0.00           H 
+HETATM    2  H     *     0       0.421   0.608  -0.187  1.00  0.00           H 
+ENDMDL
+MODEL 190
+HETATM    1  H     *     0      -0.434  -0.621   0.191  1.00  0.00           H 
+HETATM    2  H     *     0       0.434   0.621  -0.191  1.00  0.00           H 
+ENDMDL
+MODEL 191
+HETATM    1  H     *     0      -0.442  -0.628   0.193  1.00  0.00           H 
+HETATM    2  H     *     0       0.442   0.628  -0.193  1.00  0.00           H 
+ENDMDL
+MODEL 192
+HETATM    1  H     *     0      -0.447  -0.629   0.194  1.00  0.00           H 
+HETATM    2  H     *     0       0.447   0.629  -0.194  1.00  0.00           H 
+ENDMDL
+MODEL 193
+HETATM    1  H     *     0      -0.447  -0.623   0.192  1.00  0.00           H 
+HETATM    2  H     *     0       0.447   0.623  -0.192  1.00  0.00           H 
+ENDMDL
+MODEL 194
+HETATM    1  H     *     0      -0.442  -0.612   0.188  1.00  0.00           H 
+HETATM    2  H     *     0       0.442   0.612  -0.188  1.00  0.00           H 
+ENDMDL
+MODEL 195
+HETATM    1  H     *     0      -0.434  -0.594   0.183  1.00  0.00           H 
+HETATM    2  H     *     0       0.434   0.594  -0.183  1.00  0.00           H 
+ENDMDL
+MODEL 196
+HETATM    1  H     *     0      -0.420  -0.570   0.176  1.00  0.00           H 
+HETATM    2  H     *     0       0.420   0.570  -0.176  1.00  0.00           H 
+ENDMDL
+MODEL 197
+HETATM    1  H     *     0      -0.402  -0.540   0.166  1.00  0.00           H 
+HETATM    2  H     *     0       0.402   0.540  -0.166  1.00  0.00           H 
+ENDMDL
+MODEL 198
+HETATM    1  H     *     0      -0.379  -0.503   0.155  1.00  0.00           H 
+HETATM    2  H     *     0       0.379   0.503  -0.155  1.00  0.00           H 
+ENDMDL
+MODEL 199
+HETATM    1  H     *     0      -0.351  -0.460   0.142  1.00  0.00           H 
+HETATM    2  H     *     0       0.351   0.460  -0.142  1.00  0.00           H 
+ENDMDL
+MODEL 200
+HETATM    1  H     *     0      -0.318  -0.409   0.126  1.00  0.00           H 
+HETATM    2  H     *     0       0.318   0.409  -0.126  1.00  0.00           H 
+ENDMDL
+MODEL 201
+HETATM    1  H     *     0      -0.279  -0.352   0.108  1.00  0.00           H 
+HETATM    2  H     *     0       0.279   0.352  -0.108  1.00  0.00           H 
+ENDMDL
+MODEL 202
+HETATM    1  H     *     0      -0.237  -0.290   0.089  1.00  0.00           H 
+HETATM    2  H     *     0       0.237   0.290  -0.089  1.00  0.00           H 
+ENDMDL
+MODEL 203
+HETATM    1  H     *     0      -0.195  -0.229   0.070  1.00  0.00           H 
+HETATM    2  H     *     0       0.195   0.229  -0.070  1.00  0.00           H 
+ENDMDL
+MODEL 204
+HETATM    1  H     *     0      -0.165  -0.181   0.056  1.00  0.00           H 
+HETATM    2  H     *     0       0.165   0.181  -0.056  1.00  0.00           H 
+ENDMDL
+MODEL 205
+HETATM    1  H     *     0      -0.169  -0.171   0.053  1.00  0.00           H 
+HETATM    2  H     *     0       0.169   0.171  -0.053  1.00  0.00           H 
+ENDMDL
+MODEL 206
+HETATM    1  H     *     0      -0.213  -0.201   0.062  1.00  0.00           H 
+HETATM    2  H     *     0       0.213   0.201  -0.062  1.00  0.00           H 
+ENDMDL
+MODEL 207
+HETATM    1  H     *     0      -0.272  -0.246   0.076  1.00  0.00           H 
+HETATM    2  H     *     0       0.272   0.246  -0.076  1.00  0.00           H 
+ENDMDL
+MODEL 208
+HETATM    1  H     *     0      -0.333  -0.292   0.090  1.00  0.00           H 
+HETATM    2  H     *     0       0.333   0.292  -0.090  1.00  0.00           H 
+ENDMDL
+MODEL 209
+HETATM    1  H     *     0      -0.390  -0.335   0.103  1.00  0.00           H 
+HETATM    2  H     *     0       0.390   0.335  -0.103  1.00  0.00           H 
+ENDMDL
+MODEL 210
+HETATM    1  H     *     0      -0.440  -0.372   0.115  1.00  0.00           H 
+HETATM    2  H     *     0       0.440   0.372  -0.115  1.00  0.00           H 
+ENDMDL
+MODEL 211
+HETATM    1  H     *     0      -0.484  -0.404   0.124  1.00  0.00           H 
+HETATM    2  H     *     0       0.484   0.404  -0.124  1.00  0.00           H 
+ENDMDL
+MODEL 212
+HETATM    1  H     *     0      -0.521  -0.430   0.132  1.00  0.00           H 
+HETATM    2  H     *     0       0.521   0.430  -0.132  1.00  0.00           H 
+ENDMDL
+MODEL 213
+HETATM    1  H     *     0      -0.552  -0.450   0.139  1.00  0.00           H 
+HETATM    2  H     *     0       0.552   0.450  -0.139  1.00  0.00           H 
+ENDMDL
+MODEL 214
+HETATM    1  H     *     0      -0.576  -0.466   0.143  1.00  0.00           H 
+HETATM    2  H     *     0       0.576   0.466  -0.143  1.00  0.00           H 
+ENDMDL
+MODEL 215
+HETATM    1  H     *     0      -0.595  -0.476   0.147  1.00  0.00           H 
+HETATM    2  H     *     0       0.595   0.476  -0.147  1.00  0.00           H 
+ENDMDL
+MODEL 216
+HETATM    1  H     *     0      -0.607  -0.482   0.149  1.00  0.00           H 
+HETATM    2  H     *     0       0.607   0.482  -0.149  1.00  0.00           H 
+ENDMDL
+MODEL 217
+HETATM    1  H     *     0      -0.614  -0.484   0.149  1.00  0.00           H 
+HETATM    2  H     *     0       0.614   0.484  -0.149  1.00  0.00           H 
+ENDMDL
+MODEL 218
+HETATM    1  H     *     0      -0.614  -0.480   0.148  1.00  0.00           H 
+HETATM    2  H     *     0       0.614   0.480  -0.148  1.00  0.00           H 
+ENDMDL
+MODEL 219
+HETATM    1  H     *     0      -0.609  -0.472   0.145  1.00  0.00           H 
+HETATM    2  H     *     0       0.609   0.472  -0.145  1.00  0.00           H 
+ENDMDL
+MODEL 220
+HETATM    1  H     *     0      -0.597  -0.459   0.141  1.00  0.00           H 
+HETATM    2  H     *     0       0.597   0.459  -0.141  1.00  0.00           H 
+ENDMDL
+MODEL 221
+HETATM    1  H     *     0      -0.580  -0.442   0.136  1.00  0.00           H 
+HETATM    2  H     *     0       0.580   0.442  -0.136  1.00  0.00           H 
+ENDMDL
+MODEL 222
+HETATM    1  H     *     0      -0.556  -0.419   0.129  1.00  0.00           H 
+HETATM    2  H     *     0       0.556   0.419  -0.129  1.00  0.00           H 
+ENDMDL
+MODEL 223
+HETATM    1  H     *     0      -0.526  -0.392   0.121  1.00  0.00           H 
+HETATM    2  H     *     0       0.526   0.392  -0.121  1.00  0.00           H 
+ENDMDL
+MODEL 224
+HETATM    1  H     *     0      -0.488  -0.360   0.111  1.00  0.00           H 
+HETATM    2  H     *     0       0.488   0.360  -0.111  1.00  0.00           H 
+ENDMDL
+MODEL 225
+HETATM    1  H     *     0      -0.444  -0.322   0.099  1.00  0.00           H 
+HETATM    2  H     *     0       0.444   0.322  -0.099  1.00  0.00           H 
+ENDMDL
+MODEL 226
+HETATM    1  H     *     0      -0.393  -0.280   0.086  1.00  0.00           H 
+HETATM    2  H     *     0       0.393   0.280  -0.086  1.00  0.00           H 
+ENDMDL
+MODEL 227
+HETATM    1  H     *     0      -0.336  -0.233   0.072  1.00  0.00           H 
+HETATM    2  H     *     0       0.336   0.233  -0.072  1.00  0.00           H 
+ENDMDL
+MODEL 228
+HETATM    1  H     *     0      -0.276  -0.184   0.057  1.00  0.00           H 
+HETATM    2  H     *     0       0.276   0.184  -0.057  1.00  0.00           H 
+ENDMDL
+MODEL 229
+HETATM    1  H     *     0      -0.224  -0.141   0.043  1.00  0.00           H 
+HETATM    2  H     *     0       0.224   0.141  -0.043  1.00  0.00           H 
+ENDMDL
+MODEL 230
+HETATM    1  H     *     0      -0.205  -0.118   0.036  1.00  0.00           H 
+HETATM    2  H     *     0       0.205   0.118  -0.036  1.00  0.00           H 
+ENDMDL
+MODEL 231
+HETATM    1  H     *     0      -0.241  -0.127   0.039  1.00  0.00           H 
+HETATM    2  H     *     0       0.241   0.127  -0.039  1.00  0.00           H 
+ENDMDL
+MODEL 232
+HETATM    1  H     *     0      -0.307  -0.152   0.047  1.00  0.00           H 
+HETATM    2  H     *     0       0.307   0.152  -0.047  1.00  0.00           H 
+ENDMDL
+MODEL 233
+HETATM    1  H     *     0      -0.380  -0.180   0.056  1.00  0.00           H 
+HETATM    2  H     *     0       0.380   0.180  -0.056  1.00  0.00           H 
+ENDMDL
+MODEL 234
+HETATM    1  H     *     0      -0.449  -0.207   0.064  1.00  0.00           H 
+HETATM    2  H     *     0       0.449   0.207  -0.064  1.00  0.00           H 
+ENDMDL
+MODEL 235
+HETATM    1  H     *     0      -0.511  -0.230   0.071  1.00  0.00           H 
+HETATM    2  H     *     0       0.511   0.230  -0.071  1.00  0.00           H 
+ENDMDL
+MODEL 236
+HETATM    1  H     *     0      -0.566  -0.250   0.077  1.00  0.00           H 
+HETATM    2  H     *     0       0.566   0.250  -0.077  1.00  0.00           H 
+ENDMDL
+MODEL 237
+HETATM    1  H     *     0      -0.612  -0.267   0.082  1.00  0.00           H 
+HETATM    2  H     *     0       0.612   0.267  -0.082  1.00  0.00           H 
+ENDMDL
+MODEL 238
+HETATM    1  H     *     0      -0.650  -0.279   0.086  1.00  0.00           H 
+HETATM    2  H     *     0       0.650   0.279  -0.086  1.00  0.00           H 
+ENDMDL
+MODEL 239
+HETATM    1  H     *     0      -0.681  -0.289   0.089  1.00  0.00           H 
+HETATM    2  H     *     0       0.681   0.289  -0.089  1.00  0.00           H 
+ENDMDL
+MODEL 240
+HETATM    1  H     *     0      -0.705  -0.295   0.091  1.00  0.00           H 
+HETATM    2  H     *     0       0.705   0.295  -0.091  1.00  0.00           H 
+ENDMDL
+MODEL 241
+HETATM    1  H     *     0      -0.721  -0.299   0.092  1.00  0.00           H 
+HETATM    2  H     *     0       0.721   0.299  -0.092  1.00  0.00           H 
+ENDMDL
+MODEL 242
+HETATM    1  H     *     0      -0.730  -0.299   0.092  1.00  0.00           H 
+HETATM    2  H     *     0       0.730   0.299  -0.092  1.00  0.00           H 
+ENDMDL
+MODEL 243
+HETATM    1  H     *     0      -0.732  -0.297   0.091  1.00  0.00           H 
+HETATM    2  H     *     0       0.732   0.297  -0.091  1.00  0.00           H 
+ENDMDL
+MODEL 244
+HETATM    1  H     *     0      -0.728  -0.292   0.090  1.00  0.00           H 
+HETATM    2  H     *     0       0.728   0.292  -0.090  1.00  0.00           H 
+ENDMDL
+MODEL 245
+HETATM    1  H     *     0      -0.716  -0.284   0.087  1.00  0.00           H 
+HETATM    2  H     *     0       0.716   0.284  -0.087  1.00  0.00           H 
+ENDMDL
+MODEL 246
+HETATM    1  H     *     0      -0.697  -0.273   0.084  1.00  0.00           H 
+HETATM    2  H     *     0       0.697   0.273  -0.084  1.00  0.00           H 
+ENDMDL
+MODEL 247
+HETATM    1  H     *     0      -0.670  -0.259   0.080  1.00  0.00           H 
+HETATM    2  H     *     0       0.670   0.259  -0.080  1.00  0.00           H 
+ENDMDL
+MODEL 248
+HETATM    1  H     *     0      -0.636  -0.242   0.075  1.00  0.00           H 
+HETATM    2  H     *     0       0.636   0.242  -0.075  1.00  0.00           H 
+ENDMDL
+MODEL 249
+HETATM    1  H     *     0      -0.594  -0.222   0.068  1.00  0.00           H 
+HETATM    2  H     *     0       0.594   0.222  -0.068  1.00  0.00           H 
+ENDMDL
+MODEL 250
+HETATM    1  H     *     0      -0.543  -0.199   0.061  1.00  0.00           H 
+HETATM    2  H     *     0       0.543   0.199  -0.061  1.00  0.00           H 
+ENDMDL
+MODEL 251
+HETATM    1  H     *     0      -0.485  -0.173   0.053  1.00  0.00           H 
+HETATM    2  H     *     0       0.485   0.173  -0.053  1.00  0.00           H 
+ENDMDL
+MODEL 252
+HETATM    1  H     *     0      -0.418  -0.145   0.045  1.00  0.00           H 
+HETATM    2  H     *     0       0.418   0.145  -0.045  1.00  0.00           H 
+ENDMDL
+MODEL 253
+HETATM    1  H     *     0      -0.347  -0.114   0.035  1.00  0.00           H 
+HETATM    2  H     *     0       0.347   0.114  -0.035  1.00  0.00           H 
+ENDMDL
+MODEL 254
+HETATM    1  H     *     0      -0.279  -0.085   0.026  1.00  0.00           H 
+HETATM    2  H     *     0       0.279   0.085  -0.026  1.00  0.00           H 
+ENDMDL
+MODEL 255
+HETATM    1  H     *     0      -0.235  -0.063   0.019  1.00  0.00           H 
+HETATM    2  H     *     0       0.235   0.063  -0.019  1.00  0.00           H 
+ENDMDL
+MODEL 256
+HETATM    1  H     *     0      -0.248  -0.056   0.017  1.00  0.00           H 
+HETATM    2  H     *     0       0.248   0.056  -0.017  1.00  0.00           H 
+ENDMDL
+MODEL 257
+HETATM    1  H     *     0      -0.310  -0.061   0.019  1.00  0.00           H 
+HETATM    2  H     *     0       0.310   0.061  -0.019  1.00  0.00           H 
+ENDMDL
+MODEL 258
+HETATM    1  H     *     0      -0.387  -0.068   0.021  1.00  0.00           H 
+HETATM    2  H     *     0       0.387   0.068  -0.021  1.00  0.00           H 
+ENDMDL
+MODEL 259
+HETATM    1  H     *     0      -0.463  -0.075   0.023  1.00  0.00           H 
+HETATM    2  H     *     0       0.463   0.075  -0.023  1.00  0.00           H 
+ENDMDL
+MODEL 260
+HETATM    1  H     *     0      -0.533  -0.081   0.025  1.00  0.00           H 
+HETATM    2  H     *     0       0.533   0.081  -0.025  1.00  0.00           H 
+ENDMDL
+MODEL 261
+HETATM    1  H     *     0      -0.594  -0.086   0.026  1.00  0.00           H 
+HETATM    2  H     *     0       0.594   0.086  -0.026  1.00  0.00           H 
+ENDMDL
+MODEL 262
+HETATM    1  H     *     0      -0.647  -0.090   0.028  1.00  0.00           H 
+HETATM    2  H     *     0       0.647   0.090  -0.028  1.00  0.00           H 
+ENDMDL
+MODEL 263
+HETATM    1  H     *     0      -0.691  -0.092   0.028  1.00  0.00           H 
+HETATM    2  H     *     0       0.691   0.092  -0.028  1.00  0.00           H 
+ENDMDL
+MODEL 264
+HETATM    1  H     *     0      -0.727  -0.093   0.029  1.00  0.00           H 
+HETATM    2  H     *     0       0.727   0.093  -0.029  1.00  0.00           H 
+ENDMDL
+MODEL 265
+HETATM    1  H     *     0      -0.754  -0.093   0.029  1.00  0.00           H 
+HETATM    2  H     *     0       0.754   0.093  -0.029  1.00  0.00           H 
+ENDMDL
+MODEL 266
+HETATM    1  H     *     0      -0.774  -0.093   0.029  1.00  0.00           H 
+HETATM    2  H     *     0       0.774   0.093  -0.029  1.00  0.00           H 
+ENDMDL
+MODEL 267
+HETATM    1  H     *     0      -0.785  -0.091   0.028  1.00  0.00           H 
+HETATM    2  H     *     0       0.785   0.091  -0.028  1.00  0.00           H 
+ENDMDL
+MODEL 268
+HETATM    1  H     *     0      -0.790  -0.088   0.027  1.00  0.00           H 
+HETATM    2  H     *     0       0.790   0.088  -0.027  1.00  0.00           H 
+ENDMDL
+MODEL 269
+HETATM    1  H     *     0      -0.786  -0.085   0.026  1.00  0.00           H 
+HETATM    2  H     *     0       0.786   0.085  -0.026  1.00  0.00           H 
+ENDMDL
+MODEL 270
+HETATM    1  H     *     0      -0.776  -0.081   0.025  1.00  0.00           H 
+HETATM    2  H     *     0       0.776   0.081  -0.025  1.00  0.00           H 
+ENDMDL
+MODEL 271
+HETATM    1  H     *     0      -0.757  -0.076   0.023  1.00  0.00           H 
+HETATM    2  H     *     0       0.757   0.076  -0.023  1.00  0.00           H 
+ENDMDL
+MODEL 272
+HETATM    1  H     *     0      -0.730  -0.070   0.022  1.00  0.00           H 
+HETATM    2  H     *     0       0.730   0.070  -0.022  1.00  0.00           H 
+ENDMDL
+MODEL 273
+HETATM    1  H     *     0      -0.696  -0.063   0.019  1.00  0.00           H 
+HETATM    2  H     *     0       0.696   0.063  -0.019  1.00  0.00           H 
+ENDMDL
+MODEL 274
+HETATM    1  H     *     0      -0.653  -0.056   0.017  1.00  0.00           H 
+HETATM    2  H     *     0       0.653   0.056  -0.017  1.00  0.00           H 
+ENDMDL
+MODEL 275
+HETATM    1  H     *     0      -0.601  -0.048   0.015  1.00  0.00           H 
+HETATM    2  H     *     0       0.601   0.048  -0.015  1.00  0.00           H 
+ENDMDL
+MODEL 276
+HETATM    1  H     *     0      -0.540  -0.039   0.012  1.00  0.00           H 
+HETATM    2  H     *     0       0.540   0.039  -0.012  1.00  0.00           H 
+ENDMDL
+MODEL 277
+HETATM    1  H     *     0      -0.471  -0.030   0.009  1.00  0.00           H 
+HETATM    2  H     *     0       0.471   0.030  -0.009  1.00  0.00           H 
+ENDMDL
+MODEL 278
+HETATM    1  H     *     0      -0.395  -0.020   0.006  1.00  0.00           H 
+HETATM    2  H     *     0       0.395   0.020  -0.006  1.00  0.00           H 
+ENDMDL
+MODEL 279
+HETATM    1  H     *     0      -0.318  -0.010   0.003  1.00  0.00           H 
+HETATM    2  H     *     0       0.318   0.010  -0.003  1.00  0.00           H 
+ENDMDL
+MODEL 280
+HETATM    1  H     *     0      -0.256  -0.000   0.000  1.00  0.00           H 
+HETATM    2  H     *     0       0.256   0.000  -0.000  1.00  0.00           H 
+ENDMDL
+MODEL 281
+HETATM    1  H     *     0      -0.243   0.009  -0.003  1.00  0.00           H 
+HETATM    2  H     *     0       0.243  -0.009   0.003  1.00  0.00           H 
+ENDMDL
+MODEL 282
+HETATM    1  H     *     0      -0.290   0.021  -0.006  1.00  0.00           H 
+HETATM    2  H     *     0       0.290  -0.021   0.006  1.00  0.00           H 
+ENDMDL
+MODEL 283
+HETATM    1  H     *     0      -0.363   0.034  -0.011  1.00  0.00           H 
+HETATM    2  H     *     0       0.363  -0.034   0.011  1.00  0.00           H 
+ENDMDL
+MODEL 284
+HETATM    1  H     *     0      -0.440   0.048  -0.015  1.00  0.00           H 
+HETATM    2  H     *     0       0.440  -0.048   0.015  1.00  0.00           H 
+ENDMDL
+MODEL 285
+HETATM    1  H     *     0      -0.511   0.061  -0.019  1.00  0.00           H 
+HETATM    2  H     *     0       0.511  -0.061   0.019  1.00  0.00           H 
+ENDMDL
+MODEL 286
+HETATM    1  H     *     0      -0.575   0.074  -0.023  1.00  0.00           H 
+HETATM    2  H     *     0       0.575  -0.074   0.023  1.00  0.00           H 
+ENDMDL
+MODEL 287
+HETATM    1  H     *     0      -0.630   0.085  -0.026  1.00  0.00           H 
+HETATM    2  H     *     0       0.630  -0.085   0.026  1.00  0.00           H 
+ENDMDL
+MODEL 288
+HETATM    1  H     *     0      -0.676   0.095  -0.029  1.00  0.00           H 
+HETATM    2  H     *     0       0.676  -0.095   0.029  1.00  0.00           H 
+ENDMDL
+MODEL 289
+HETATM    1  H     *     0      -0.714   0.104  -0.032  1.00  0.00           H 
+HETATM    2  H     *     0       0.714  -0.104   0.032  1.00  0.00           H 
+ENDMDL
+MODEL 290
+HETATM    1  H     *     0      -0.743   0.111  -0.034  1.00  0.00           H 
+HETATM    2  H     *     0       0.743  -0.111   0.034  1.00  0.00           H 
+ENDMDL
+MODEL 291
+HETATM    1  H     *     0      -0.764   0.118  -0.036  1.00  0.00           H 
+HETATM    2  H     *     0       0.764  -0.118   0.036  1.00  0.00           H 
+ENDMDL
+MODEL 292
+HETATM    1  H     *     0      -0.778   0.123  -0.038  1.00  0.00           H 
+HETATM    2  H     *     0       0.778  -0.123   0.038  1.00  0.00           H 
+ENDMDL
+MODEL 293
+HETATM    1  H     *     0      -0.784   0.127  -0.039  1.00  0.00           H 
+HETATM    2  H     *     0       0.784  -0.127   0.039  1.00  0.00           H 
+ENDMDL
+MODEL 294
+HETATM    1  H     *     0      -0.783   0.130  -0.040  1.00  0.00           H 
+HETATM    2  H     *     0       0.783  -0.130   0.040  1.00  0.00           H 
+ENDMDL
+MODEL 295
+HETATM    1  H     *     0      -0.774   0.132  -0.040  1.00  0.00           H 
+HETATM    2  H     *     0       0.774  -0.132   0.040  1.00  0.00           H 
+ENDMDL
+MODEL 296
+HETATM    1  H     *     0      -0.758   0.132  -0.041  1.00  0.00           H 
+HETATM    2  H     *     0       0.758  -0.132   0.041  1.00  0.00           H 
+ENDMDL
+MODEL 297
+HETATM    1  H     *     0      -0.734   0.131  -0.040  1.00  0.00           H 
+HETATM    2  H     *     0       0.734  -0.131   0.040  1.00  0.00           H 
+ENDMDL
+MODEL 298
+HETATM    1  H     *     0      -0.702   0.128  -0.040  1.00  0.00           H 
+HETATM    2  H     *     0       0.702  -0.128   0.040  1.00  0.00           H 
+ENDMDL
+MODEL 299
+HETATM    1  H     *     0      -0.661   0.124  -0.038  1.00  0.00           H 
+HETATM    2  H     *     0       0.661  -0.124   0.038  1.00  0.00           H 
+ENDMDL
+MODEL 300
+HETATM    1  H     *     0      -0.613   0.119  -0.037  1.00  0.00           H 
+HETATM    2  H     *     0       0.613  -0.119   0.037  1.00  0.00           H 
+ENDMDL
+MODEL 301
+HETATM    1  H     *     0      -0.555   0.112  -0.034  1.00  0.00           H 
+HETATM    2  H     *     0       0.555  -0.112   0.034  1.00  0.00           H 
+ENDMDL
+MODEL 302
+HETATM    1  H     *     0      -0.489   0.103  -0.032  1.00  0.00           H 
+HETATM    2  H     *     0       0.489  -0.103   0.032  1.00  0.00           H 
+ENDMDL
+MODEL 303
+HETATM    1  H     *     0      -0.415   0.092  -0.028  1.00  0.00           H 
+HETATM    2  H     *     0       0.415  -0.092   0.028  1.00  0.00           H 
+ENDMDL
+MODEL 304
+HETATM    1  H     *     0      -0.338   0.081  -0.025  1.00  0.00           H 
+HETATM    2  H     *     0       0.338  -0.081   0.025  1.00  0.00           H 
+ENDMDL
+MODEL 305
+HETATM    1  H     *     0      -0.267   0.071  -0.022  1.00  0.00           H 
+HETATM    2  H     *     0       0.267  -0.071   0.022  1.00  0.00           H 
+ENDMDL
+MODEL 306
+HETATM    1  H     *     0      -0.229   0.070  -0.021  1.00  0.00           H 
+HETATM    2  H     *     0       0.229  -0.070   0.021  1.00  0.00           H 
+ENDMDL
+MODEL 307
+HETATM    1  H     *     0      -0.251   0.087  -0.027  1.00  0.00           H 
+HETATM    2  H     *     0       0.251  -0.087   0.027  1.00  0.00           H 
+ENDMDL
+MODEL 308
+HETATM    1  H     *     0      -0.311   0.117  -0.036  1.00  0.00           H 
+HETATM    2  H     *     0       0.311  -0.117   0.036  1.00  0.00           H 
+ENDMDL
+MODEL 309
+HETATM    1  H     *     0      -0.380   0.151  -0.047  1.00  0.00           H 
+HETATM    2  H     *     0       0.380  -0.151   0.047  1.00  0.00           H 
+ENDMDL
+MODEL 310
+HETATM    1  H     *     0      -0.448   0.184  -0.057  1.00  0.00           H 
+HETATM    2  H     *     0       0.448  -0.184   0.057  1.00  0.00           H 
+ENDMDL
+MODEL 311
+HETATM    1  H     *     0      -0.508   0.214  -0.066  1.00  0.00           H 
+HETATM    2  H     *     0       0.508  -0.214   0.066  1.00  0.00           H 
+ENDMDL
+MODEL 312
+HETATM    1  H     *     0      -0.560   0.241  -0.074  1.00  0.00           H 
+HETATM    2  H     *     0       0.560  -0.241   0.074  1.00  0.00           H 
+ENDMDL
+MODEL 313
+HETATM    1  H     *     0      -0.605   0.265  -0.082  1.00  0.00           H 
+HETATM    2  H     *     0       0.605  -0.265   0.082  1.00  0.00           H 
+ENDMDL
+MODEL 314
+HETATM    1  H     *     0      -0.641   0.285  -0.088  1.00  0.00           H 
+HETATM    2  H     *     0       0.641  -0.285   0.088  1.00  0.00           H 
+ENDMDL
+MODEL 315
+HETATM    1  H     *     0      -0.670   0.301  -0.093  1.00  0.00           H 
+HETATM    2  H     *     0       0.670  -0.301   0.093  1.00  0.00           H 
+ENDMDL
+MODEL 316
+HETATM    1  H     *     0      -0.692   0.314  -0.097  1.00  0.00           H 
+HETATM    2  H     *     0       0.692  -0.314   0.097  1.00  0.00           H 
+ENDMDL
+MODEL 317
+HETATM    1  H     *     0      -0.706   0.324  -0.100  1.00  0.00           H 
+HETATM    2  H     *     0       0.706  -0.324   0.100  1.00  0.00           H 
+ENDMDL
+MODEL 318
+HETATM    1  H     *     0      -0.713   0.331  -0.102  1.00  0.00           H 
+HETATM    2  H     *     0       0.713  -0.331   0.102  1.00  0.00           H 
+ENDMDL
+MODEL 319
+HETATM    1  H     *     0      -0.714   0.335  -0.103  1.00  0.00           H 
+HETATM    2  H     *     0       0.714  -0.335   0.103  1.00  0.00           H 
+ENDMDL
+MODEL 320
+HETATM    1  H     *     0      -0.707   0.335  -0.103  1.00  0.00           H 
+HETATM    2  H     *     0       0.707  -0.335   0.103  1.00  0.00           H 
+ENDMDL
+MODEL 321
+HETATM    1  H     *     0      -0.694   0.332  -0.102  1.00  0.00           H 
+HETATM    2  H     *     0       0.694  -0.332   0.102  1.00  0.00           H 
+ENDMDL
+MODEL 322
+HETATM    1  H     *     0      -0.674   0.326  -0.100  1.00  0.00           H 
+HETATM    2  H     *     0       0.674  -0.326   0.100  1.00  0.00           H 
+ENDMDL
+MODEL 323
+HETATM    1  H     *     0      -0.647   0.317  -0.097  1.00  0.00           H 
+HETATM    2  H     *     0       0.647  -0.317   0.097  1.00  0.00           H 
+ENDMDL
+MODEL 324
+HETATM    1  H     *     0      -0.612   0.303  -0.093  1.00  0.00           H 
+HETATM    2  H     *     0       0.612  -0.303   0.093  1.00  0.00           H 
+ENDMDL
+MODEL 325
+HETATM    1  H     *     0      -0.570   0.286  -0.088  1.00  0.00           H 
+HETATM    2  H     *     0       0.570  -0.286   0.088  1.00  0.00           H 
+ENDMDL
+MODEL 326
+HETATM    1  H     *     0      -0.520   0.265  -0.082  1.00  0.00           H 
+HETATM    2  H     *     0       0.520  -0.265   0.082  1.00  0.00           H 
+ENDMDL
+MODEL 327
+HETATM    1  H     *     0      -0.462   0.240  -0.074  1.00  0.00           H 
+HETATM    2  H     *     0       0.462  -0.240   0.074  1.00  0.00           H 
+ENDMDL
+MODEL 328
+HETATM    1  H     *     0      -0.397   0.212  -0.065  1.00  0.00           H 
+HETATM    2  H     *     0       0.397  -0.212   0.065  1.00  0.00           H 
+ENDMDL
+MODEL 329
+HETATM    1  H     *     0      -0.327   0.180  -0.056  1.00  0.00           H 
+HETATM    2  H     *     0       0.327  -0.180   0.056  1.00  0.00           H 
+ENDMDL
+MODEL 330
+HETATM    1  H     *     0      -0.258   0.150  -0.046  1.00  0.00           H 
+HETATM    2  H     *     0       0.258  -0.150   0.046  1.00  0.00           H 
+ENDMDL
+MODEL 331
+HETATM    1  H     *     0      -0.207   0.129  -0.040  1.00  0.00           H 
+HETATM    2  H     *     0       0.207  -0.129   0.040  1.00  0.00           H 
+ENDMDL
+MODEL 332
+HETATM    1  H     *     0      -0.203   0.139  -0.043  1.00  0.00           H 
+HETATM    2  H     *     0       0.203  -0.139   0.043  1.00  0.00           H 
+ENDMDL
+MODEL 333
+HETATM    1  H     *     0      -0.244   0.178  -0.055  1.00  0.00           H 
+HETATM    2  H     *     0       0.244  -0.178   0.055  1.00  0.00           H 
+ENDMDL
+MODEL 334
+HETATM    1  H     *     0      -0.299   0.229  -0.070  1.00  0.00           H 
+HETATM    2  H     *     0       0.299  -0.229   0.070  1.00  0.00           H 
+ENDMDL
+MODEL 335
+HETATM    1  H     *     0      -0.355   0.279  -0.086  1.00  0.00           H 
+HETATM    2  H     *     0       0.355  -0.279   0.086  1.00  0.00           H 
+ENDMDL
+MODEL 336
+HETATM    1  H     *     0      -0.407   0.327  -0.101  1.00  0.00           H 
+HETATM    2  H     *     0       0.407  -0.327   0.101  1.00  0.00           H 
+ENDMDL
+MODEL 337
+HETATM    1  H     *     0      -0.451   0.368  -0.113  1.00  0.00           H 
+HETATM    2  H     *     0       0.451  -0.368   0.113  1.00  0.00           H 
+ENDMDL
+MODEL 338
+HETATM    1  H     *     0      -0.490   0.405  -0.125  1.00  0.00           H 
+HETATM    2  H     *     0       0.490  -0.405   0.125  1.00  0.00           H 
+ENDMDL
+MODEL 339
+HETATM    1  H     *     0      -0.521   0.436  -0.134  1.00  0.00           H 
+HETATM    2  H     *     0       0.521  -0.436   0.134  1.00  0.00           H 
+ENDMDL
+MODEL 340
+HETATM    1  H     *     0      -0.546   0.461  -0.142  1.00  0.00           H 
+HETATM    2  H     *     0       0.546  -0.461   0.142  1.00  0.00           H 
+ENDMDL
+MODEL 341
+HETATM    1  H     *     0      -0.565   0.482  -0.148  1.00  0.00           H 
+HETATM    2  H     *     0       0.565  -0.482   0.148  1.00  0.00           H 
+ENDMDL
+MODEL 342
+HETATM    1  H     *     0      -0.578   0.497  -0.153  1.00  0.00           H 
+HETATM    2  H     *     0       0.578  -0.497   0.153  1.00  0.00           H 
+ENDMDL
+MODEL 343
+HETATM    1  H     *     0      -0.585   0.507  -0.156  1.00  0.00           H 
+HETATM    2  H     *     0       0.585  -0.507   0.156  1.00  0.00           H 
+ENDMDL
+MODEL 344
+HETATM    1  H     *     0      -0.587   0.513  -0.158  1.00  0.00           H 
+HETATM    2  H     *     0       0.587  -0.513   0.158  1.00  0.00           H 
+ENDMDL
+MODEL 345
+HETATM    1  H     *     0      -0.582   0.513  -0.158  1.00  0.00           H 
+HETATM    2  H     *     0       0.582  -0.513   0.158  1.00  0.00           H 
+ENDMDL
+MODEL 346
+HETATM    1  H     *     0      -0.573   0.509  -0.157  1.00  0.00           H 
+HETATM    2  H     *     0       0.573  -0.509   0.157  1.00  0.00           H 
+ENDMDL
+MODEL 347
+HETATM    1  H     *     0      -0.557   0.499  -0.154  1.00  0.00           H 
+HETATM    2  H     *     0       0.557  -0.499   0.154  1.00  0.00           H 
+ENDMDL
+MODEL 348
+HETATM    1  H     *     0      -0.536   0.485  -0.149  1.00  0.00           H 
+HETATM    2  H     *     0       0.536  -0.485   0.149  1.00  0.00           H 
+ENDMDL
+MODEL 349
+HETATM    1  H     *     0      -0.509   0.465  -0.143  1.00  0.00           H 
+HETATM    2  H     *     0       0.509  -0.465   0.143  1.00  0.00           H 
+ENDMDL
+MODEL 350
+HETATM    1  H     *     0      -0.476   0.439  -0.135  1.00  0.00           H 
+HETATM    2  H     *     0       0.476  -0.439   0.135  1.00  0.00           H 
+ENDMDL
+MODEL 351
+HETATM    1  H     *     0      -0.436   0.408  -0.126  1.00  0.00           H 
+HETATM    2  H     *     0       0.436  -0.408   0.126  1.00  0.00           H 
+ENDMDL
+MODEL 352
+HETATM    1  H     *     0      -0.390   0.370  -0.114  1.00  0.00           H 
+HETATM    2  H     *     0       0.390  -0.370   0.114  1.00  0.00           H 
+ENDMDL
+MODEL 353
+HETATM    1  H     *     0      -0.338   0.327  -0.101  1.00  0.00           H 
+HETATM    2  H     *     0       0.338  -0.327   0.101  1.00  0.00           H 
+ENDMDL
+MODEL 354
+HETATM    1  H     *     0      -0.281   0.279  -0.086  1.00  0.00           H 
+HETATM    2  H     *     0       0.281  -0.279   0.086  1.00  0.00           H 
+ENDMDL
+MODEL 355
+HETATM    1  H     *     0      -0.223   0.230  -0.071  1.00  0.00           H 
+HETATM    2  H     *     0       0.223  -0.230   0.071  1.00  0.00           H 
+ENDMDL
+MODEL 356
+HETATM    1  H     *     0      -0.173   0.189  -0.058  1.00  0.00           H 
+HETATM    2  H     *     0       0.173  -0.189   0.058  1.00  0.00           H 
+ENDMDL
+MODEL 357
+HETATM    1  H     *     0      -0.151   0.179  -0.055  1.00  0.00           H 
+HETATM    2  H     *     0       0.151  -0.179   0.055  1.00  0.00           H 
+ENDMDL
+MODEL 358
+HETATM    1  H     *     0      -0.169   0.216  -0.067  1.00  0.00           H 
+HETATM    2  H     *     0       0.169  -0.216   0.067  1.00  0.00           H 
+ENDMDL
+MODEL 359
+HETATM    1  H     *     0      -0.205   0.277  -0.085  1.00  0.00           H 
+HETATM    2  H     *     0       0.205  -0.277   0.085  1.00  0.00           H 
+ENDMDL
+MODEL 360
+HETATM    1  H     *     0      -0.245   0.341  -0.105  1.00  0.00           H 
+HETATM    2  H     *     0       0.245  -0.341   0.105  1.00  0.00           H 
+ENDMDL
+MODEL 361
+HETATM    1  H     *     0      -0.281   0.402  -0.124  1.00  0.00           H 
+HETATM    2  H     *     0       0.281  -0.402   0.124  1.00  0.00           H 
+ENDMDL
+MODEL 362
+HETATM    1  H     *     0      -0.314   0.457  -0.141  1.00  0.00           H 
+HETATM    2  H     *     0       0.314  -0.457   0.141  1.00  0.00           H 
+ENDMDL
+MODEL 363
+HETATM    1  H     *     0      -0.342   0.505  -0.156  1.00  0.00           H 
+HETATM    2  H     *     0       0.342  -0.505   0.156  1.00  0.00           H 
+ENDMDL
+MODEL 364
+HETATM    1  H     *     0      -0.364   0.546  -0.168  1.00  0.00           H 
+HETATM    2  H     *     0       0.364  -0.546   0.168  1.00  0.00           H 
+ENDMDL
+MODEL 365
+HETATM    1  H     *     0      -0.383   0.580  -0.179  1.00  0.00           H 
+HETATM    2  H     *     0       0.383  -0.580   0.179  1.00  0.00           H 
+ENDMDL
+MODEL 366
+HETATM    1  H     *     0      -0.396   0.607  -0.187  1.00  0.00           H 
+HETATM    2  H     *     0       0.396  -0.607   0.187  1.00  0.00           H 
+ENDMDL
+MODEL 367
+HETATM    1  H     *     0      -0.406   0.628  -0.193  1.00  0.00           H 
+HETATM    2  H     *     0       0.406  -0.628   0.193  1.00  0.00           H 
+ENDMDL
+MODEL 368
+HETATM    1  H     *     0      -0.411   0.642  -0.198  1.00  0.00           H 
+HETATM    2  H     *     0       0.411  -0.642   0.198  1.00  0.00           H 
+ENDMDL
+MODEL 369
+HETATM    1  H     *     0      -0.413   0.650  -0.200  1.00  0.00           H 
+HETATM    2  H     *     0       0.413  -0.650   0.200  1.00  0.00           H 
+ENDMDL
+MODEL 370
+HETATM    1  H     *     0      -0.410   0.652  -0.201  1.00  0.00           H 
+HETATM    2  H     *     0       0.410  -0.652   0.201  1.00  0.00           H 
+ENDMDL
+MODEL 371
+HETATM    1  H     *     0      -0.403   0.647  -0.199  1.00  0.00           H 
+HETATM    2  H     *     0       0.403  -0.647   0.000  1.00  0.00           H 
+ENDMDL
+MODEL 372
+HETATM    1  H     *     0      -0.393   0.636  -0.196  1.00  0.00           H 
+HETATM    2  H     *     0       0.393  -0.636   0.196  1.00  0.00           H 
+ENDMDL
+MODEL 373
+HETATM    1  H     *     0      -0.379   0.619  -0.191  1.00  0.00           H 
+HETATM    2  H     *     0       0.379  -0.619   0.191  1.00  0.00           H 
+ENDMDL
+MODEL 374
+HETATM    1  H     *     0      -0.360   0.595  -0.183  1.00  0.00           H 
+HETATM    2  H     *     0       0.360  -0.595   0.183  1.00  0.00           H 
+ENDMDL
+MODEL 375
+HETATM    1  H     *     0      -0.337   0.564  -0.174  1.00  0.00           H 
+HETATM    2  H     *     0       0.337  -0.564   0.174  1.00  0.00           H 
+ENDMDL
+MODEL 376
+HETATM    1  H     *     0      -0.311   0.526  -0.162  1.00  0.00           H 
+HETATM    2  H     *     0       0.311  -0.526   0.162  1.00  0.00           H 
+ENDMDL
+MODEL 377
+HETATM    1  H     *     0      -0.279   0.481  -0.148  1.00  0.00           H 
+HETATM    2  H     *     0       0.279  -0.481   0.148  1.00  0.00           H 
+ENDMDL
+MODEL 378
+HETATM    1  H     *     0      -0.244   0.428  -0.132  1.00  0.00           H 
+HETATM    2  H     *     0       0.244  -0.428   0.132  1.00  0.00           H 
+ENDMDL
+MODEL 379
+HETATM    1  H     *     0      -0.204   0.369  -0.114  1.00  0.00           H 
+HETATM    2  H     *     0       0.204  -0.369   0.114  1.00  0.00           H 
+ENDMDL
+MODEL 380
+HETATM    1  H     *     0      -0.163   0.306  -0.094  1.00  0.00           H 
+HETATM    2  H     *     0       0.163  -0.306   0.094  1.00  0.00           H 
+ENDMDL
+MODEL 381
+HETATM    1  H     *     0      -0.123   0.246  -0.076  1.00  0.00           H 
+HETATM    2  H     *     0       0.123  -0.246   0.076  1.00  0.00           H 
+ENDMDL
+MODEL 382
+HETATM    1  H     *     0      -0.096   0.212  -0.065  1.00  0.00           H 
+HETATM    2  H     *     0       0.096  -0.212   0.065  1.00  0.00           H 
+ENDMDL
+MODEL 383
+HETATM    1  H     *     0      -0.094   0.231  -0.071  1.00  0.00           H 
+HETATM    2  H     *     0       0.094  -0.231   0.071  1.00  0.00           H 
+ENDMDL
+MODEL 384
+HETATM    1  H     *     0      -0.108   0.292  -0.090  1.00  0.00           H 
+HETATM    2  H     *     0       0.108  -0.292   0.090  1.00  0.00           H 
+ENDMDL
+MODEL 385
+HETATM    1  H     *     0      -0.126   0.364  -0.112  1.00  0.00           H 
+HETATM    2  H     *     0       0.126  -0.364   0.112  1.00  0.00           H 
+ENDMDL
+MODEL 386
+HETATM    1  H     *     0      -0.144   0.435  -0.134  1.00  0.00           H 
+HETATM    2  H     *     0       0.144  -0.435   0.134  1.00  0.00           H 
+ENDMDL
+MODEL 387
+HETATM    1  H     *     0      -0.160   0.499  -0.154  1.00  0.00           H 
+HETATM    2  H     *     0       0.160  -0.499   0.154  1.00  0.00           H 
+ENDMDL
+MODEL 388
+HETATM    1  H     *     0      -0.174   0.556  -0.171  1.00  0.00           H 
+HETATM    2  H     *     0       0.174  -0.556   0.171  1.00  0.00           H 
+ENDMDL
+MODEL 389
+HETATM    1  H     *     0      -0.185   0.604  -0.186  1.00  0.00           H 
+HETATM    2  H     *     0       0.185  -0.604   0.186  1.00  0.00           H 
+ENDMDL
+MODEL 390
+HETATM    1  H     *     0      -0.193   0.645  -0.199  1.00  0.00           H 
+HETATM    2  H     *     0       0.193  -0.645   0.199  1.00  0.00           H 
+ENDMDL
+MODEL 391
+HETATM    1  H     *     0      -0.199   0.677  -0.209  1.00  0.00           H 
+HETATM    2  H     *     0       0.199  -0.677   0.209  1.00  0.00           H 
+ENDMDL
+MODEL 392
+HETATM    1  H     *     0      -0.203   0.703  -0.216  1.00  0.00           H 
+HETATM    2  H     *     0       0.203  -0.703   0.216  1.00  0.00           H 
+ENDMDL
+MODEL 393
+HETATM    1  H     *     0      -0.205   0.721  -0.222  1.00  0.00           H 
+HETATM    2  H     *     0       0.205  -0.721   0.222  1.00  0.00           H 
+ENDMDL
+MODEL 394
+HETATM    1  H     *     0      -0.204   0.731  -0.225  1.00  0.00           H 
+HETATM    2  H     *     0       0.204  -0.731   0.225  1.00  0.00           H 
+ENDMDL
+MODEL 395
+HETATM    1  H     *     0      -0.202   0.735  -0.226  1.00  0.00           H 
+HETATM    2  H     *     0       0.202  -0.735   0.226  1.00  0.00           H 
+ENDMDL
+MODEL 396
+HETATM    1  H     *     0      -0.198   0.732  -0.225  1.00  0.00           H 
+HETATM    2  H     *     0       0.198  -0.732   0.225  1.00  0.00           H 
+ENDMDL
+MODEL 397
+HETATM    1  H     *     0      -0.192   0.721  -0.222  1.00  0.00           H 
+HETATM    2  H     *     0       0.192  -0.721   0.222  1.00  0.00           H 
+ENDMDL
+MODEL 398
+HETATM    1  H     *     0      -0.184   0.703  -0.217  1.00  0.00           H 
+HETATM    2  H     *     0       0.184  -0.703   0.217  1.00  0.00           H 
+ENDMDL
+MODEL 399
+HETATM    1  H     *     0      -0.174   0.678  -0.209  1.00  0.00           H 
+HETATM    2  H     *     0       0.174  -0.678   0.209  1.00  0.00           H 
+ENDMDL

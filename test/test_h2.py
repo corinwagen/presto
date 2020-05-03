@@ -1,7 +1,6 @@
-import unittest, cctk
+import unittest, cctk, os, sys
 import numpy as np
 
-import sys
 sys.path.append('../presto')
 
 import presto
@@ -23,28 +22,25 @@ class TestHydrogen(unittest.TestCase):
             calculator=presto.calculators.XTBCalculator(),
             integrator=presto.integrators.VelocityVerletIntegrator(),
             bath_scheduler=boring_scheduler,
-            stop_time = 10,
+            stop_time = 200,
         )
 
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
         self.assertTrue(isinstance(traj, presto.trajectory.EquilibrationTrajectory))
         self.assertEqual(traj.bath_scheduler(0), 298)
 
-        traj.run(checkpoint_filename="chk.chk", checkpoint_interval=50, positions=start.geometry)
-        times = list(range(len(traj.forward_frames)))
+        traj.run(checkpoint_filename="test/static/h2.chk", checkpoint_interval=50, positions=start.geometry)
+        times = list(range(len(traj.frames)))
         times = np.array(times)*traj.timestep
         #print(np.mean(traj.forward_frames[0].positions,axis=0))
-        for time,frame in zip(times,traj.forward_frames):
+        for time,frame in zip(times,traj.frames):
             print(f"{time:.1f}  ", end="")
             h1,h2 = frame.positions[1], frame.positions[2]
             distance = cctk.helper_functions.compute_distance_between(h1,h2)
             print(frame)
             print(f"r={distance:.2f}")
             print("---------------------------")
-        self.assertTrue(isinstance(traj.forward_frames[0], presto.frame.Frame))
-        #self.assertTrue(np.array_equal(traj.forward_frames[0].positions, start.geometry))
+        self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
 
-        temps = [f.temperature() for f in traj.forward_frames]
-        dists = [f.molecule().get_distance(1,2) for f in traj.forward_frames]
-        energies = [f.energy for f in traj.forward_frames]
-
+        traj.write_movie("test/static/h2.pdb")
+        os.remove("test/static/h2.chk")
