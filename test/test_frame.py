@@ -25,7 +25,7 @@ class TestFrame(unittest.TestCase):
 
         e0 = cctk.OneIndexedArray([[0,0,0]])
         e1 = cctk.OneIndexedArray([[1,0,0]])
-        frame = presto.frame.Frame(traj, e0, e1, e0, [1])
+        frame = presto.frame.Frame(traj, e0, e1, e0)
         self.assertTrue(isinstance(frame, presto.frame.Frame))
         return frame
 
@@ -50,3 +50,27 @@ class TestFrame(unittest.TestCase):
 
         f0 = frame.prev()
         self.assertListEqual(list(f0.positions[1]), [-0.5, 0, 0])
+
+    def test_com_motion(self):
+        zs = cctk.OneIndexedArray([2,2])
+        traj = presto.trajectory.Trajectory(
+            timestep=0.5,
+            atomic_numbers=zs,
+            high_atoms=np.array([]),
+            active_atoms=np.array([]),
+            calculator=presto.calculators.XTBCalculator(),
+            integrator=presto.integrators.VelocityVerletIntegrator(),
+        )
+
+        positions = 5 * np.random.random(size=(2,3)).view(cctk.OneIndexedArray)
+        velocities = 5 * np.random.random(size=(2,3)).view(cctk.OneIndexedArray)
+        accels = 5 * np.random.random(size=(2,3)).view(cctk.OneIndexedArray)
+
+#        positions = cctk.OneIndexedArray([[2,0,0],[-2,0,0]])
+#        velocities= cctk.OneIndexedArray([[0,1,0],[0,-1,0]])
+#        accels = cctk.OneIndexedArray([[1,0,0],[0,1,0]])
+
+        frame = presto.frame.Frame(traj, positions, velocities, accels)
+        self.assertFalse(np.linalg.norm(np.sum(traj.masses.reshape(-1,1) * frame.velocities, axis=0)) < 0.0001)
+        frame.remove_com_motion()
+        self.assertTrue(np.linalg.norm(np.sum(traj.masses.reshape(-1,1) * frame.velocities, axis=0)) < 0.0001)

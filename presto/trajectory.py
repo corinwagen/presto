@@ -75,6 +75,8 @@ class Trajectory():
         if os.path.exists(filename):
             with h5py.File(filename, "r+") as h5:
                 all_energies = h5.get("all_energies")
+                if all_energies is None:
+                    return False
                 if len(all_energies) > 0:
                     return True
                 else:
@@ -100,9 +102,9 @@ class Trajectory():
             assert len(all_velocities) == len(all_energies)
             assert len(all_accels) == len(all_energies)
 
-            self.forward_frames = []
+            self.frames = []
             for i, e in enumerate(all_energies):
-                self.forward_frames.append(presto.frame.Frame(
+                self.frames.append(presto.frame.Frame(
                     self,
                     all_positions[i].view(cctk.OneIndexedArray),
                     all_velocities[i].view(cctk.OneIndexedArray),
@@ -110,7 +112,6 @@ class Trajectory():
                     energy=e,
                     bath_temperature=self.bath_scheduler(self.timestep*i)
                 ))
-
         return
 
     def save(self, filename):
@@ -121,28 +122,28 @@ class Trajectory():
                 all_energies = h5.get("all_energies")
 
                 old_n_frames = len(all_energies)
-                now_n_frames = len(self.frames())
+                now_n_frames = len(self.frames)
                 new_n_frames = now_n_frames - old_n_frames
 
                 if new_n_frames == 0:
                     return
                 assert new_n_frames > 0, "we can't write negative frames"
 
-                new_energies = np.asarray([frame.energy for frame in self.frames()[-new_n_frames-1:]])
+                new_energies = np.asarray([frame.energy for frame in self.frames[-new_n_frames-1:]])
                 all_energies.resize((now_n_frames,))
                 all_energies[-new_n_frames-1:] = new_energies
 
-                new_positions = np.stack([frame.positions for frame in self.frames()[-new_n_frames:]])
+                new_positions = np.stack([frame.positions for frame in self.frames[-new_n_frames:]])
                 all_positions = h5.get("all_positions")
                 all_positions.resize((now_n_frames,n_atoms,3))
                 all_positions[-new_n_frames:] = new_positions
 
-                new_velocities= np.stack([frame.velocities for frame in self.frames()[-new_n_frames:]])
+                new_velocities= np.stack([frame.velocities for frame in self.frames[-new_n_frames:]])
                 all_velocities = h5.get("all_velocities")
                 all_velocities.resize((now_n_frames,n_atoms,3))
                 all_velocities[-new_n_frames:] = new_velocities
 
-                new_accels = np.stack([frame.accelerations for frame in self.frames()[-new_n_frames:]])
+                new_accels = np.stack([frame.accelerations for frame in self.frames[-new_n_frames:]])
                 all_accels = h5.get("all_accelerations")
                 all_accels.resize((now_n_frames,n_atoms,3))
                 all_accels[-new_n_frames:] = new_accels
@@ -156,19 +157,19 @@ class Trajectory():
                 h5.attrs['finished'] = self.finished
                 n_atoms = len(self.atomic_numbers)
 
-                energies = np.asarray([frame.energy for frame in self.frames()])
+                energies = np.asarray([frame.energy for frame in self.frames])
                 h5.create_dataset("all_energies", data=energies, maxshape=(None,),
                             compression="gzip", compression_opts=9)
 
-                all_positions = np.stack([frame.positions for frame in self.frames()])
+                all_positions = np.stack([frame.positions for frame in self.frames])
                 h5.create_dataset("all_positions", data=all_positions, maxshape=(None,n_atoms,3),
                                 compression="gzip", compression_opts=9)
 
-                all_velocities = np.stack([frame.velocities for frame in self.frames()])
+                all_velocities = np.stack([frame.velocities for frame in self.frames])
                 h5.create_dataset("all_velocities", data=all_velocities, maxshape=(None,n_atoms,3),
                                 compression="gzip", compression_opts=9)
 
-                all_accels= np.stack([frame.accelerations for frame in self.frames()])
+                all_accels= np.stack([frame.accelerations for frame in self.frames])
                 h5.create_dataset("all_accelerations", data=all_accels, maxshape=(None,n_atoms,3),
                                 compression="gzip", compression_opts=9)
 
@@ -178,7 +179,7 @@ class Trajectory():
 
     def as_ensemble(self):
         ensemble = cctk.ConformationalEnsemble()
-        for frame in self.forward_frames[:-1]:
+        for frame in self.frames[:-1]:
             ensemble.add_molecule(frame.molecule(), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
@@ -188,45 +189,15 @@ class Trajectory():
 class ReactionTrajectory(Trajectory):
     """
     Attributes:
-        forward_frames (list of presto.Frame):
-        reverse_frames (list of presto.Frame):
+        frames (list of presto.Frame):
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted
         max_time (float): how long to run forward and reverse trajectories
+        reverse (Bool): whether or not to propagate in reverse or forward
     """
 
     def initialize(self):
-        pass
-
-    def propagate(self):
-        pass
-
-class EquilibrationTrajectory(Trajectory):
-    """
-    Attributes:
-        forward_frames (list of presto.Frame):
-        bath_scheduler (function): takes current time and returns target temperature
-        stop_time (float): when to stop equilibrating
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        stop_time = kwargs.get("stop_time")
-        bath_scheduler = kwargs.get("bath_scheduler")
-
-        assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
-        assert stop_time > 0, "stop_time needs to be positive!"
-
-        self.stop_time = stop_time
-        self.bath_scheduler = bath_scheduler
-
-    def frames(self):
-        return self.forward_frames
-
-    def initialize(self, positions):
         """
         Generates initial frame object for initialization trajectory.
-
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
 
         Args:
@@ -261,13 +232,75 @@ class EquilibrationTrajectory(Trajectory):
 
         velocities = velocities.view(cctk.OneIndexedArray)
         accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-        self.forward_frames  = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
+        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
+
+    def propagate(self):
+        pass
+
+class EquilibrationTrajectory(Trajectory):
+    """
+    Attributes:
+        frames (list of presto.Frame):
+        bath_scheduler (function): takes current time and returns target temperature
+        stop_time (float): when to stop equilibrating
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        stop_time = kwargs.get("stop_time")
+        bath_scheduler = kwargs.get("bath_scheduler")
+
+        assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
+        assert stop_time > 0, "stop_time needs to be positive!"
+
+        self.stop_time = stop_time
+        self.bath_scheduler = bath_scheduler
+
+    def initialize(self, positions):
+        """
+        Generates initial frame object for initialization trajectory.
+        Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
+
+        Args:
+            positions (cctk.OneIndexedArray):
+
+        Returns:
+            frame
+        """
+        assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
+
+        # move centroid to origin
+        centroid = np.mean(positions, axis=0)
+        positions = positions - centroid
+
+        # determine active atoms
+        inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)
+        inactive_mask[self.active_atoms] = 0
+        inactive_mask  = inactive_mask.astype(bool)
+
+        # add random velocity to everything
+        random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
+        random_gaussian[inactive_mask] = 0
+        velocities = random_gaussian * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+
+        #### subtract out center-of-mass translational motion
+        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+        correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
+        correction_tran[inactive_mask] = 0
+        velocities = velocities - correction_tran
+        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+        assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
+        velocities = velocities.view(cctk.OneIndexedArray)
+        accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
+        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
 
     def propagate(self, checkpoint_filename, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        for t in np.arange(self.timestep * len(self.forward_frames), self.stop_time, self.timestep):
-            self.forward_frames.append(self.forward_frames[-1].next(temp=self.bath_scheduler(t)))
-            if len(self.forward_frames) % checkpoint_interval == 0:
+        for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
+            self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
+            if len(self.frames) % checkpoint_interval == 0:
                 self.save(checkpoint_filename)
         self.finished = True
         return
