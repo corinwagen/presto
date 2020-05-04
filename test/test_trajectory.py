@@ -2,7 +2,7 @@ import unittest, cctk
 import numpy as np
 from datetime import datetime
 
-import sys
+import sys, os
 sys.path.append('../presto')
 
 import presto
@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
 class TestTrajectory(unittest.TestCase):
     def test_equil_trajectory(self):
+        os.remove("test/static/chk.chk")
         def boring_scheduler(time):
             return 298
 
@@ -33,17 +34,20 @@ class TestTrajectory(unittest.TestCase):
         self.assertEqual(traj.bath_scheduler(0), 298)
 
         x = cctk.OneIndexedArray([[2,0,0], [0,0,0]])
-        traj.run(checkpoint_filename="chk.chk", checkpoint_interval=50, positions=x)
+        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=x)
 
-        self.assertTrue(isinstance(traj.forward_frames[0], presto.frame.Frame))
-        self.assertTrue(np.array_equal(traj.forward_frames[0].positions, x))
+        self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
+        self.assertTrue(np.array_equal(traj.frames[0].positions, x))
 
-        temps = [f.temperature() for f in traj.forward_frames]
-        energies = [f.energy for f in traj.forward_frames]
+        temps = [f.temperature() for f in traj.frames]
+        energies = [f.energy for f in traj.frames]
         print(temps)
         print(energies)
 
+        os.remove("test/static/chk.chk")
+
     def test_benzene(self):
+        os.remove("test/static/chk.chk")
         def boring_scheduler(time):
             return 298
 
@@ -63,17 +67,22 @@ class TestTrajectory(unittest.TestCase):
         self.assertTrue(isinstance(traj, presto.trajectory.EquilibrationTrajectory))
         self.assertEqual(traj.bath_scheduler(0), 298)
 
-        traj.run(checkpoint_filename="chk.chk", checkpoint_interval=50, positions=start.geometry)
-        self.assertTrue(isinstance(traj.forward_frames[0], presto.frame.Frame))
-        self.assertTrue(np.array_equal(traj.forward_frames[0].positions, start.geometry))
+        print(start.atomic_numbers)
 
-        temps = [f.temperature() for f in traj.forward_frames]
-        energies = [f.energy for f in traj.forward_frames]
-        print(temps)
-        print(energies)
+        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=start.geometry)
+        self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
+
+        temps = [f.temperature() for f in traj.frames]
+        energies = [f.energy for f in traj.frames]
+
+        print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
+        print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
+
+        os.remove("test/static/chk.chk")
 
 #    def solvent_box(self):
     def test_solvent_box(self):
+        os.remove("test/static/chk.chk")
         def boring_scheduler(time):
             return 298
 
@@ -94,15 +103,15 @@ class TestTrajectory(unittest.TestCase):
         self.assertEqual(traj.bath_scheduler(0), 298)
 
         print(datetime.now())
-        traj.run(checkpoint_filename="chk.chk", checkpoint_interval=50, positions=start.geometry)
+        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=start.geometry)
         print(datetime.now())
-        self.assertTrue(isinstance(traj.forward_frames[0], presto.frame.Frame))
+        self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
 
-        temps = [f.temperature() for f in traj.forward_frames][10:]
-        energies = [f.energy for f in traj.forward_frames][10:-1]
-        pressures = [f.pressure() for f in traj.forward_frames][10:]
+        temps = [f.temperature() for f in traj.frames][10:]
+        energies = [f.energy for f in traj.frames][10:-1]
+        pressures = [f.pressure() for f in traj.frames][10:]
 
-        print(len(traj.forward_frames))
+        print(len(traj.frames))
         print(temps)
         print(np.std(temps))
         print(np.std(energies)*627.509)
@@ -114,3 +123,4 @@ class TestTrajectory(unittest.TestCase):
         traj.write_movie("movie.pdb")
 
         print("done")
+        os.remove("test/static/chk.chk")

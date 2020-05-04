@@ -1,0 +1,19 @@
+#
+# input file built automatically by build_input.py
+# presto
+
+tolerance 2.0
+filetype xyz
+
+structure test/static/tetrahedral_TS.xyz
+  number 1
+  fixed 0. 0. 0. 0. 0. 0.
+  centerofmass
+end structure
+
+structure ../presto/presto/solvents/acetonitrile.xyz
+  number 10
+  inside sphere 0. 0. 0. 5.97
+end structure
+
+output solvated_tetrahedral_TS.xyz
