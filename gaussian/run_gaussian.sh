@@ -14,7 +14,7 @@
 # output file ends up in the unique_id folder
 
 # get command line parameters
-${unique_id}=$1
+unique_id=${1}
 
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
@@ -28,8 +28,12 @@ if [ ! -f ${unique_id}.gjf ]; then
     exit 1
 fi
 
-# create directory and run job
+# create job directory and put input file in it
 mkdir ${unique_id}
 mv ${unique_id}.gjf ${unique_id}
 cd ${unique_id}
+
+# run job
+echo Starting job...
 g16 ${unique_id}.gjf ${unique_id}.out
+echo Job finished normally.

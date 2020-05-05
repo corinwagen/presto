@@ -134,4 +134,7 @@ dmypy.json
 # temp files
 *.swp
 
+# presto
+gaussian/*
+
 .DS_Store
