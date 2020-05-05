@@ -133,3 +133,5 @@ dmypy.json
 
 # temp files
 *.swp
+
+.DS_Store
