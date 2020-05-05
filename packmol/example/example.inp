@@ -1,0 +1,19 @@
+#
+# molecule solvated by 250 explicit ether molecules.  
+#
+
+tolerance 2.0
+filetype xyz
+
+structure molecule.xyz
+  number 1 
+  fixed 0. 0. 0. 0. 0. 0.
+  centerofmass
+end structure
+
+structure ether.xyz
+  number 250 
+  inside sphere 0. 0. 0. 22.
+end structure
+
+output solvent.xyz
