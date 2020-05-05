@@ -1,8 +1,7 @@
-import argparse, math, sys
+import argparse, math, sys, os, subprocess
 import numpy as np
 import cctk
 
-import sys
 sys.path.append('../presto')
 
 try:
@@ -19,6 +18,10 @@ import presto.solvents as solvents
 #### python build_input.py -s ether -n 250 -o solvated_structure.xyz -f molecule.xyz
 #### python build_input.py -s benzene toluene -n 100 100 -o solvated_structure.xyz -f molecule.xyz
 
+#### This program expects that ``packmol`` can be executed in bash. You may wish to add a ``~/.bashrc`` alias to that effect.
+
+#### - Corin Wagen, 2020
+
 parser = argparse.ArgumentParser(prog="build_input.py")
 parser.add_argument("--file", "-f", type=str)
 parser.add_argument("--solvent", "-s", type=str, nargs="+")
@@ -34,12 +37,14 @@ assert "output" in args.keys(), "need output file"
 
 assert len(args["solvent"]) == len(args["num_atoms"]), "missing solvents/num_atoms, lists must be same size!"
 
+#### build first half of packmol input file
 text = "#\n# input file built automatically by build_input.py\n# presto\n\n"
 text += "tolerance 2.0\nfiletype xyz\n\n"
 text += f"structure {args['file']}\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\n  centerofmass\nend structure\n\n"
 
 volume = cctk.XYZFile.read_file(args["file"]).molecule.volume()
 
+#### load solvent file
 for s, n in zip(args["solvent"], args["num_atoms"]):
     with pkg_resources.path(solvents, f"{s}.xyz") as file:
         f = cctk.XYZFile.read_file(file)
@@ -50,6 +55,7 @@ for s, n in zip(args["solvent"], args["num_atoms"]):
 
         volume += n * float(title_dict["mw"]) / float(title_dict["density"]) * 1.6606 # 10^24 (Å**3 per mL) divided by Avogadro's number
 
+#### choose appropriately-sized enclosing sphere
 radius = np.cbrt(0.75 * volume / math.pi)
 
 for s, n in zip(args["solvent"], args["num_atoms"]):
@@ -57,4 +63,18 @@ for s, n in zip(args["solvent"], args["num_atoms"]):
         text += f"structure {file}\n  number {n}\n  inside sphere 0. 0. 0. {radius:.2f}\nend structure\n\n"
 
 text += f"output {args['output']}"
-print(text)
+
+#### write temporary packmol input file
+with open("temp.inp", "w+") as file:
+    file.write(text)
+print(f"temp.inp created")
+
+#### call packmol!
+subprocess.call(['/bin/bash', '-i', '-c', "packmol < temp.inp"])
+
+#### either delete temporary file or leave it if packmol failed
+if os.path.exists(args["output"]):
+    os.remove("temp.inp")
+    print(f"temp.inp removed")
+else:
+    print("file not created - try running ``packmol < temp.inp`` manually")

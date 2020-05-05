@@ -33,7 +33,7 @@ energies = [f.energy for f in traj.frames][10:-1]
 print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
 
-traj.write_movie("test/static/tet_equil.pdb")
+#traj.write_movie("test/static/tet_equil.pdb")
 
 print("done equil")
 
@@ -45,18 +45,21 @@ def termination(frame):
         return True
     return False
 
-f_run, r_run = traj.spawn(termination, 250)
+f_run, r_run = traj.spawn(termination, 250, "test/static/tet_run_f.chk", "test/static/tet_run_r.chk")
 
 print("\nrunning forward trajectory")
 print(datetime.now())
-f_run.run("test/static/tet_run_f.chk", checkpoint_interval=10)
+f_run.run(checkpoint_interval=10)
 print(datetime.now())
 print(f"{len(f_run.frames)} frames run")
-f_run.write_movie("test/static/tet_run_f.pdb")
 
 print("\nrunning reverse trajectory")
 print(datetime.now())
-r_run.run("test/static/tet_run_r.chk", checkpoint_interval=10)
+r_run.run(checkpoint_interval=10)
 print(datetime.now())
 print(f"{len(r_run.frames)} frames run")
-r_run.write_movie("test/static/tet_run_r.pdb")
+
+full = presto.trajectory.join(f_run, r_run)
+
+print(f"{len(full.frames)} run in total")
+full.write_movie("test/static/tetrahedral_movie.mol2")
