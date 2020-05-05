@@ -43,16 +43,12 @@ class Trajectory():
         active_atoms = None
         if "active_atoms" in kwargs:
             active_atoms = kwargs["active_atoms"]
+            assert isinstance(active_atoms, np.ndarray), "active_atoms must be np.ndarray!"
+            self.active_atoms = active_atoms
         elif "inactive_atoms" in kwargs:
-            active_atoms = list(range(1, len(atomic_numbers)+1))
-            for atom in kwargs["inactive_atoms"]:
-                active_atoms.remove(atom)
-            active_atoms = np.array(active_atoms)
+            self.set_inactive_atoms(kwargs["inactive_atoms"])
         else:
             raise ValueError("neither active atoms nor inactive atoms specificed!")
-
-        assert isinstance(active_atoms, np.ndarray), "active_atoms must be np.ndarray!"
-        self.active_atoms = active_atoms
 
         assert timestep > 0, "can't have timestep ≤ 0!"
         self.timestep = float(timestep)
@@ -68,6 +64,13 @@ class Trajectory():
         self.checkpoint_filename = checkpoint_filename
         if self.has_checkpoint():
             self.load_from_checkpoint()
+
+    def set_inactive_atoms(self, inactive_atoms):
+        active_atoms = list(range(1, len(self.atomic_numbers)+1))
+        for atom in inactive_atoms:
+            active_atoms.remove(atom)
+        active_atoms = np.array(active_atoms)
+        self.active_atoms = active_atoms
 
     def run(self, checkpoint_interval=10, **kwargs):
         if self.checkpoint_filename is None:
