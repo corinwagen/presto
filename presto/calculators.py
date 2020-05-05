@@ -5,7 +5,8 @@ import ctypes
 import os
 import random
 import string
-import subprocess
+import subprocess as sp
+import shutil
 
 import xtb
 
@@ -28,7 +29,7 @@ for i in range(7):
 COUNTER = 0
 
 # this is the absolute path to the directory where the run_gaussian.sh script is
-GAUSSIAN_DIRECTORY = f"{os.getcwd()}/gaussian/"
+GAUSSIAN_DIRECTORY = f"{os.getcwd()}/gaussian"
 
 ###########################
 
@@ -95,10 +96,17 @@ class XTBCalculator(Calculator):
 
 class GaussianCalculator(Calculator):
 
-    def evaluate(self, positions, atomic_numbers, charge=0, multiplicity=1,
+    def __init__(self, charge=0, multiplicity=1,
                  link0={"mem":"1GB", "nprocshared":"4"},
-                 route_card="hf 3-21g force",
+                 route_card="#p hf 3-21g force",
                  footer=None):
+        self.charge = charge
+        self.multiplicity = multiplicity
+        self.link0 = link0
+        self.route_card = route_card
+        self.footer = footer
+
+    def evaluate(self, positions, atomic_numbers):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -115,38 +123,60 @@ class GaussianCalculator(Calculator):
         os.chdir(GAUSSIAN_DIRECTORY)
 
         # generate filenames
-        COUNTER += 1
-        this_unique_id = f"{UNIQUE_ID}-{COUNTER:09d}"
-        input_filename = f"presto-{this_unique_id}.gjf"
+        global COUNTER
+        attempts = 0
+        while True:
+            COUNTER += 1
+            attempts += 1
+            this_unique_id = f"{UNIQUE_ID}-{COUNTER:09d}"
+            input_filename = f"presto-{this_unique_id}.gjf"
+            if not os.path.isfile(input_filename):
+                break
+            if attempts > 10000:
+                raise ValueError("could not find a unique filename to write!")
         output_filename = f"presto-{this_unique_id}.out"
 
         # create molecule
-        molecule = cctk.Molecule(atomic_numbers, geometry, charge=charge, multiplicity=multiplicity)
+        molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
-	# write out job
-        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, route_card, link0, footer)
+	    # write out job
+        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, self.route_card, self.link0, self.footer)
 
         # run job
-        command = ["bash", "run_gaussian.sh", this_unique_id]
+        command = ["bash", "run_gaussian.sh", f"presto-{this_unique_id}"]
         process = sp.Popen(command, stdout=sp.PIPE)
         output, error = process.communicate()
         p_status = process.wait()
         output = output.decode("utf-8")
-        print(output)
-        print(p_status)
+        #print(output)
+        #print(p_status)
+        if p_status != 0:
+            raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
 
-        # get results and change units
-        file = cctk.GaussianFile.read_file(output_filename)
-        ensemble = file.ensemble
-        molecule = file.molecules[-1]
+        # get results
+        job_directory = f"{GAUSSIAN_DIRECTORY}/presto-{this_unique_id}"
+        os.chdir(job_directory)
+        gaussian_file = cctk.GaussianFile.read_file(output_filename)
+        ensemble = gaussian_file.ensemble
+        molecule = ensemble.molecules[-1]
         properties_dict = ensemble.get_properties_dict(molecule)
-        print(properties_dict)
+        energy = properties_dict["energy"]
+        forces = properties_dict["forces"]
+        forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+
+        # delete job directory
+        os.chdir(GAUSSIAN_DIRECTORY)
+        try:
+            shutil.rmtree(job_directory)
+        except Exception as e:
+            print(e)
+            print(f"warning: could not remove ${job_directory} but continuing")
 
         # restore working directory
         os.chdir(old_working_directory)
 
         # return result
-        pass
+        return energy,forces
 
 class ONIOMCalculator(Calculator):
 
