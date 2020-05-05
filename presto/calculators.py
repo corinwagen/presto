@@ -96,8 +96,8 @@ class XTBCalculator(Calculator):
 class GaussianCalculator(Calculator):
 
     def evaluate(self, positions, atomic_numbers, charge=0, multiplicity=1,
-                 link0={"mem":"1GB", "nprocshared":"4"}
-                 route_card="hf 3-21g force"
+                 link0={"mem":"1GB", "nprocshared":"4"},
+                 route_card="hf 3-21g force",
                  footer=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
