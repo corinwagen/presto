@@ -126,7 +126,7 @@ class Trajectory():
         with h5py.File(self.checkpoint_filename, "r") as h5:
             assert self.timestep == h5.attrs['timestep']
             assert np.array_equal(self.high_atoms, h5.attrs['high_atoms'])
-            assert np.array_equal(self.active_atoms, h5.attrs['active_atoms'])
+#            assert np.array_equal(self.active_atoms, h5.attrs['active_atoms'])
             assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
             self.finished = h5.attrs['finished']
 
