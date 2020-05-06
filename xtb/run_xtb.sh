@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# script to run gaussian
+# script to run xtb
 #
 # usage:
-# ./run_gaussian.sh unique_id
+# ./run_gaussian.sh unique_id charge multiplicity
 #
-# {unique_id}.gjf will be run in a folder called unique_id
+# {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
 #
 # if there are any errors, the script will terminate with error code 1
@@ -15,6 +15,8 @@
 
 # get command line parameters
 unique_id=${1}
+charge=${2}
+multiplicity=${3}
 
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
@@ -23,17 +25,18 @@ if [ -d ${unique_id} ]; then
 fi
 
 # ensure input file exists
-if [ ! -f ${unique_id}.gjf ]; then
-    echo Error: input file ${unique_id}.gjf not found.
+if [ ! -f ${unique_id}.xyz ]; then
+    echo Error: input file ${unique_id}.xyz not found.
     exit 1
 fi
 
 # create job directory and put input file in it
 mkdir ${unique_id}
-mv ${unique_id}.gjf ${unique_id}
+mv ${unique_id}.xyz ${unique_id}
 cd ${unique_id}
 
 # run job
 echo Starting job...
-g16 ${unique_id}.gjf ${unique_id}.out
+xtb --chrg ${charge} --uhf ${multiplicity} --grad ${unique_id}.xyz &> ${unique_id}.out
 echo Job finished normally.
+

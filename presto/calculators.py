@@ -5,15 +5,16 @@ import ctypes
 import os
 import random
 import string
-import subprocess
+import subprocess as sp
+import shutil
 
 import xtb
 
 from presto import constants
 
-###########################
-### Gaussian Parameters ###
-###########################
+############################
+### Directory Parameters ###
+############################
 
 # A-Za-z0-9
 LETTERS_AND_DIGITS = string.ascii_letters + string.digits
@@ -25,10 +26,12 @@ for i in range(7):
     UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
 # will be incremented by one every time a calculation is run
-COUNTER = 0
+GAUSSIAN_COUNTER = 0
+XTB_COUNTER = 0
 
 # this is the absolute path to the directory where the run_gaussian.sh script is
-GAUSSIAN_DIRECTORY = f"{os.getcwd()}/gaussian/"
+GAUSSIAN_DIRECTORY = f"{os.getcwd()}/gaussian"
+XTB_DIRECTORY = f"{os.getcwd()}/xtb"
 
 ###########################
 
@@ -93,12 +96,115 @@ class XTBCalculator(Calculator):
 
         return energy, forces
 
+class XTBCommandLineCalculator(Calculator):
+
+    def __init__(self, charge=0, multiplicity=1):
+        self.charge = charge
+        self.multiplicity = multiplicity
+
+    def evaluate(self, positions, atomic_numbers):
+        """
+        Gets the electronic energy and cartesian forces for the specified geometry.
+
+        Args:
+            positions (cctk.OneIndexedArray): the atomic positions in angstroms
+            atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
+
+        Returns:
+            energy (float): in Hartree
+            forces (cctk.OneIndexedArray): in amu Å per fs**2
+        """
+        # set working directory
+        old_working_directory = os.getcwd()
+        os.chdir(XTB_DIRECTORY)
+
+        # generate filenames
+        global XTB_COUNTER
+        attempts = 0
+        while True:
+            XTB_COUNTER += 1
+            attempts += 1
+            this_unique_id = f"{UNIQUE_ID}-{XTB_COUNTER:09d}"
+            input_filename = f"presto-{this_unique_id}.xyz"
+            if not os.path.isfile(input_filename):
+                break
+            if attempts > 10000:
+                raise ValueError("could not find a unique filename to write!")
+        output_filename = f"presto-{this_unique_id}.out"
+
+        # create molecule
+        molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
+
+	    # write out job
+        cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
+
+        # run job
+        command = ["bash", "run_xtb.sh", f"presto-{this_unique_id}", str(self.charge), str(self.multiplicity)]
+        process = sp.Popen(command, stdout=sp.PIPE)
+        output, error = process.communicate()
+        p_status = process.wait()
+        output = output.decode("utf-8")
+
+        #print(output)
+        #print(p_status)
+        if p_status != 0:
+            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {p_status}!")
+
+        # get results
+        job_directory = f"{XTB_DIRECTORY}/presto-{this_unique_id}"
+        os.chdir(job_directory)
+        
+        # parse energy
+        if not os.path.isfile("energy"):
+            raise ValueError(f"xtb energy file not found for job {this_unique_id}")
+        with open("energy", "r") as f:
+            energy_lines = f.read().splitlines()
+        energy = energy_lines[1]
+        fields = energy.split()
+        energy = float(fields[1])
+        if not os.path.isfile("gradient"):
+            raise ValueError(f"xtb gradient file not found for job {this_unique_id}")
+        with open("gradient", "r") as f:
+            gradient_lines = f.read().splitlines()
+
+        # parse forces
+        forces = []
+        for line in gradient_lines:
+            fields = line.split()
+            if len(fields) == 3:
+                x,y,z = float(fields[0]), float(fields[1]), float(fields[2])
+                forces.append([-x,-y,-z])
+        forces = cctk.OneIndexedArray(forces)
+        forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+        assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
+
+        # delete job directory
+        os.chdir(XTB_DIRECTORY)
+        try:
+            shutil.rmtree(job_directory)
+        except Exception as e:
+            print(e)
+            print(f"warning: could not remove ${job_directory} but continuing")
+
+        # restore working directory
+        os.chdir(old_working_directory)
+
+        # return result
+        return energy, forces
+
 class GaussianCalculator(Calculator):
 
-    def evaluate(self, positions, atomic_numbers, charge=0, multiplicity=1,
+    def __init__(self, charge=0, multiplicity=1,
                  link0={"mem":"1GB", "nprocshared":"4"},
-                 route_card="hf 3-21g force",
+                 route_card="#p hf 3-21g force",
                  footer=None):
+        self.charge = charge
+        self.multiplicity = multiplicity
+        self.link0 = link0
+        self.route_card = route_card
+        self.footer = footer
+
+    def evaluate(self, positions, atomic_numbers):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -115,38 +221,60 @@ class GaussianCalculator(Calculator):
         os.chdir(GAUSSIAN_DIRECTORY)
 
         # generate filenames
-        COUNTER += 1
-        this_unique_id = f"{UNIQUE_ID}-{COUNTER:09d}"
-        input_filename = f"presto-{this_unique_id}.gjf"
+        global GAUSSIAN_COUNTER
+        attempts = 0
+        while True:
+            GAUSSIAN_COUNTER += 1
+            attempts += 1
+            this_unique_id = f"{UNIQUE_ID}-{XTB_COUNTER:09d}"
+            input_filename = f"presto-{this_unique_id}.gjf"
+            if not os.path.isfile(input_filename):
+                break
+            if attempts > 10000:
+                raise ValueError("could not find a unique filename to write!")
         output_filename = f"presto-{this_unique_id}.out"
 
         # create molecule
-        molecule = cctk.Molecule(atomic_numbers, geometry, charge=charge, multiplicity=multiplicity)
+        molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
-	# write out job
-        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, route_card, link0, footer)
+	    # write out job
+        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, self.route_card, self.link0, self.footer)
 
         # run job
-        command = ["bash", "run_gaussian.sh", this_unique_id]
+        command = ["bash", "run_gaussian.sh", f"presto-{this_unique_id}"]
         process = sp.Popen(command, stdout=sp.PIPE)
         output, error = process.communicate()
         p_status = process.wait()
         output = output.decode("utf-8")
-        print(output)
-        print(p_status)
+        #print(output)
+        #print(p_status)
+        if p_status != 0:
+            raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
 
-        # get results and change units
-        file = cctk.GaussianFile.read_file(output_filename)
-        ensemble = file.ensemble
-        molecule = file.molecules[-1]
+        # get results
+        job_directory = f"{GAUSSIAN_DIRECTORY}/presto-{this_unique_id}"
+        os.chdir(job_directory)
+        gaussian_file = cctk.GaussianFile.read_file(output_filename)
+        ensemble = gaussian_file.ensemble
+        molecule = ensemble.molecules[-1]
         properties_dict = ensemble.get_properties_dict(molecule)
-        print(properties_dict)
+        energy = properties_dict["energy"]
+        forces = properties_dict["forces"]
+        forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+
+        # delete job directory
+        os.chdir(GAUSSIAN_DIRECTORY)
+        try:
+            shutil.rmtree(job_directory)
+        except Exception as e:
+            print(e)
+            print(f"warning: could not remove ${job_directory} but continuing")
 
         # restore working directory
         os.chdir(old_working_directory)
 
         # return result
-        pass
+        return energy,forces
 
 class ONIOMCalculator(Calculator):
 

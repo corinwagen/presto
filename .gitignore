@@ -134,6 +134,10 @@ dmypy.json
 # temp files
 *.swp
 
+# presto
+gaussian/*
+xtb/*
+
 .DS_Store
 
 # slurm submission
