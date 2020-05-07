@@ -37,23 +37,25 @@ XTB_DIRECTORY = f"{os.getcwd()}/xtb"
 
 class Calculator():
     """
+    Generic calculator class.
     """
 
     def __init__(self):
         pass
 
-    def evaluate(self):
+    def evaluate(self, atomic_numbers, positions, high_atoms):
         pass
 
 
-class XTBCalculator(Calculator):
+class XTB_API_Calculator(Calculator):
     """
     """
-    def evaluate(self, atomic_numbers, positions, params={}):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, params={}):
         """
         Args:
             atomic_numbers (cctk.OneIndexedArray):
             positions (cctk.OneIndexedArray):
+            high_atoms (np.ndarray): do nothing with this
             params (dict): custom params for calculation (not currently implemented)
 
         Returns:
@@ -96,19 +98,20 @@ class XTBCalculator(Calculator):
 
         return energy, forces
 
-class XTBCommandLineCalculator(Calculator):
+class XTBCalculator(Calculator):
 
     def __init__(self, charge=0, multiplicity=1):
         self.charge = charge
         self.multiplicity = multiplicity
 
-    def evaluate(self, positions, atomic_numbers):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
         Args:
-            positions (cctk.OneIndexedArray): the atomic positions in angstroms
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
+            positions (cctk.OneIndexedArray): the atomic positions in angstroms
+            high_atoms (np.ndarray): do nothing with this
 
         Returns:
             energy (float): in Hartree
@@ -135,7 +138,7 @@ class XTBCommandLineCalculator(Calculator):
         # create molecule
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
-	    # write out job
+        # write out job
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
         # run job
@@ -145,15 +148,13 @@ class XTBCommandLineCalculator(Calculator):
         p_status = process.wait()
         output = output.decode("utf-8")
 
-        #print(output)
-        #print(p_status)
         if p_status != 0:
             raise ValueError(f"command line xtb job {this_unique_id} died with exit code {p_status}!")
 
         # get results
         job_directory = f"{XTB_DIRECTORY}/presto-{this_unique_id}"
         os.chdir(job_directory)
-        
+
         # parse energy
         if not os.path.isfile("energy"):
             raise ValueError(f"xtb energy file not found for job {this_unique_id}")
@@ -198,19 +199,23 @@ class GaussianCalculator(Calculator):
                  link0={"mem":"1GB", "nprocshared":"4"},
                  route_card="#p hf 3-21g force",
                  footer=None):
+        if not re.search("force", route_card):
+            raise ValueError("need a force job to calculate forces")
+
         self.charge = charge
         self.multiplicity = multiplicity
         self.link0 = link0
         self.route_card = route_card
         self.footer = footer
 
-    def evaluate(self, positions, atomic_numbers):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
         Args:
-            positions (cctk.OneIndexedArray): the atomic positions in angstroms
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
+            positions (cctk.OneIndexedArray): the atomic positions in angstroms
+            high_atoms (np.ndarray): do nothing with this
 
         Returns:
             energy (float): in Hartree
@@ -237,7 +242,7 @@ class GaussianCalculator(Calculator):
         # create molecule
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
-	    # write out job
+        # write out job
         cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, self.route_card, self.link0, self.footer)
 
         # run job
@@ -246,8 +251,6 @@ class GaussianCalculator(Calculator):
         output, error = process.communicate()
         p_status = process.wait()
         output = output.decode("utf-8")
-        #print(output)
-        #print(p_status)
         if p_status != 0:
             raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
 
@@ -277,6 +280,21 @@ class GaussianCalculator(Calculator):
         return energy,forces
 
 class ONIOMCalculator(Calculator):
+    def __init__(self, high_calculator, low_calculator):
+        assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
+        assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
+        self.high_calculator = high_calculator
+        self.low_calculator = low_calculator
 
-    def evaluate(self, molecule):
-        pass
+    def evaluate(self, atomic_numbers, positions, high_atoms):
+        high_atomic_numbers = atomic_numbers[high_atoms]
+        high_positions = positions[high_atoms]
+
+        e_hh, f_hh = self.high_calculator.evaluate(high_atomic_numbers, high_positions)
+        e_hl, f_hl = self.low_calculator.evaluate(high_atomic_numbers, high_positions)
+        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
+
+        energy = e_hh + e_ll - e_hl
+        forces = f_hh + f_ll - f_hl
+
+        return energy, forces

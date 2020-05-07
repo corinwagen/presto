@@ -1,11 +1,12 @@
-import unittest, cctk
+import unittest, cctk, logging
 import numpy as np
 from datetime import datetime
 
 import sys
 sys.path.append('../presto')
-
 import presto
+
+logging.basicConfig(level=logging.INFO, filename="nazarov.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M', filemode="w")
 
 def boring_scheduler(time):
     return 220
@@ -70,4 +71,4 @@ print(f"{len(r_run.frames)} frames run")
 full = presto.trajectory.join(f_run, r_run)
 
 print(f"{len(full.frames)} run in total")
-full.write_movie("test/static/nazarov_movie.mol2")
+full.write_movie("test/static/nazarov_movie.pdb")

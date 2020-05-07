@@ -1,8 +1,10 @@
 import numpy as np
-import math, copy, cctk, os, re
+import math, copy, cctk, os, re, logging
 
 import h5py
 import presto
+
+logger = logging.getLogger(__name__)
 
 class Trajectory():
     """
@@ -27,43 +29,53 @@ class Trajectory():
         checkpoint_filename (str):
     """
 
-    def __init__(self, timestep, atomic_numbers, high_atoms, calculator, integrator, forwards=True, checkpoint_filename=None, **kwargs):
-        assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
-        assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
-        assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
-
-        self.atomic_numbers = atomic_numbers
-        self.calculator = calculator
-        self.integrator = integrator
-        self.finished = False
-
-        assert isinstance(high_atoms, np.ndarray), "high_atoms must be np.ndarray!"
-        self.high_atoms = high_atoms
-
-        active_atoms = None
-        if "active_atoms" in kwargs:
-            active_atoms = kwargs["active_atoms"]
-            assert isinstance(active_atoms, np.ndarray), "active_atoms must be np.ndarray!"
-            self.active_atoms = active_atoms
-        elif "inactive_atoms" in kwargs:
-            self.set_inactive_atoms(kwargs["inactive_atoms"])
-        else:
-            raise ValueError("neither active atoms nor inactive atoms specificed!")
-
-        assert timestep > 0, "can't have timestep ≤ 0!"
-        self.timestep = float(timestep)
-
-        self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
-        self.frames = []
-
-        assert isinstance(forwards, bool), "forwards must be bool"
-        self.forwards = forwards
-
+    def __init__(self, calculator, integrator, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, **kwargs):
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
         if self.has_checkpoint():
             self.load_from_checkpoint()
+
+        assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
+        assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
+        self.calculator = calculator
+        self.integrator = integrator
+
+        if not hasattr(self, "atomic_numbers"):
+            assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
+            self.atomic_numbers = atomic_numbers
+
+        if not hasattr(self, "finished"):
+            self.finished = False
+
+        if not hasattr(self, "high_atoms"):
+            assert isinstance(high_atoms, np.ndarray), "high_atoms must be np.ndarray!"
+            self.high_atoms = high_atoms
+
+        if not hasattr(self, "active_atoms"):
+            active_atoms = None
+            if "active_atoms" in kwargs:
+                active_atoms = kwargs["active_atoms"]
+                assert isinstance(active_atoms, np.ndarray), "active_atoms must be np.ndarray!"
+                self.active_atoms = active_atoms
+            elif "inactive_atoms" in kwargs:
+                self.set_inactive_atoms(kwargs["inactive_atoms"])
+            else:
+                raise ValueError("neither active atoms nor inactive atoms specificed!")
+
+        if not hasattr(self, "timestep"):
+            assert timestep > 0, "can't have timestep ≤ 0!"
+            self.timestep = float(timestep)
+
+        if not hasattr(self, "masses"):
+            self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
+
+        if not hasattr(self, "frames"):
+            self.frames = []
+
+        if not hasattr(self, "forwards"):
+            assert isinstance(forwards, bool), "forwards must be bool"
+            self.forwards = forwards
 
     def set_inactive_atoms(self, inactive_atoms):
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
@@ -86,8 +98,10 @@ class Trajectory():
                 self.initialize(**kwargs)
 
         if self.finished:
+            logger.info("Trajectory already finished!")
             return self
         else:
+            logger.info("Propagating trajectory.")
             self.propagate(checkpoint_interval)
             self.save()
             return self
@@ -124,10 +138,31 @@ class Trajectory():
     def load_from_checkpoint(self):
         assert self.has_checkpoint(), "can't load without checkpoint file"
         with h5py.File(self.checkpoint_filename, "r") as h5:
-            assert self.timestep == h5.attrs['timestep']
-            assert np.array_equal(self.high_atoms, h5.attrs['high_atoms'])
-#            assert np.array_equal(self.active_atoms, h5.attrs['active_atoms'])
-            assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
+            if hasattr(self, "timestep"):
+                assert self.timestep == h5.attrs['timestep']
+            else:
+                self.timestep = h5.attrs['timestep']
+
+            if hasattr(self, "high_atoms"):
+                assert np.array_equal(self.high_atoms, h5.attrs['high_atoms'])
+            else:
+                self.high_atoms = h5.attrs["high_atoms"][:]
+
+            if hasattr(self, "active_atoms"):
+                pass
+            else:
+                self.active_atoms = h5.attrs["active_atoms"][:]
+
+            if hasattr(self, "atomic_numbers"):
+                assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
+            else:
+                self.atomic_numbers = h5.attrs["atomic_numbers"]
+
+            if hasattr(self, "masses"):
+                assert self.masses == h5.attrs["masses"]
+            else:
+                self.masses = h5.attrs["masses"]
+
             self.finished = h5.attrs['finished']
 
             all_energies = h5.get("all_energies")
@@ -150,12 +185,14 @@ class Trajectory():
                     energy=e,
                     bath_temperature=temperatures[i]
                 ))
+        logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
         return
 
     def save(self):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
         if self.has_checkpoint():
+            logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({n_new_frames} new frames)")
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
@@ -193,12 +230,14 @@ class Trajectory():
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
         else:
+            logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 # store general data about the trajectory
                 h5.attrs['timestep'] = self.timestep
                 h5.attrs['high_atoms'] = self.high_atoms
                 h5.attrs['active_atoms'] = self.active_atoms
                 h5.attrs['atomic_numbers'] = self.atomic_numbers
+                h5.attrs['masses'] = self.masses
                 h5.attrs['finished'] = self.finished
                 h5.attrs['forwards'] = self.forwards
                 n_atoms = len(self.atomic_numbers)
@@ -225,6 +264,7 @@ class Trajectory():
 
     def write_movie(self, filename):
         ensemble = self.as_ensemble()
+        logger.info("Writing trajectory to {filename}")
         if re.search("pdb$", filename):
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
@@ -247,6 +287,19 @@ class Trajectory():
             forward ReactionTrajectory
             reverse ReactionTrajectory
         """
+        if os.path.exists(f_filename) and os.path.exists(r_filename):
+            logger.info(f"Trajectories to spawn already exist!")
+
+            f_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=f_filename)
+            f_traj.termination_function = termination_function
+            f_traj.max_time = max_time
+
+            r_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=r_filename, forwards=False)
+            r_traj.termination_function = termination_function
+            r_traj.max_time = max_time
+
+            return f_traj, r_traj
+
         # add random velocity to previously inactive atoms
         frame = self.frames[-1]
 
@@ -285,6 +338,7 @@ class Trajectory():
 
         assert os.path.exists(f_filename), f"didn't save to {f_filename} successfully"
         assert os.path.exists(r_filename), f"didn't save to {r_filename} successfully"
+        logger.info(f"Two new reaction trajectories spawned and saved to {f_filename} and {r_filename}")
 
         return f_traj, r_traj
 
@@ -313,6 +367,7 @@ class ReactionTrajectory(Trajectory):
         Returns:
             frame
         """
+        logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint()
             return
@@ -336,6 +391,7 @@ class ReactionTrajectory(Trajectory):
                 return
 
             if self.termination_function(self.frames[-1]) or time_since_finished > 0:
+                logger.info(f"Termination function satisfied, running for {time_after_finished} additional fs ({time_since_finished} completed thus far)")
                 time_since_finished += self.timestep
 
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
@@ -378,6 +434,7 @@ class EquilibrationTrajectory(Trajectory):
         Returns:
             frame
         """
+        logger.info("Initializing new equilibration trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint()
             return
@@ -432,7 +489,7 @@ def join(traj1, traj2):
     Returns:
         combined ``ReactionTrajectory``
     """
-
+    logger.info("Joining forward and reverse reaction trajectories....")
     assert isinstance(traj1, ReactionTrajectory), "need a ReactionTrajectory"
     assert isinstance(traj2, ReactionTrajectory), "need a ReactionTrajectory"
 
