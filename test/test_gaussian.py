@@ -14,7 +14,7 @@ class TestGaussian(unittest.TestCase):
     def test_gaussian(self):
         hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
         atomic_numbers = hydrogen_molecule.atomic_numbers
-        positions = hydrogen_molecule.geometry    
+        positions = hydrogen_molecule.geometry
         gaussian_calculator = calculators.GaussianCalculator(charge=0, multiplicity=1,
                                                                     link0={"mem":"1GB", "nprocshared":"1"},
                                                                     route_card = "#p hf 3-21g force",
