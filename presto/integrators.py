@@ -32,7 +32,7 @@ class VelocityVerletIntegrator(Integrator):
 
     def update_accelerations(self, frame, new_x, forwards):
         calculator = frame.trajectory.calculator
-        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, new_x)
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, new_x, frame.trajectory.high_atoms)
         forces[frame.inactive_mask()] = 0
         masses = frame.trajectory.masses
         return energy, forces / masses.reshape(-1,1)
