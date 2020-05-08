@@ -9,3 +9,31 @@ import presto
 if __name__ == '__main__':
     unittest.main()
 
+class TestLangevinIntegrator(unittest.TestCase):
+    def gen_test_frame(self):
+        zs = cctk.OneIndexedArray([2])
+        traj = presto.trajectory.Trajectory(
+            timestep=0.5,
+            atomic_numbers=zs,
+            high_atoms=np.array([]),
+            active_atoms=np.array([1]),
+            calculator=presto.calculators.XTBCalculator(),
+            integrator=presto.integrators.LangevinIntegrator(viscosity=0.0001),
+        )
+
+        self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
+
+        e0 = cctk.OneIndexedArray([[0,0,0]])
+        e1 = cctk.OneIndexedArray([[1,0,0]])
+        frame = presto.frame.Frame(traj, e0, e1, e0)
+        self.assertTrue(isinstance(frame, presto.frame.Frame))
+        return frame
+
+    def test_radius(self):
+        frame = self.gen_test_frame()
+        self.assertEqual(frame.radii()[1], 1.4)
+
+    def test_drag(self):
+        frame = self.gen_test_frame()
+        new_a = cctk.OneIndexedArray([1,0,0])
+        print(frame.trajectory.integrator.drag_forces(frame, True, new_a))

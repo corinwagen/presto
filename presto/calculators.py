@@ -2,6 +2,8 @@ import numpy as np
 import os, random, string, re, cctk, ctypes
 import subprocess as sp
 import shutil
+import multiprocessing as mp
+import time
 
 import xtb
 
@@ -38,60 +40,8 @@ class Calculator():
     def __init__(self):
         pass
 
-    def evaluate(self, atomic_numbers, positions, high_atoms):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe):
         pass
-
-
-class XTB_API_Calculator(Calculator):
-    """
-    """
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, params={}):
-        """
-        Args:
-            atomic_numbers (cctk.OneIndexedArray):
-            positions (cctk.OneIndexedArray):
-            high_atoms (np.ndarray): do nothing with this
-            params (dict): custom params for calculation (not currently implemented)
-
-        Returns:
-            energy (float): in Hartree
-            forces (cctk.OneIndexedArray): in amu Å per fs**2
-        """
-
-        #### np.int8 converts to ctypes.c_bytes, whereas np.intc converts to ctypes.c_int
-        numbers = atomic_numbers.view(np.ndarray).astype(ctypes.c_int)
-        num_atoms = len(numbers)
-
-        positions = positions.view(np.ndarray) * constants.BOHR_PER_ANGSTROM
-        positions = positions.astype(ctypes.c_double)
-
-        calc = xtb.interface.XTBLibrary()
-        options = {
-            "print_level": 0,
-            "parallel": 0,
-            "accuracy": 1.00,
-            "electronic_temperature": 300.0,
-            "gradient": True,
-            "restart": False,
-            "ccm": True,
-            "max_iterations": 250,
-        }
-
-        output = calc.GFN2Calculation(
-            natoms=num_atoms,
-            numbers=numbers,
-            charge=0.0,
-            positions=positions,
-            options=options,
-            output="-",
-            magnetic_moment=0,
-        )
-
-        grad = -output["gradient"]
-        energy = output["energy"]
-        forces = np.array(grad).view(cctk.OneIndexedArray) *  constants.AMU_A2_FS2_PER_HARTREE_BOHR
-
-        return energy, forces
 
 class XTBCalculator(Calculator):
 
@@ -99,7 +49,7 @@ class XTBCalculator(Calculator):
         self.charge = charge
         self.multiplicity = multiplicity
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -186,7 +136,12 @@ class XTBCalculator(Calculator):
         os.chdir(old_working_directory)
 
         # return result
-        return energy, forces
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
 
 class GaussianCalculator(Calculator):
 
@@ -203,9 +158,9 @@ class GaussianCalculator(Calculator):
         self.route_card = route_card
         self.footer = footer
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
-        Gets the electronic energy and cartesian forces for the specified geometry.
+        Gets the electronic energy and Cartesian forces for the specified geometry.
 
         Args:
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
@@ -226,7 +181,7 @@ class GaussianCalculator(Calculator):
         while True:
             GAUSSIAN_COUNTER += 1
             attempts += 1
-            this_unique_id = f"{UNIQUE_ID}-{XTB_COUNTER:09d}"
+            this_unique_id = f"{UNIQUE_ID}-{GAUSSIAN_COUNTER:09d}"
             input_filename = f"presto-{this_unique_id}.gjf"
             if not os.path.isfile(input_filename):
                 break
@@ -272,22 +227,71 @@ class GaussianCalculator(Calculator):
         os.chdir(old_working_directory)
 
         # return result
-        return energy,forces
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
 
 class ONIOMCalculator(Calculator):
+    """
+    Composes two other calculators, and computes forces according to the ONIOM embedding scheme.
+    """
     def __init__(self, high_calculator, low_calculator):
         assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
         assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
         self.high_calculator = high_calculator
         self.low_calculator = low_calculator
 
-    def evaluate(self, atomic_numbers, positions, high_atoms):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
+        """
+        Evaluates the forces according to the ONIOM embedding scheme.
+        """
         high_atomic_numbers = atomic_numbers[high_atoms]
         high_positions = positions[high_atoms]
 
-        e_hh, f_hh = self.high_calculator.evaluate(high_atomic_numbers, high_positions)
-        e_hl, f_hl = self.low_calculator.evaluate(high_atomic_numbers, high_positions)
-        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
+        parent_hh, child_hh = mp.Pipe()
+        process_hh = mp.Process(target=self.high_calculator.evaluate, kwargs={
+            "atomic_numbers": high_atomic_numbers,
+            "positions": high_positions,
+            "pipe": child_hh,
+        })
+        process_hh.start()
+
+        #### prevent collisions in the time between when one calculation has checked for namespace availability and actually written the file
+        time.sleep(0.1)
+
+        parent_hl, child_hl = mp.Pipe()
+        process_hl = mp.Process(target=self.low_calculator.evaluate, kwargs={
+            "atomic_numbers": high_atomic_numbers,
+            "positions": high_positions,
+            "pipe": child_hl,
+        })
+        process_hl.start()
+
+        time.sleep(0.1)
+
+        parent_ll, child_ll = mp.Pipe()
+        process_ll = mp.Process(target=self.low_calculator.evaluate, kwargs={
+            "atomic_numbers": atomic_numbers,
+            "positions": positions,
+            "pipe": child_ll,
+        })
+        process_ll.start()
+
+        e_hh, f_hh = parent_hh.recv()
+        e_hl, f_hl = parent_hl.recv()
+        e_ll, f_ll = parent_ll.recv()
+
+        process_hh.join()
+        process_hl.join()
+        process_ll.join()
+
+        # this is the non-multiprocessing way. lame!
+#        e_hh, f_hh = self.high_calculator.evaluate(high_atomic_numbers, high_positions)
+#        e_hl, f_hl = self.low_calculator.evaluate(high_atomic_numbers, high_positions)
+#        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
 
         energy = e_hh + e_ll - e_hl
         forces = f_hh + f_ll - f_hl
