@@ -9,7 +9,7 @@ import presto
 import xtb
 from ctypes import c_int, c_double
 
-class TestXTBCalculator(unittest.TestCase):
+class NoTestXTBCalculator(unittest.TestCase):
     def test_basic(self):
         path = "test/static/PhF.xyz"
         mol = cctk.XYZFile.read_file(path).molecule

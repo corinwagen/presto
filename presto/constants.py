@@ -11,8 +11,14 @@ Base units for *presto*:
 Forces from most computational chemistry software come in Hartrees/Bohr.
 
 x kcal      4184 J      1 kg m^2 s^-2     10^20 Å^2         1 s^2       1000 g      1 amu
--------  * -------- *  --------------- * ----------- * ------------- * -------- *  --------- = 0.0004184 * x amu Å fs^-2 * mol * A / K
+-------  * -------- *  --------------- * ----------- * ------------- * -------- *  --------- = 0.0004184 * x amu Å fs^-2
 mol * Å     1 kcal           1 J             m^2        10^30 fs^2      1 kg        1 g/mol
+
+Viscosity comes in Pa * s (kg * m^-1 * s^-1):
+
+x kg       1 s       6.022*10^26 amu      1 m
+----- * ---------- * --------------- * --------- = 60.22 amu Å^-1 fs^-1
+m * s    10^15 fs         1 kg          10^10 Å
 
 """
 
@@ -23,10 +29,13 @@ HARTREE_PER_KCAL = 0.001593601
 KCAL_PER_HARTREE = 627.5095
 
 KCAL_MOL_ANGSTROMS_PER_HARTREE_BOHR = BOHR_PER_ANGSTROM * KCAL_PER_HARTREE
-AMU_A2_FS2_PER_KCAL_MOL_ANGSTROM = 0.0004184
-AMU_A2_FS2_PER_HARTREE_BOHR = 0.4961455 # AMU_A2_FS2_PER_KCAL_MOL_ANGSTROM * KCAL_MOL_ANGSTROMS_PER_HARTREE_BOHR
+AMU_A_FS2_PER_KCAL_MOL_ANGSTROM = 0.0004184
+AMU_A2_FS2_PER_KCAL_MOL = 0.0004184
+AMU_A2_FS2_PER_HARTREE_BOHR = 0.4961455 # AMU_A_FS2_PER_KCAL_MOL_ANGSTROM * KCAL_MOL_ANGSTROMS_PER_HARTREE_BOHR
 
-BOLTZMANN_CONSTANT = 0.0019872041 * 0.0004184
+BOLTZMANN_CONSTANT = 0.0019872041 * 0.0004184 # convert from kcal/mol to amu Å^2/fs^2
+
+AMU_A_FS_PER_PASCAL_SECOND = 60.22
 
 """
 Radii taken from Inorg. Mater. 2001, 37, 871 and J. Phys. Chem. A. 2009, 113, 5806.
@@ -112,7 +121,7 @@ VDW_RADII = {
 
 def vdw_radius(z):
     assert isinstance(z, (int, np.integer)), "can't have a non-integer atomic number"
-    if z in keys(VDW_RADIUS):
-        return VDW_RADIUS[z]
-    else
+    if z in VDW_RADII:
+        return VDW_RADII[z]
+    else:
         raise ValueError(f"no van der Waals radius defined for element {z}!")

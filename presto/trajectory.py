@@ -158,10 +158,11 @@ class Trajectory():
             else:
                 self.atomic_numbers = h5.attrs["atomic_numbers"]
 
-            if hasattr(self, "masses"):
-                assert self.masses == h5.attrs["masses"]
-            else:
-                self.masses = h5.attrs["masses"]
+            #### too many problems with resampling isotopes
+#            if hasattr(self, "masses"):
+#                assert np.array_equal(self.masses, h5.attrs["masses"])
+#            else:
+            self.masses = h5.attrs["masses"]
 
             self.finished = h5.attrs['finished']
 
@@ -192,7 +193,6 @@ class Trajectory():
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
         if self.has_checkpoint():
-            logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({n_new_frames} new frames)")
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
@@ -229,6 +229,7 @@ class Trajectory():
                 all_temps = h5.get("bath_temperatures")
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
+                logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added)")
         else:
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
