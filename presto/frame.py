@@ -79,7 +79,7 @@ class Frame():
         T = sum{ m_i * v_i ** 2 / (kB * Nf) }
         """
         v = [np.linalg.norm(x) for x in self.velocities[self.trajectory.active_atoms]]
-        m = self.trajectory.masses[self.trajectory.active_atoms].reshape(-1,1)
+        m = self.masses()[self.trajectory.active_atoms]
         K = m * np.power(v, 2)
         return float(np.mean(K)) / (3 * presto.constants.BOLTZMANN_CONSTANT)
 
@@ -204,3 +204,6 @@ class Frame():
 
     def masses(self):
         return self.trajectory.masses.reshape(-1,1).view(cctk.OneIndexedArray)
+
+    def radii(self):
+        return np.array([presto.constants.vdw_radius(z) for z in self.trajectory.atomic_numbers]).view(cctk.OneIndexedArray)
