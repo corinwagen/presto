@@ -142,3 +142,4 @@ xtb/*
 
 # slurm submission
 submit.sh
+slurm*
