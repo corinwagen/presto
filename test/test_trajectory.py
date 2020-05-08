@@ -71,7 +71,7 @@ class TestTrajectory(unittest.TestCase):
         self.assertTrue(isinstance(traj, presto.trajectory.EquilibrationTrajectory))
         self.assertEqual(traj.bath_scheduler(0), 298)
 
-        traj.run(checkpoint_filename="test/static/benzene2.chk", checkpoint_interval=50, positions=start.geometry)
+        traj.run(checkpoint_filename="test/static/benzene.chk", checkpoint_interval=50, positions=start.geometry)
 
         temps = np.array([f.temperature() for f in traj.frames])
         energies = np.array([f.energy for f in traj.frames])
@@ -87,7 +87,8 @@ class TestTrajectory(unittest.TestCase):
 
 #    def solvent_box(self):
     def test_solvent_box(self):
-        os.remove("test/static/chk.chk")
+        if os.path.exists("test/static/solvent.chk"):
+            os.remove("test/static/solvent.chk")
         def boring_scheduler(time):
             return 298
 
@@ -98,7 +99,7 @@ class TestTrajectory(unittest.TestCase):
             high_atoms=np.array([]),
             active_atoms=np.arange(1,start.num_atoms()+1),
             calculator=presto.calculators.XTBCalculator(),
-            integrator=presto.integrators.VelocityVerletIntegrator(),
+            integrator=presto.integrators.LangevinIntegrator(viscosity=0.0001),
             bath_scheduler=boring_scheduler,
             stop_time = 100,
         )
@@ -108,7 +109,7 @@ class TestTrajectory(unittest.TestCase):
         self.assertEqual(traj.bath_scheduler(0), 298)
 
         print(datetime.now())
-        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=start.geometry)
+        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=10, positions=start.geometry)
         print(datetime.now())
         self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
 
@@ -128,5 +129,5 @@ class TestTrajectory(unittest.TestCase):
         traj.write_movie("movie.pdb")
 
         print("done")
-        os.remove("test/static/chk.chk")
+        os.remove("test/static/solvent.chk")
 

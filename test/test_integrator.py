@@ -33,7 +33,19 @@ class TestLangevinIntegrator(unittest.TestCase):
         frame = self.gen_test_frame()
         self.assertEqual(frame.radii()[1], 1.4)
 
-    def test_drag(self):
-        frame = self.gen_test_frame()
-        new_a = cctk.OneIndexedArray([1,0,0])
-        print(frame.trajectory.integrator.drag_forces(frame, True, new_a))
+#    def test_drag(self):
+#        frame = self.gen_test_frame()
+#        new_a = cctk.OneIndexedArray([1,0,0])
+#        print(frame.trajectory.integrator.drag_forces(frame, True, new_a))
+
+class TestSphericalIntegration(unittest.TestCase):
+    def test_spherical_harmonic_potential(self):
+        potential = presto.integrators.spherical_harmonic_potential(radius=10, force_constant=1)
+
+        x = np.array([[1], [9], [11], [-12]])
+        f = potential(x)
+
+        self.assertEqual(f[1], 0)
+        self.assertEqual(f[2], 0)
+        self.assertEqual(f[3], -1)
+        self.assertEqual(f[4], 4)
