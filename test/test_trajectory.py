@@ -7,6 +7,8 @@ sys.path.append('../presto')
 
 import presto
 
+from asciichartpy import plot
+
 if __name__ == '__main__':
     unittest.main()
 
@@ -31,7 +33,7 @@ class TestTrajectory(unittest.TestCase):
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
         self.assertTrue(isinstance(traj, presto.trajectory.EquilibrationTrajectory))
 
-        self.assertEqual(traj.bath_scheduler(0), 298)
+#        self.assertEqual(traj.bath_scheduler(0), 298)
 
         x = cctk.OneIndexedArray([[2,0,0], [0,0,0]])
         traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=x)
@@ -47,7 +49,9 @@ class TestTrajectory(unittest.TestCase):
         os.remove("test/static/chk.chk")
 
     def test_benzene(self):
-        os.remove("test/static/chk.chk")
+#        if os.path.exists("test/static/chk.chk"):
+#            os.remove("test/static/chk.chk")
+
         def boring_scheduler(time):
             return 298
 
@@ -56,29 +60,30 @@ class TestTrajectory(unittest.TestCase):
             timestep=0.5,
             atomic_numbers=start.atomic_numbers,
             high_atoms=np.array([]),
-            active_atoms=np.arange(1,start.num_atoms()+1),
+            inactive_atoms=np.array([]),
             calculator=presto.calculators.XTBCalculator(),
-            integrator=presto.integrators.VelocityVerletIntegrator(),
+            integrator=presto.integrators.LangevinIntegrator(viscosity=0.0006),
             bath_scheduler=boring_scheduler,
-            stop_time = 250,
+            stop_time = 1500,
         )
 
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
         self.assertTrue(isinstance(traj, presto.trajectory.EquilibrationTrajectory))
         self.assertEqual(traj.bath_scheduler(0), 298)
 
-        print(start.atomic_numbers)
+        traj.run(checkpoint_filename="test/static/benzene2.chk", checkpoint_interval=50, positions=start.geometry)
 
-        traj.run(checkpoint_filename="test/static/chk.chk", checkpoint_interval=50, positions=start.geometry)
-        self.assertTrue(isinstance(traj.frames[0], presto.frame.Frame))
-
-        temps = [f.temperature() for f in traj.frames]
-        energies = [f.energy for f in traj.frames]
+        temps = np.array([f.temperature() for f in traj.frames])
+        energies = np.array([f.energy for f in traj.frames])
+        rel_energies = energies - np.min(energies)
+        rel_energies = energies * 627.509
 
         print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
+        print(plot(np.mean(temps[:(len(temps)//18)*18].reshape(-1,18), axis=1), {"height": 20}))
         print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
+        print(plot(np.mean(rel_energies[:(len(rel_energies)//18)*18].reshape(-1,18), axis=1), {"height":20}))
 
-        os.remove("test/static/chk.chk")
+#        os.remove("test/static/chk.chk")
 
 #    def solvent_box(self):
     def test_solvent_box(self):
@@ -124,3 +129,4 @@ class TestTrajectory(unittest.TestCase):
 
         print("done")
         os.remove("test/static/chk.chk")
+
