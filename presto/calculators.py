@@ -1,10 +1,5 @@
 import numpy as np
-import cctk
-import ctypes
-
-import os
-import random
-import string
+import os, random, string, re, cctk, ctypes
 import subprocess as sp
 import shutil
 

@@ -159,7 +159,7 @@ class Trajectory():
                 self.atomic_numbers = h5.attrs["atomic_numbers"]
 
             if hasattr(self, "masses"):
-                assert self.masses == h5.attrs["masses"]
+                assert np.array_equal(self.masses, h5.attrs["masses"])
             else:
                 self.masses = h5.attrs["masses"]
 
