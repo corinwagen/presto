@@ -93,15 +93,41 @@ class XTBCalculator(Calculator):
         # write out job
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
-        # run job
-        command = ["bash", "run_xtb.sh", f"presto-{this_unique_id}", str(self.charge), str(self.multiplicity - 1), str(self.gfn), str(self.parallel)]
-        process = sp.Popen(command, stdout=sp.PIPE)
-        output, error = process.communicate()
-        p_status = process.wait()
-        output = output.decode("utf-8")
+        # run job and wait for completion
+        command = ["bash", "run_xtb.sh",
+                   f"presto-{this_unique_id}",
+                   f"{self.charge}",
+                   f"{self.multiplicity - 1}",
+                   f"{self.gfn}",
+                   f"{self.parallel}"]
+        process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
+        exit_code = process.returncode
 
-        if p_status != 0:
-            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {p_status}!\n{error}")
+        if exit_code != 0:
+            xtb_input_filename = f"{XTB_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.xyz"
+            xtb_output_filename = f"{XTB_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.out"
+            print("========= xtb error ========")
+            print("\n===xtb input ===")
+            print(f">>>{xtb_input_filename}")
+            try:
+                with open(xtb_input_filename,"r") as f:
+                    print(f.read())
+            except Exception as e:
+                print(e)
+            print("\n=== xtb output ===")
+            print(f">>>{xtb_output_filename}")
+            try:
+                with open(xtb_output_filename, "r") as f:
+                    print(f.read())
+            except Exception as e:
+                print(e)
+            print("\n===run_xtb.sh script stdout===")
+            print(process.stdout.decode("utf-8"))
+            print("\n===run_xtb.sh script stderr===")
+            print(process.stderr.decode("utf-8"))
+            print()
+            print("========= xtb error ========")
+            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {exit_code}!")
 
         # get results
         job_directory = f"{XTB_DIRECTORY}/presto-{this_unique_id}"
@@ -115,12 +141,12 @@ class XTBCalculator(Calculator):
         energy = energy_lines[1]
         fields = energy.split()
         energy = float(fields[1])
+
+        # parse forces
         if not os.path.isfile("gradient"):
             raise ValueError(f"xtb gradient file not found for job {this_unique_id}")
         with open("gradient", "r") as f:
             gradient_lines = f.read().splitlines()
-
-        # parse forces
         forces = []
         for line in gradient_lines:
             fields = line.split()

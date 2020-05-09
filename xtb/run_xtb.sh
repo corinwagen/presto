@@ -3,7 +3,12 @@
 # script to run xtb
 #
 # usage:
-# ./run_xtb.sh unique_id charge multiplicity gfn parallel_threads
+# ./run_xtb.sh unique_id charge unpaired gfn parallel_threads
+#
+# charge:              total charge of this molecule
+# unpaired:            unpaired electrons (0=singlet, 1=doublet, ...)
+# gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2)
+# parallel_threads:    how many processors to use
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -18,7 +23,7 @@ export XTBPATH="/n/home03/cwagen/.xtb-parameters/"
 # get command line parameters
 unique_id=${1}
 charge=${2}
-multiplicity=${3}
+unpaired=${3}
 gfn=${4}
 parallel=${5}
 
@@ -40,9 +45,13 @@ mv ${unique_id}.xyz ${unique_id}
 cd ${unique_id}
 
 # run job
-echo Starting job...
-echo $XTBPATH
+echo XTBPATH is $XTBPATH
 ls $XTBPATH
-xtb --chrg ${charge} --uhf ${multiplicity} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
-echo Job finished normally.
+echo Current directory is:
+pwd
+ls
+echo Starting job...
+echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz    ${unique_id}.out
+xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+echo Job finished.
 
