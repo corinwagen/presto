@@ -3,7 +3,7 @@
 # script to run xtb
 #
 # usage:
-# ./run_gaussian.sh unique_id charge multiplicity
+# ./run_xtb.sh unique_id charge multiplicity gfn parallel_threads
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -13,10 +13,14 @@
 # to get fancier behaviors, modify this script, ensuring the the
 # output file ends up in the unique_id folder
 
+export XTBPATH="/n/home03/cwagen/.xtb-parameters/"
+
 # get command line parameters
 unique_id=${1}
 charge=${2}
 multiplicity=${3}
+gfn=${4}
+parallel=${5}
 
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
@@ -37,6 +41,8 @@ cd ${unique_id}
 
 # run job
 echo Starting job...
-xtb --chrg ${charge} --uhf ${multiplicity} --grad ${unique_id}.xyz &> ${unique_id}.out
+echo $XTBPATH
+ls $XTBPATH
+xtb --chrg ${charge} --uhf ${multiplicity} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
 echo Job finished normally.
 

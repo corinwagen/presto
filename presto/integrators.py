@@ -85,7 +85,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         xi = 6 * math.pi * self.viscosity * frame.radii()
         old_vel = super().update_velocities(frame, new_a, forwards)
 
-        apply_to = np.linalg.norm(new_x, axis=1) > self.radius
+        no_apply_to = np.linalg.norm(new_x, axis=1) > self.radius
 
         #### have to do numerical convergence since drag is proportional to instantaneous velocity
         for n in range(maxiter):
@@ -93,7 +93,8 @@ class LangevinIntegrator(VelocityVerletIntegrator):
             pred_vel = super().update_velocities(frame, new_a + drag.view(cctk.OneIndexedArray) / frame.masses(), forwards)
 
             if np.mean(np.linalg.norm(pred_vel - old_vel, axis=0)/np.linalg.norm(pred_vel, axis=0)) < tolerance:
-                return drag[apply_to].view(cctk.OneIndexedArray)
+                drag.view(np.ndarray)[no_apply_to,:] = 0
+                return drag.view(cctk.OneIndexedArray)
             else:
                 old_vel = pred_vel
 
@@ -144,7 +145,7 @@ def spherical_harmonic_potential(radius, force_constant=0.004184):
         forces = -1 * force_constant * (positions - positions/radii.reshape(-1,1) * radius)
         forces = forces * np.linalg.norm(positions - positions/radii.reshape(-1,1) * radius, axis=1).reshape(-1,1)
         inside = radii < radius
-        forces[inside,:] = 0
+        forces.view(np.ndarray)[inside,:] = 0
         return forces.view(cctk.OneIndexedArray)
 
     return force

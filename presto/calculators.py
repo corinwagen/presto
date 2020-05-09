@@ -45,9 +45,16 @@ class Calculator():
 
 class XTBCalculator(Calculator):
 
-    def __init__(self, charge=0, multiplicity=1):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1):
+        assert isinstance(charge, int)
+        assert isinstance(multiplicity, int)
+        assert isinstance(gfn, int)
+        assert isinstance(parallel, int) #### for some reason this doesn't work :/
+
         self.charge = charge
         self.multiplicity = multiplicity
+        self.gfn = gfn
+        self.parallel = parallel
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
@@ -87,14 +94,14 @@ class XTBCalculator(Calculator):
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
         # run job
-        command = ["bash", "run_xtb.sh", f"presto-{this_unique_id}", str(self.charge), str(self.multiplicity)]
+        command = ["bash", "run_xtb.sh", f"presto-{this_unique_id}", str(self.charge), str(self.multiplicity - 1), str(self.gfn), str(self.parallel)]
         process = sp.Popen(command, stdout=sp.PIPE)
         output, error = process.communicate()
         p_status = process.wait()
         output = output.decode("utf-8")
 
         if p_status != 0:
-            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {p_status}!")
+            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {p_status}!\n{error}")
 
         # get results
         job_directory = f"{XTB_DIRECTORY}/presto-{this_unique_id}"
