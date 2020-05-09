@@ -8,6 +8,7 @@ import time
 import xtb
 
 from presto import constants
+from presto import config
 
 ############################
 ### Directory Parameters ###
@@ -27,8 +28,13 @@ GAUSSIAN_COUNTER = 0
 XTB_COUNTER = 0
 
 # this is the absolute path to the directory where the run_gaussian.sh script is
-GAUSSIAN_DIRECTORY = f"{os.getcwd()}/gaussian"
-XTB_DIRECTORY = f"{os.getcwd()}/xtb"
+GAUSSIAN_SCRIPT_DIRECTORY = config.GAUSSIAN_SCRIPT_DIRECTORY
+
+# this is the absolute path to the directory where the run_xtb.sh script is
+XTB_SCRIPT_DIRECTORY = config.XTB_SCRIPT_DIRECTORY
+
+# where the xtb GFNn config files are stored
+XTB_HOME = config.XTB_HOME
 
 ###########################
 
@@ -71,7 +77,7 @@ class XTBCalculator(Calculator):
         """
         # set working directory
         old_working_directory = os.getcwd()
-        os.chdir(XTB_DIRECTORY)
+        os.chdir(XTB_SCRIPT_DIRECTORY)
 
         # generate filenames
         global XTB_COUNTER
@@ -99,14 +105,18 @@ class XTBCalculator(Calculator):
                    f"{self.charge}",
                    f"{self.multiplicity - 1}",
                    f"{self.gfn}",
-                   f"{self.parallel}"]
+                   f"{self.parallel}",
+                   XTB_HOME]
         process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
         exit_code = process.returncode
 
         if exit_code != 0:
-            xtb_input_filename = f"{XTB_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.xyz"
-            xtb_output_filename = f"{XTB_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.out"
+            xtb_input_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.xyz"
+            xtb_output_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.out"
             print("========= xtb error ========")
+            print("\n===script command issued===")
+            print(f"currently in {os.getcwd()}")
+            print(command)
             print("\n===xtb input ===")
             print(f">>>{xtb_input_filename}")
             try:
@@ -130,7 +140,7 @@ class XTBCalculator(Calculator):
             raise ValueError(f"command line xtb job {this_unique_id} died with exit code {exit_code}!")
 
         # get results
-        job_directory = f"{XTB_DIRECTORY}/presto-{this_unique_id}"
+        job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
         os.chdir(job_directory)
 
         # parse energy
@@ -158,7 +168,7 @@ class XTBCalculator(Calculator):
         assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
         # delete job directory
-        os.chdir(XTB_DIRECTORY)
+        os.chdir(XTB_SCRIPT_DIRECTORY)
         try:
             shutil.rmtree(job_directory)
         except Exception as e:
@@ -206,7 +216,7 @@ class GaussianCalculator(Calculator):
         """
         # set working directory
         old_working_directory = os.getcwd()
-        os.chdir(GAUSSIAN_DIRECTORY)
+        os.chdir(GAUSSIAN_SCRIPT_DIRECTORY)
 
         # generate filenames
         global GAUSSIAN_COUNTER
@@ -238,7 +248,7 @@ class GaussianCalculator(Calculator):
             raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
 
         # get results
-        job_directory = f"{GAUSSIAN_DIRECTORY}/presto-{this_unique_id}"
+        job_directory = f"{GAUSSIAN_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
         os.chdir(job_directory)
         gaussian_file = cctk.GaussianFile.read_file(output_filename)
         ensemble = gaussian_file.ensemble
@@ -249,7 +259,7 @@ class GaussianCalculator(Calculator):
         forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
 
         # delete job directory
-        os.chdir(GAUSSIAN_DIRECTORY)
+        os.chdir(GAUSSIAN_SCRIPT_DIRECTORY)
         try:
             shutil.rmtree(job_directory)
         except Exception as e:
