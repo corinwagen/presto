@@ -34,7 +34,7 @@ GAUSSIAN_SCRIPT_DIRECTORY = config.GAUSSIAN_SCRIPT_DIRECTORY
 XTB_SCRIPT_DIRECTORY = config.XTB_SCRIPT_DIRECTORY
 
 # where the xtb GFNn config files are stored
-XTB_HOME = config.XTB_HOME
+XTB_PATH = config.XTB_PATH
 
 ###########################
 
@@ -106,7 +106,7 @@ class XTBCalculator(Calculator):
                    f"{self.multiplicity - 1}",
                    f"{self.gfn}",
                    f"{self.parallel}",
-                   XTB_HOME]
+                   XTB_PATH]
         process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
         exit_code = process.returncode
 

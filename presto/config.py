@@ -31,8 +31,14 @@ check_directory("GAUSSIAN_SCRIPT_DIRECTORY", GAUSSIAN_SCRIPT_DIRECTORY)
 XTB_SCRIPT_DIRECTORY = resolve_directory(config['xtb']['XTB_SCRIPT_DIRECTORY'])
 check_directory("XTB_SCRIPT_DIRECTORY", XTB_SCRIPT_DIRECTORY)
 
-XTB_HOME = resolve_directory(config['xtb']['XTB_HOME'])
-check_directory("XTB_HOME",XTB_HOME)
+XTB_PATH = config['xtb']['XTB_PATH']
+if XTB_PATH.lower() == "@auto":
+    CONDA_PATH = os.getenv('CONDA_PREFIX')
+    assert CONDA_PATH is not None, "Could not get a value for CONDA_PATH when trying to autodetect XTBPATH.  Aborting."
+    XTB_PATH = f"{CONDA_PATH}/share/xtb"
+else:
+    XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
+check_directory("XTB_PATH",XTB_PATH)
 
 # finished
 print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
