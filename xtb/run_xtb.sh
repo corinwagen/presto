@@ -3,13 +3,13 @@
 # script to run xtb
 #
 # usage:
-# ./run_xtb.sh unique_id charge unpaired gfn parallel_threads xtb_home
+# ./run_xtb.sh unique_id charge unpaired gfn parallel_threads xtb_path
 #
 # charge:              total charge of this molecule
 # unpaired:            unpaired electrons (0=singlet, 1=doublet, ...)
 # gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2)
 # parallel_threads:    how many processors to use
-# xtb_home:            the xtb home directory where the GFN parameters are
+# xtb_path:            the xtb home directory where the GFN parameters are
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -25,16 +25,14 @@ charge=${2}
 unpaired=${3}
 gfn=${4}
 parallel=${5}
-xtb_home=${6}
+xtb_path=${6}
 
-# set XTBHOME
-if [ ! -d ${xtb_home} ]; then
-    echo Error: xtb home directory ${xtb_home} not found.
+# set XTBPATH
+if [ ! -d ${xtb_path} ]; then
+    echo Error: xtb directory ${xtb_path} not found.
     exit 1
 fi
-#export XTBPATH=${xtb_home}
-#export XTBHOME=${xtb_home}
-export XTBPATH=~/.xtb-parameters
+export XTBPATH=${xtb_path}
 
 
 # if folder exists, quit with error
