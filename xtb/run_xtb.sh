@@ -33,7 +33,16 @@ if [ ! -d ${xtb_path} ]; then
     exit 1
 fi
 export XTBPATH=${xtb_path}
+export XTBHOME=${xtb_path}
 
+# setup parallelism
+# assumes openmp is available
+if [ ${parallel} -gt 1 ]; then
+    export OMP_STACKSIZE=1G
+    export OMP_NUM_THREADS=${parallel},1
+    export OMP_MAX_ACTIVE_LEVELS=1
+    export MKL_NUM_THREADS=${parallel}
+fi
 
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
@@ -53,7 +62,8 @@ mv ${unique_id}.xyz ${unique_id}
 cd ${unique_id}
 
 # run job
-echo XTBPATH/XTBHOME is $XTBPATH
+echo XTBPATH is $XTBPATH
+echo XTBHOME is $XTBHOME
 echo
 echo xtb refers to:
 which xtb
@@ -62,7 +72,12 @@ echo Current directory is:
 pwd
 ls
 echo Starting job...
-echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz    ${unique_id}.out
-xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+if [ ${parallel} -gt 1 ]; then
+    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz    ${unique_id}.out
+    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+else
+    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+fi
 echo Job finished.
 
