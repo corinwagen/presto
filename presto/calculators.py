@@ -17,16 +17,6 @@ from presto import config
 # A-Za-z0-9
 LETTERS_AND_DIGITS = string.ascii_letters + string.digits
 
-# select a unique 8-letter string that will
-# be used to identify this particular Python process
-UNIQUE_ID = random.choice(string.ascii_letters)
-for i in range(7):
-    UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
-
-# will be incremented by one every time a calculation is run
-GAUSSIAN_COUNTER = 0
-XTB_COUNTER = 0
-
 # this is the absolute path to the directory where the run_gaussian.sh script is
 GAUSSIAN_SCRIPT_DIRECTORY = config.GAUSSIAN_SCRIPT_DIRECTORY
 
@@ -62,7 +52,15 @@ class XTBCalculator(Calculator):
         self.gfn = gfn
         self.parallel = parallel
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+        # select a unique 8-letter string that will
+        # be used to identify this calculator
+        self.UNIQUE_ID = random.choice(string.ascii_letters)
+        for i in range(7):
+            self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
+
+        self.COUNTER = 0
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -80,12 +78,11 @@ class XTBCalculator(Calculator):
         os.chdir(XTB_SCRIPT_DIRECTORY)
 
         # generate filenames
-        global XTB_COUNTER
         attempts = 0
         while True:
-            XTB_COUNTER += 1
+            self.COUNTER += 1
             attempts += 1
-            this_unique_id = f"{UNIQUE_ID}-{XTB_COUNTER:09d}"
+            this_unique_id = f"{self.UNIQUE_ID}-{self.COUNTER:09d}"
             input_filename = f"presto-{this_unique_id}.xyz"
             if not os.path.isfile(input_filename):
                 break
@@ -107,10 +104,20 @@ class XTBCalculator(Calculator):
                    f"{self.gfn}",
                    f"{self.parallel}",
                    XTB_PATH]
+        start = time.time()
         process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
+        end = time.time()
+        if print_timing:
+            print(f"\nxtb call {this_unique_id} took {end-start:.3f} s.")
         exit_code = process.returncode
 
-        if exit_code != 0:
+        # get results
+        job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
+        os.chdir(job_directory)
+        found_energy_file = os.path.isfile("energy")
+        found_gradient_file =  os.path.isfile("gradient")
+
+        if exit_code != 0 or (not found_energy_file) or (not found_gradient_file):
             xtb_input_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.xyz"
             xtb_output_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.out"
             print("========= xtb error ========")
@@ -137,15 +144,9 @@ class XTBCalculator(Calculator):
             print(process.stderr.decode("utf-8"))
             print()
             print("========= xtb error ========")
-            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {exit_code}!")
-
-        # get results
-        job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
-        os.chdir(job_directory)
+            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {exit_code} (found_energy_file={found_energy_file}, found_gradient_file={found_gradient_file})!")
 
         # parse energy
-        if not os.path.isfile("energy"):
-            raise ValueError(f"xtb energy file not found for job {this_unique_id}")
         with open("energy", "r") as f:
             energy_lines = f.read().splitlines()
         energy = energy_lines[1]
@@ -153,8 +154,6 @@ class XTBCalculator(Calculator):
         energy = float(fields[1])
 
         # parse forces
-        if not os.path.isfile("gradient"):
-            raise ValueError(f"xtb gradient file not found for job {this_unique_id}")
         with open("gradient", "r") as f:
             gradient_lines = f.read().splitlines()
         forces = []
@@ -201,7 +200,15 @@ class GaussianCalculator(Calculator):
         self.route_card = route_card
         self.footer = footer
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+        # select a unique 8-letter string that will
+        # be used to identify this calculator
+        self.UNIQUE_ID = random.choice(string.ascii_letters)
+        for i in range(7):
+            self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
+
+        self.COUNTER = 0
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -219,12 +226,11 @@ class GaussianCalculator(Calculator):
         os.chdir(GAUSSIAN_SCRIPT_DIRECTORY)
 
         # generate filenames
-        global GAUSSIAN_COUNTER
         attempts = 0
         while True:
-            GAUSSIAN_COUNTER += 1
+            self.COUNTER += 1
             attempts += 1
-            this_unique_id = f"{UNIQUE_ID}-{GAUSSIAN_COUNTER:09d}"
+            this_unique_id = f"{self.UNIQUE_ID}-{self.COUNTER:09d}"
             input_filename = f"presto-{this_unique_id}.gjf"
             if not os.path.isfile(input_filename):
                 break
@@ -239,13 +245,17 @@ class GaussianCalculator(Calculator):
         cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, self.route_card, self.link0, self.footer)
 
         # run job
+        start = time.time()
         command = ["bash", "run_gaussian.sh", f"presto-{this_unique_id}"]
         process = sp.Popen(command, stdout=sp.PIPE)
         output, error = process.communicate()
         p_status = process.wait()
+        end = time.time()
         output = output.decode("utf-8")
         if p_status != 0:
             raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
+        if print_timing:
+            print(f"\nGaussian call {this_unique_id} took {end-start:.3f} s.")
 
         # get results
         job_directory = f"{GAUSSIAN_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
