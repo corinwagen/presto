@@ -76,5 +76,6 @@ subprocess.call(['/bin/bash', '-i', '-c', "packmol < temp.inp"])
 if os.path.exists(args["output"]):
     os.remove("temp.inp")
     print(f"temp.inp removed")
+    print(f"confining radius = {radius} Å")
 else:
     print("file not created - try running ``packmol < temp.inp`` manually")
