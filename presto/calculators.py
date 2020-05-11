@@ -62,7 +62,7 @@ class XTBCalculator(Calculator):
         self.gfn = gfn
         self.parallel = parallel
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, increment=1):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -70,6 +70,8 @@ class XTBCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
+            pipe ():
+            increment (int): extra increment for counter
 
         Returns:
             energy (float): in Hartree
@@ -83,7 +85,7 @@ class XTBCalculator(Calculator):
         global XTB_COUNTER
         attempts = 0
         while True:
-            XTB_COUNTER += 1
+            XTB_COUNTER += increment
             attempts += 1
             this_unique_id = f"{UNIQUE_ID}-{XTB_COUNTER:09d}"
             input_filename = f"presto-{this_unique_id}.xyz"
@@ -201,7 +203,7 @@ class GaussianCalculator(Calculator):
         self.route_card = route_card
         self.footer = footer
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, increment=1):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -209,6 +211,8 @@ class GaussianCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
+            pipe ():
+            increment (int): extra increment for counter
 
         Returns:
             energy (float): in Hartree
@@ -222,7 +226,7 @@ class GaussianCalculator(Calculator):
         global GAUSSIAN_COUNTER
         attempts = 0
         while True:
-            GAUSSIAN_COUNTER += 1
+            GAUSSIAN_COUNTER += increment
             attempts += 1
             this_unique_id = f"{UNIQUE_ID}-{GAUSSIAN_COUNTER:09d}"
             input_filename = f"presto-{this_unique_id}.gjf"
@@ -310,6 +314,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
+            "increment": 2
         })
         process_hl.start()
 
@@ -320,6 +325,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": atomic_numbers,
             "positions": positions,
             "pipe": child_ll,
+            "increment": 3,
         })
         process_ll.start()
 
@@ -337,6 +343,7 @@ class ONIOMCalculator(Calculator):
 #        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
 
         energy = e_hh + e_ll - e_hl
-        forces = f_hh + f_ll - f_hl
+        forces = f_ll
+        forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
         return energy, forces

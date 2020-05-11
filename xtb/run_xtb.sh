@@ -34,7 +34,6 @@ if [ ! -d ${xtb_path} ]; then
 fi
 export XTBPATH=${xtb_path}
 
-
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
 	echo Error: directory ${unique_id} already exists.
