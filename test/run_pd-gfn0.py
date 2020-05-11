@@ -33,15 +33,15 @@ traj = presto.trajectory.EquilibrationTrajectory(
     atomic_numbers=start.atomic_numbers,
     high_atoms=np.array(list(range(1,93))),
     inactive_atoms=np.array([]),
-#    calculator=oniom_calc,
-    calculator=presto.calculators.XTBCalculator(gfn=0),
+    calculator=oniom_calc,
+#    calculator=presto.calculators.XTBCalculator(gfn=0),
     integrator=presto.integrators.LangevinIntegrator(radius=12,viscosity=0.0005,potential=presto.integrators.spherical_harmonic_potential(radius=15)),
     bath_scheduler=boring_scheduler,
     stop_time = 1000,
 )
 
 print("running...")
-traj.run(checkpoint_filename="test/static/pd-gfn0_equil.chk", checkpoint_interval=10, positions=start.geometry)
+traj.run(checkpoint_filename="test/static/pd-gfn0_equil.chk", checkpoint_interval=1, positions=start.geometry)
 temps = [f.temperature() for f in traj.frames][500:]
 energies = [f.energy for f in traj.frames][500:-1]
 
