@@ -85,7 +85,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         xi = 6 * math.pi * self.viscosity * frame.radii()
         old_vel = super().update_velocities(frame, new_a, forwards)
 
-        no_apply_to = np.linalg.norm(new_x, axis=1) > self.radius
+        no_apply_to = np.linalg.norm(new_x, axis=1) < self.radius
 
         #### have to do numerical convergence since drag is proportional to instantaneous velocity
         for n in range(maxiter):
