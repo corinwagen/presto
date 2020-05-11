@@ -35,6 +35,8 @@ fi
 export XTBPATH=${xtb_path}
 export XTBHOME=${xtb_path}
 
+<<<<<<< HEAD
+=======
 # setup parallelism
 # assumes openmp is available
 if [ ${parallel} -gt 1 ]; then
@@ -44,6 +46,7 @@ if [ ${parallel} -gt 1 ]; then
     export MKL_NUM_THREADS=${parallel}
 fi
 
+>>>>>>> 8952e1068e44814a04157ba5b3a5b42f45f245a8
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
 	echo Error: directory ${unique_id} already exists.

@@ -68,6 +68,8 @@ class XTBCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
+            pipe ():
+            increment (int): extra increment for counter
 
         Returns:
             energy (float): in Hartree
@@ -216,6 +218,8 @@ class GaussianCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
+            pipe ():
+            increment (int): extra increment for counter
 
         Returns:
             energy (float): in Hartree
@@ -320,6 +324,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
+            "increment": 2
         })
         process_hl.start()
 
@@ -330,6 +335,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": atomic_numbers,
             "positions": positions,
             "pipe": child_ll,
+            "increment": 3,
         })
         process_ll.start()
 
@@ -347,6 +353,7 @@ class ONIOMCalculator(Calculator):
 #        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
 
         energy = e_hh + e_ll - e_hl
-        forces = f_hh + f_ll - f_hl
+        forces = f_ll
+        forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
         return energy, forces

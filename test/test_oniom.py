@@ -16,7 +16,7 @@ class TestONIOM(unittest.TestCase):
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         high_atoms = np.array([1])
-        xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1)
+        xtb_calculator = calculators.XTBCalculator()
         oniom_calculator = calculators.ONIOMCalculator(high_calculator=xtb_calculator, low_calculator=xtb_calculator)
 
         energy, forces = oniom_calculator.evaluate(atomic_numbers, positions, high_atoms)
