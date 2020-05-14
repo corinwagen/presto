@@ -1,4 +1,4 @@
-import unittest, cctk, logging
+import unittest, cctk, logging, math
 import numpy as np
 from datetime import datetime
 
@@ -6,7 +6,9 @@ import sys
 sys.path.append('../presto')
 import presto
 
-logging.basicConfig(level=logging.INFO, filename="water.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M', filemode="w")
+from asciichartpy import plot
+
+#logging.basicConfig(level=logging.INFO, filename="water.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M', filemode="w")
 
 def boring_scheduler(time):
     return 298
@@ -26,15 +28,25 @@ traj = presto.trajectory.EquilibrationTrajectory(
     integrator=presto.integrators.LangevinIntegrator(radius=12,viscosity=0.0005,potential=presto.integrators.spherical_harmonic_potential(radius=15)),
     bath_scheduler=boring_scheduler,
     stop_time = 10000,
+    checkpoint_filename="test/static/water.chk",
 )
 
-print("running...")
-traj.run(checkpoint_filename="test/static/water.chk", checkpoint_interval=50, positions=start.geometry)
-temps = [f.temperature() for f in traj.frames][500:]
-energies = [f.energy for f in traj.frames][500:-1]
+print("loading...")
+temps = np.array([f.temperature() for f in traj.frames][:])
+energies = np.array([f.energy for f in traj.frames][:-1])
+rel_energies = energies - np.min(energies)
+rel_energies = energies * 627.509
+
+max_width = 100
+scale = math.ceil(len(energies) / max_width)
+print(scale)
+if scale < 1:
+    scale == 1
+print(scale)
 
 print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
+print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": 20}))
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
+print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
-traj.write_movie("water.mol2")
-
+traj.write_movie("water.pdb")
