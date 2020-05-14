@@ -16,7 +16,11 @@ def boring_scheduler(time):
 #    low_calculator = presto.calculators.XTBCalculator(gfn=0),
 #)
 
+<<<<<<< HEAD
 start = cctk.XYZFile.read_file("test/static/500_water.xyz").molecule
+=======
+start = cctk.XYZFile.read_file("test/static/solvated-brettphos-pd.xyz").molecule
+>>>>>>> d5d3c1f9c0b804852d31fe0e8f082bfdad0f5846
 traj = presto.trajectory.EquilibrationTrajectory(
     timestep=0.5,
     atomic_numbers=start.atomic_numbers,
@@ -36,5 +40,9 @@ energies = [f.energy for f in traj.frames][500:-1]
 print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
 
+<<<<<<< HEAD
 traj.write_movie("water.mol2")
+=======
+traj.write_movie("pd-gfn0_movie.mol2")
+>>>>>>> d5d3c1f9c0b804852d31fe0e8f082bfdad0f5846
 
