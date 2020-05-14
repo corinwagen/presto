@@ -143,3 +143,8 @@ xtb/*
 # slurm submission
 submit.sh
 slurm*
+
+# giant presto files
+*.chk
+*.pdb
+*.mol2
