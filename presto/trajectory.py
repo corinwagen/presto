@@ -229,7 +229,7 @@ class Trajectory():
                 all_temps = h5.get("bath_temperatures")
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
-                logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added)")
+                logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
         else:
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
@@ -454,7 +454,7 @@ class EquilibrationTrajectory(Trajectory):
         # add random velocity to everything
         random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
         random_gaussian[inactive_mask] = 0
-        velocities = random_gaussian * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+        velocities = random_gaussian / np.linalg.norm(random_gaussian, axis=1).reshape(-1,1) * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
 
         # subtract out center-of-mass translational motion
         com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
