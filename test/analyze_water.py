@@ -1,4 +1,4 @@
-import unittest, cctk, logging
+import unittest, cctk, logging, math
 import numpy as np
 from datetime import datetime
 
@@ -8,7 +8,7 @@ import presto
 
 from asciichartpy import plot
 
-logging.basicConfig(level=logging.INFO, filename="water.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M', filemode="w")
+#logging.basicConfig(level=logging.INFO, filename="water.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M', filemode="w")
 
 def boring_scheduler(time):
     return 298
@@ -37,10 +37,16 @@ energies = np.array([f.energy for f in traj.frames][:-1])
 rel_energies = energies - np.min(energies)
 rel_energies = energies * 627.509
 
+max_width = 100
+scale = math.ceil(len(energies) / max_width)
+print(scale)
+if scale < 1:
+    scale == 1
+print(scale)
+
 print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
-print(plot(np.mean(temps[:(len(temps)//18)*18].reshape(-1,18), axis=1), {"height": 20}))
+print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": 20}))
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
-print(plot(np.mean(rel_energies[:(len(rel_energies)//18)*18].reshape(-1,18), axis=1), {"height":20}))
+print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
-traj.write_movie("water-equil.pdb")
-
+traj.write_movie("water.pdb")
