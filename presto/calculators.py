@@ -1,9 +1,7 @@
 import numpy as np
-import os, random, string, re, cctk, ctypes
+import os, random, string, re, cctk, ctypes, copy, shutil, time
 import subprocess as sp
-import shutil
 import multiprocessing as mp
-import time
 
 import xtb
 
@@ -59,6 +57,11 @@ class XTBCalculator(Calculator):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
         self.COUNTER = 0
+    
+    def randomize_id(self):
+        self.UNIQUE_ID = random.choice(string.ascii_letters)
+        for i in range(7):
+            self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
         """
@@ -69,7 +72,6 @@ class XTBCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe ():
-            increment (int): extra increment for counter
 
         Returns:
             energy (float): in Hartree
@@ -210,6 +212,11 @@ class GaussianCalculator(Calculator):
 
         self.COUNTER = 0
 
+    def randomize_id(self):
+        self.UNIQUE_ID = random.choice(string.ascii_letters)
+        for i in range(7):
+            self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
+
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
@@ -301,6 +308,10 @@ class ONIOMCalculator(Calculator):
         self.high_calculator = high_calculator
         self.low_calculator = low_calculator
 
+        #### prevent namespace collisions
+        self.full_calculator = copy.deepcopy(self.low_calculator)
+        self.full_calculator.randomize_id()
+
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
@@ -316,26 +327,19 @@ class ONIOMCalculator(Calculator):
         })
         process_hh.start()
 
-        #### prevent collisions in the time between when one calculation has checked for namespace availability and actually written the file
-        time.sleep(0.1)
-
         parent_hl, child_hl = mp.Pipe()
         process_hl = mp.Process(target=self.low_calculator.evaluate, kwargs={
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
-            "increment": 2
         })
         process_hl.start()
 
-        time.sleep(0.1)
-
         parent_ll, child_ll = mp.Pipe()
-        process_ll = mp.Process(target=self.low_calculator.evaluate, kwargs={
+        process_ll = mp.Process(target=self.full_calculator.evaluate, kwargs={
             "atomic_numbers": atomic_numbers,
             "positions": positions,
             "pipe": child_ll,
-            "increment": 3,
         })
         process_ll.start()
 

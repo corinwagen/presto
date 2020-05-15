@@ -71,6 +71,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         quantum_forces = quantum_accels * frame.masses()
 
         random_forces = self.random_forces(frame, new_x)
+#        drag_forces = self.drag_forces(frame, forwards, new_x, quantum_forces / frame.masses())
         drag_forces = self.drag_forces(frame, forwards, new_x, (quantum_forces + random_forces) / frame.masses())
 
         if self.potential is not None:
@@ -107,9 +108,12 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         forces = np.random.normal(size=new_x.shape)
         forces = forces / np.linalg.norm(forces, axis=1).reshape(-1,1) * np.random.normal(scale=np.sqrt(variance), size=variance.shape).reshape(-1,1)
 
+        # or is this better?
+        forces = np.random.normal(scale=np.sqrt(variance.reshape(-1,1)), size=new_x.shape)
+
         no_apply_to = np.linalg.norm(new_x, axis=1) < self.radius
         forces[no_apply_to,:] = 0
-
+        
         #### remove center-of-mass motion
         forces += -np.mean(forces, axis=0)
         forces += np.cross(np.mean(np.cross(forces.view(cctk.OneIndexedArray), new_x), axis=0), new_x) / np.power(np.linalg.norm(new_x, axis=1).reshape(-1,1), 2)

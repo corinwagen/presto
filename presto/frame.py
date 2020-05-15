@@ -78,10 +78,10 @@ class Frame():
 
         T = sum{ m_i * v_i ** 2 / (kB * Nf) }
         """
-        v = [np.linalg.norm(x) for x in self.velocities[self.trajectory.active_atoms]]
-        m = self.masses()[self.trajectory.active_atoms]
-        K = m * np.power(v, 2)
-        return float(np.sum(K) / ((3 * len(self.trajectory.active_atoms) - 3) * presto.constants.BOLTZMANN_CONSTANT)
+        v = np.array([np.linalg.norm(x) for x in self.velocities[self.trajectory.active_atoms]])
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
+        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+        return float(np.sum(K) / ((3 * len(self.trajectory.active_atoms) - 3) * presto.constants.BOLTZMANN_CONSTANT))
 
     def pressure(self):
         """
@@ -89,7 +89,7 @@ class Frame():
 
         P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
         """
-        m = self.trajectory.masses[self.trajectory.active_atoms]
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
         tot = 0
         for i in range(1, len(self.positions) + 1):
             tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.accelerations[i] *  m[i])

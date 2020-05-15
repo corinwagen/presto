@@ -29,15 +29,18 @@ class Trajectory():
         checkpoint_filename (str):
     """
 
-    def __init__(self, calculator, integrator, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, **kwargs):
+    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, **kwargs):
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
         if self.has_checkpoint():
             self.load_from_checkpoint()
 
-        assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
-        assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
+        if calculator is not None:
+            assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
+        if integrator is not None:
+            assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
+
         self.calculator = calculator
         self.integrator = integrator
 
@@ -77,6 +80,9 @@ class Trajectory():
             assert isinstance(forwards, bool), "forwards must be bool"
             self.forwards = forwards
 
+    def __str__(self):
+        return f"presto trajectory with {len(self.frames)} frames"
+
     def set_inactive_atoms(self, inactive_atoms):
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
         for atom in inactive_atoms:
@@ -85,6 +91,8 @@ class Trajectory():
         self.active_atoms = active_atoms
 
     def run(self, checkpoint_interval=10, **kwargs):
+        assert isinstance(self.calculator, presto.calculators.Calculator), "need a valid calculator!"
+        assert isinstance(self.integrator, presto.integrators.Integrator), "need a valid integrator!"
         if self.checkpoint_filename is None:
             if "checkpoint_filename" in kwargs:
                 self.checkpoint_filename = kwargs["checkpoint_filename"]
@@ -405,6 +413,7 @@ class EquilibrationTrajectory(Trajectory):
     """
     Attributes:
         bath_scheduler (function): takes current time and returns target temperature
+            alternatively, pass a number if you want a constant-temperature bath
         stop_time (float): when to stop equilibrating
     """
 
@@ -418,7 +427,16 @@ class EquilibrationTrajectory(Trajectory):
         assert stop_time > 0, "stop_time needs to be positive!"
 
         self.stop_time = stop_time
-        self.bath_scheduler = bath_scheduler
+
+        if hasattr(bath_scheduler, "__call__"):
+            self.bath_scheduler = bath_scheduler
+        elif isinstance(bath_scheduler, (int, float)):
+            def sched(time):
+                return bath_scheduler
+
+            self.bath_scheduler = sched
+        else:
+            raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
 
     @classmethod
     def new_from_checkpoint(self):
@@ -452,9 +470,10 @@ class EquilibrationTrajectory(Trajectory):
         inactive_mask  = inactive_mask.astype(bool)
 
         # add random velocity to everything
-        random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
-        random_gaussian[inactive_mask] = 0
-        velocities = random_gaussian / np.linalg.norm(random_gaussian, axis=1).reshape(-1,1) * np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+        sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+        velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
+        velocities[inactive_mask] = 0
+#        velocities = random_gaussian / np.linalg.norm(random_gaussian, axis=1).reshape(-1,1) * sigma
 
         # subtract out center-of-mass translational motion
         com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
