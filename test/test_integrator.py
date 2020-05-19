@@ -49,3 +49,15 @@ class TestSphericalIntegration(unittest.TestCase):
         self.assertEqual(f[2], 0)
         self.assertEqual(f[3], -1)
         self.assertEqual(f[4], 4)
+
+        x = np.array([[0,0,10]])
+        f = potential(x)
+        self.assertEqual(np.linalg.norm(f[1]), 0)
+        
+        x = np.array([[0,0,-8]])
+        f = potential(x)
+        self.assertEqual(np.linalg.norm(f[1]), 0)
+
+        x = np.array([[0,0,1]])
+        f = potential(x)
+        self.assertEqual(np.linalg.norm(f[1]), 0)

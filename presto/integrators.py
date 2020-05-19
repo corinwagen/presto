@@ -68,50 +68,72 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
     def update_accelerations(self, frame, new_x, forwards):
         energy, quantum_accels = super().update_accelerations(frame, new_x, forwards)
+
         quantum_forces = quantum_accels * frame.masses()
-
         random_forces = self.random_forces(frame, new_x)
-#        drag_forces = self.drag_forces(frame, forwards, new_x, quantum_forces / frame.masses())
-        drag_forces = self.drag_forces(frame, forwards, new_x, (quantum_forces + random_forces) / frame.masses())
 
+        assert isinstance(quantum_forces, cctk.OneIndexedArray)
+        assert isinstance(random_forces, cctk.OneIndexedArray)
+
+        #### OpenMD calculates drag including random forces, so we will too
         if self.potential is not None:
-            potential_force = self.potential(new_x)
-            return energy, (quantum_forces + drag_forces + random_forces + potential_force) / frame.masses()
+            potential_forces = self.potential(new_x)
+            assert isinstance(potential_forces, cctk.OneIndexedArray)
+
+#            drag_forces = self.drag_forces(frame, forwards, new_x, quantum_forces / frame.masses())
+            drag_forces = self.drag_forces(frame, forwards, new_x, (quantum_forces + random_forces + potential_forces) / frame.masses())
+            assert isinstance(drag_forces, cctk.OneIndexedArray)
+
+            forces = (quantum_forces  + drag_forces + random_forces + potential_forces) / frame.masses()
+            assert isinstance(forces, cctk.OneIndexedArray)
+
+            return energy, forces
         else:
-            return energy, (quantum_forces + drag_forces + random_forces) / frame.masses()
+#            drag_forces = self.drag_forces(frame, forwards, new_x, quantum_forces / frame.masses())
+            drag_forces = self.drag_forces(frame, forwards, new_x, (quantum_forces + random_forces) / frame.masses())
+            assert isinstance(drag_forces, cctk.OneIndexedArray)
+
+            forces = (quantum_forces  + drag_forces + random_forces) / frame.masses
+            assert isinstance(forces, cctk.OneIndexedArray)
+
+            return energy, forces
 
     def drag_forces(self, frame, forwards, new_x, new_a, maxiter=50, tolerance=0.00001):
         #### calculate friction coefficient -- should have a factor of 1/mass also
         #### but drag is equal to –1 * xi * mass * velocity so the mass cancels out, so we ignore it.
         xi = 6 * math.pi * self.viscosity * frame.radii()
-        old_vel = super().update_velocities(frame, new_a, forwards)
 
+        prev_vel = super().update_velocities(frame, new_a, forwards)
+        assert isinstance(prev_vel, cctk.OneIndexedArray)
+
+        #### define exclusion radius
         no_apply_to = np.linalg.norm(new_x, axis=1) < self.radius
 
         #### have to do numerical convergence since drag is proportional to instantaneous velocity
         for n in range(maxiter):
-            drag = -1 * xi.reshape(-1,1).view(cctk.OneIndexedArray) * old_vel
-            pred_vel = super().update_velocities(frame, new_a + drag.view(cctk.OneIndexedArray) / frame.masses(), forwards)
+            #### calculate drag on current velocity
+            drag = -1 * xi.reshape(-1,1).view(np.ndarray) * prev_vel.view(np.ndarray)
 
-            if np.mean(np.linalg.norm(pred_vel - old_vel, axis=0)/np.linalg.norm(pred_vel, axis=0)) < tolerance:
+            #### generate new acceleration and velocity estimates
+            accel = new_a.view(np.ndarray) + (drag / frame.masses().view(np.ndarray))
+            vel = super().update_velocities(frame, accel.view(cctk.OneIndexedArray), forwards)
+
+            #### if we've converged, return - otherwise iterate again
+            if np.mean(np.linalg.norm(prev_vel - vel, axis=0)/np.linalg.norm(prev_vel, axis=0)) < tolerance:
                 drag.view(np.ndarray)[no_apply_to,:] = 0
                 return drag.view(cctk.OneIndexedArray)
             else:
-                old_vel = pred_vel
+                prev_vel = vel
 
         raise ValueError(f"drag calculation didn't converge in {maxiter} cycles!")
 
     def random_forces(self, frame, new_x):
-        xi = 6 * math.pi * self.viscosity * frame.radii()
         #### thermal forces linked to drag by fluctuation-dissipation theorem
-        variance =  2 * xi * presto.constants.BOLTZMANN_CONSTANT * frame.bath_temperature / frame.trajectory.timestep
-        forces = np.random.normal(size=new_x.shape)
-        forces = forces / np.linalg.norm(forces, axis=1).reshape(-1,1) * np.random.normal(scale=np.sqrt(variance), size=variance.shape).reshape(-1,1)
-
-        # or is this better?
-        forces = np.random.normal(scale=np.sqrt(variance.reshape(-1,1)), size=new_x.shape)
+        xi = 6 * math.pi * self.viscosity * frame.radii()
+        variance =  2 * xi.view(np.ndarray) * presto.constants.BOLTZMANN_CONSTANT * frame.bath_temperature / frame.trajectory.timestep
 
         no_apply_to = np.linalg.norm(new_x, axis=1) < self.radius
+        forces = np.random.normal(scale=np.sqrt(variance.reshape(-1,1)), size=new_x.shape)
         forces[no_apply_to,:] = 0
         
         #### remove center-of-mass motion

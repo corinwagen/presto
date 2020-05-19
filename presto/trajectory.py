@@ -144,6 +144,9 @@ class Trajectory():
             return False
 
     def load_from_checkpoint(self):
+
+        #### TODO = add options for load all or just some frames
+
         assert self.has_checkpoint(), "can't load without checkpoint file"
         with h5py.File(self.checkpoint_filename, "r") as h5:
             if hasattr(self, "timestep"):
@@ -207,8 +210,8 @@ class Trajectory():
                 all_energies = h5.get("all_energies")
 
                 old_n_frames = len(all_energies)
-                now_n_frames = len(self.frames)
-                new_n_frames = now_n_frames - old_n_frames
+                new_n_frames = len(self.frames) - 1
+                now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
                     return
@@ -270,6 +273,8 @@ class Trajectory():
                 temps = np.asarray([frame.bath_temperature for frame in self.frames])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,),
                             compression="gzip", compression_opts=9)
+
+        self.frames = [self.frames[-1]]
 
     def write_movie(self, filename):
         ensemble = self.as_ensemble()
@@ -404,7 +409,7 @@ class ReactionTrajectory(Trajectory):
                 time_since_finished += self.timestep
 
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
-            if len(self.frames) % checkpoint_interval == 0:
+            if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save()
 
         self.finished = True
@@ -492,7 +497,7 @@ class EquilibrationTrajectory(Trajectory):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
             self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
-            if len(self.frames) % checkpoint_interval == 0:
+            if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save()
         self.finished = True
 
