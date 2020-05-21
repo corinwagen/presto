@@ -74,14 +74,15 @@ class Frame():
 
     def temperature(self):
         """
-        Computes the temperature based on the equipartition theorem, counting only the active atoms.
+        Computes the instantaneous temperature based on the equipartition theorem, counting only the active atoms.
 
         T = sum{ m_i * v_i ** 2 / (kB * Nf) }
         """
-        v = np.array([np.linalg.norm(x) for x in self.velocities[self.trajectory.active_atoms]])
+        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
         K = np.multiply(m.view(np.ndarray), np.power(v, 2))
-        return float(np.sum(K) / ((3 * len(self.trajectory.active_atoms) - 3) * presto.constants.BOLTZMANN_CONSTANT))
+        F = 3 * len(self.trajectory.active_atoms) - 3
+        return float(np.sum(K) / (F * presto.constants.BOLTZMANN_CONSTANT))
 
     def pressure(self):
         """
