@@ -20,6 +20,15 @@ x kg       1 s       6.022*10^26 amu      1 m
 ----- * ---------- * --------------- * --------- = 60.22 amu Å^-1 fs^-1
 m * s    10^15 fs         1 kg          10^10 Å
 
+To convert to Pascals:
+
+  x kg     6.022 * 10^26 amu     1 m          1 s^2
+------- * ------------------ * -------- * ------------ = 6.022 * 10^-14 amu Å^-1 fs^-2
+m * s**2         1 kg           10^10 Å    10^30 fs^2
+
+But since one atmosphere is 101325 Pa, the net conversion becomes 6.102 * 10^-9 amu Å^-1 fs^-2 = 1 atm.
+
+Equivalently, 163886294.7 amu Å^-1 fs^-2 in 1 atm.
 """
 
 ANGSTROM_PER_BOHR = 0.52917721092
@@ -36,6 +45,8 @@ AMU_A2_FS2_PER_HARTREE_BOHR = 0.4961455 # AMU_A_FS2_PER_KCAL_MOL_ANGSTROM * KCAL
 BOLTZMANN_CONSTANT = 0.0019872041 * 0.0004184 # convert from kcal/mol to amu Å^2/fs^2 - checked with Wolfram Alpha
 
 AMU_A_FS_PER_PASCAL_SECOND = 60.22 # checked with Wolfram Alpha
+
+AMU_A_FS2_PER_ATM = 163886294.705
 
 """
 Radii taken from Inorg. Mater. 2001, 37, 871 and J. Phys. Chem. A. 2009, 113, 5806.

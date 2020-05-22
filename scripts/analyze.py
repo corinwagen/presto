@@ -22,6 +22,7 @@ for filename in glob.iglob(args["files"], recursive=True):
         print("trajectory finished!")
 
     temps = np.array([f.temperature() for f in traj.frames][args["cutoff"]:])
+    pressures = np.array([f.pressure() for f in traj.frames][args["cutoff"]:])
     energies = np.array([f.energy for f in traj.frames][args["cutoff"]:-1])
     rel_energies = energies - np.min(energies)
     rel_energies = energies * 627.509
@@ -31,10 +32,12 @@ for filename in glob.iglob(args["files"], recursive=True):
     if scale < 1:
         scale == 1
 
-    print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} (± {np.std(temps):.2f})")
+    print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} K (± {np.std(temps):.2f})")
     print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": 20}))
     print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
     print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
+    print(f"PRESSURE:\t\t\t{np.mean(pressures):.5f} atm (± {np.std(pressures):.5f})")
+    print(plot(np.mean(pressures[:(len(pressures)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
     if args["movie"]:
         movie_path = re.sub("chk$", "pdb", filename)

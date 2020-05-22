@@ -91,11 +91,14 @@ class Frame():
         P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
         """
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
+        v = self.velocities[self.trajectory.active_atoms]
+        a = self.accelerations[self.trajectory.active_atoms]
+        x = self.positions[self.trajectory.active_atoms]
         tot = 0
-        for i in range(1, len(self.positions) + 1):
-            tot += np.dot(m[i] * self.velocities[i], self.velocities[i]) + np.dot(self.positions[i], self.accelerations[i] *  m[i])
+        for i in range(1, len(v) + 1):
+            tot += np.dot(m[i] * v[i], v[i]) + np.dot(x[i], a[i] * m[i])
 
-        return tot/3 * self.volume()
+        return tot/3 * self.volume() / presto.constants.AMU_A_FS2_PER_ATM
 
     def volume(self):
         return self.molecule().volume()
