@@ -9,7 +9,7 @@ class Integrator():
     def next(self, frame, forwards=True):
         pass
 
-class VelocityVerletIntegrator(Integrator):
+class OldVelocityVerletIntegrator(Integrator):
     """
     The standard velocity Verlet algorithm.
     """
@@ -43,6 +43,25 @@ class VelocityVerletIntegrator(Integrator):
             timestep = timestep * -1
         return frame.velocities + (frame.accelerations + new_a) * 0.5 * timestep
 
+class VelocityVerletIntegrator(Integrator):
+    def next(self, frame, forwards=True):
+        calculator = frame.trajectory.calculator
+        timestep = frame.trajectory.timestep
+        if forwards == False:
+            timestep = timestep * -1
+
+        x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
+
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+        forces[frame.inactive_mask()] = 0
+
+        a_full = forces / frame.masses()
+
+        v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
+
+        return energy, x_full, v_full, a_full
+
+
 class LangevinIntegrator(VelocityVerletIntegrator):
     """
     Defines a Langevin integrator (NVT ensemble).
@@ -50,11 +69,13 @@ class LangevinIntegrator(VelocityVerletIntegrator):
     Attributes:
         viscosity (float): solvent viscosity (in amu/(fs*Å))
         radius (float): distance from center where this kicks in!
+        maxiter (int): maximum number of numerical drag iterations
+        tolerance (float): convergence cutoff for numerical drag calculation - smaller is tighter
         potential (float): additional function that maps positions to forces
             needs to return ``cctk.OneIndexedArray``
     """
 
-    def __init__(self, viscosity, convert_from_pascal_seconds=True, radius=0, potential=None):
+    def __init__(self, viscosity, convert_from_pascal_seconds=True, radius=0, potential=None, maxiter=50, tolerance=0.00001):
         assert isinstance(viscosity, (int, float)), "viscosity must be numeric"
         if convert_from_pascal_seconds:
             viscosity = viscosity * presto.constants.AMU_A_FS_PER_PASCAL_SECOND
@@ -63,8 +84,60 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         assert isinstance(radius, (int, float)), "radius must be numeric"
         self.radius = radius
 
+        assert isinstance(maxiter, int), "max num iterations must be integer"
+        self.maxiter = maxiter
+
+        assert isinstance(tolerance, (int, float)), "tolerance must be numeric"
+        self.tolerance = tolerance
+
         # if you use this, it's your own problem to check that you did it right!
         self.potential = potential
+
+    def next(self, frame, forwards=True):
+        calculator = frame.trajectory.calculator
+        timestep = frame.trajectory.timestep
+        if forwards == False:
+            timestep = timestep * -1
+
+        v_half = frame.velocities + 0.5 * frame.accelerations * timestep
+
+        x_full = frame.positions + v_half * timestep
+
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+
+        #### compute random forces
+        xi = 6 * math.pi * self.viscosity * frame.radii()
+        variance =  2 * xi * presto.constants.BOLTZMANN_CONSTANT * frame.bath_temperature / frame.trajectory.timestep
+        no_apply_to = np.linalg.norm(x_full, axis=1) < self.radius
+
+        random_forces = np.random.normal(loc=0, scale=np.sqrt(variance.reshape(-1,1)), size=x_full.shape)
+        random_forces[no_apply_to,:] = 0
+        forces += random_forces.view(cctk.OneIndexedArray)
+
+        if self.potential is not None:
+            forces += self.potential(x_full)
+
+        #### compute drag
+        drag = np.zeros_like(random_forces).view(cctk.OneIndexedArray)
+        v_full = v_half + 0.5 * (forces / frame.masses()) * timestep
+
+        #### have to do numerical convergence since drag is proportional to instantaneous velocity
+        for n in range(self.maxiter):
+            prev_v = v_full
+            drag = -1 * xi.reshape(-1,1) * v_full
+            v_full = v_half + 0.5 * ((forces + drag) / frame.masses()) * timestep
+
+            #### if we've converged, return - otherwise iterate again
+            if np.mean(np.linalg.norm(prev_v - v_full, axis=0)/np.linalg.norm(prev_v, axis=0)) < self.tolerance:
+                break
+
+        drag.view(np.ndarray)[no_apply_to,:] = 0
+        forces += drag
+
+        forces[frame.inactive_mask()] = 0
+        a_full = forces / frame.masses()
+
+        return energy, x_full, v_full, a_full
 
     def update_accelerations(self, frame, new_x, forwards):
         energy, quantum_accels = super().update_accelerations(frame, new_x, forwards)
@@ -139,9 +212,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         no_apply_to = np.linalg.norm(new_x, axis=1) < self.radius
         forces = np.random.normal(loc=0, scale=np.sqrt(variance.reshape(-1,1)), size=new_x.shape)
         forces[no_apply_to,:] = 0
-        
+
         return forces.view(cctk.OneIndexedArray)
-        
+
         #### remove center-of-mass motion
         forces += -np.mean(forces, axis=0)
         forces += np.cross(np.mean(np.cross(forces.view(cctk.OneIndexedArray), new_x), axis=0), new_x) / np.power(np.linalg.norm(new_x, axis=1).reshape(-1,1), 2)

@@ -91,6 +91,12 @@ class Trajectory():
         self.active_atoms = active_atoms
 
     def run(self, checkpoint_interval=10, **kwargs):
+        """
+        Run the trajectory.
+
+        Args:
+            checkpoint_interval (int): interval at which to save (in frames, not fs)
+        """
         assert isinstance(self.calculator, presto.calculators.Calculator), "need a valid calculator!"
         assert isinstance(self.integrator, presto.integrators.Integrator), "need a valid integrator!"
         if self.checkpoint_filename is None:
@@ -101,6 +107,7 @@ class Trajectory():
 
         if self.has_checkpoint():
             self.load_from_checkpoint()
+            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
         else:
             if len(self.frames) == 0:
                 self.initialize(**kwargs)
@@ -199,6 +206,13 @@ class Trajectory():
                 ))
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
         return
+
+    def num_frames(self):
+        assert self.has_checkpoint(), "can't load without checkpoint file"
+        num = 0
+        with h5py.File(self.checkpoint_filename, "r") as h5:
+            num = len(h5.get("all_energies"))
+        return num
 
     def save(self):
         if self.checkpoint_filename is None:
@@ -495,7 +509,7 @@ class EquilibrationTrajectory(Trajectory):
 
     def propagate(self, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
+        for t in np.arange(self.timestep * self.num_frames(), self.stop_time, self.timestep):
             self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save()

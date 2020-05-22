@@ -2,6 +2,7 @@ import argparse, math, sys, os, subprocess, glob, re, shutil
 import numpy as np
 from asciichartpy import plot
 
+sys.path.append('../presto')
 import presto
 
 parser = argparse.ArgumentParser(prog="analyze.py")
@@ -19,7 +20,7 @@ for filename in glob.iglob(args["files"], recursive=True):
     print(f"{len(traj.frames)} frames loaded from {filename}")
     if traj.finished:
         print("trajectory finished!")
-    
+
     temps = np.array([f.temperature() for f in traj.frames][args["cutoff"]:])
     energies = np.array([f.energy for f in traj.frames][args["cutoff"]:-1])
     rel_energies = energies - np.min(energies)
