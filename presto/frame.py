@@ -76,7 +76,7 @@ class Frame():
         """
         Computes the instantaneous temperature based on the equipartition theorem, counting only the active atoms.
 
-        T = sum{ m_i * v_i ** 2 / (kB * Nf) }
+        T = sum{ m_i * v_i ** 2} / (kB * Nf)
         """
         v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
@@ -90,15 +90,22 @@ class Frame():
 
         P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
         """
-        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
-        v = self.velocities[self.trajectory.active_atoms]
-        a = self.accelerations[self.trajectory.active_atoms]
-        x = self.positions[self.trajectory.active_atoms]
-        tot = 0
-        for i in range(1, len(v) + 1):
-            tot += np.dot(m[i] * v[i], v[i]) + np.dot(x[i], a[i] * m[i])
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms].view(np.ndarray)
+        v = self.velocities[self.trajectory.active_atoms].view(np.ndarray)
+        a = self.accelerations[self.trajectory.active_atoms].view(np.ndarray)
+        x = self.positions[self.trajectory.active_atoms].view(np.ndarray)
 
-        return tot/3 * self.volume() / presto.constants.AMU_A_FS2_PER_ATM
+        volume = self.volume()
+
+        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
+        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+
+        pressure = np.sum(K) / (3 * volume)
+        for pos, mass, accel in zip(x, m, a):
+            pressure += np.dot(pos, mass * accel) / (3 * volume)
+
+        return pressure / presto.constants.AMU_A_FS2_PER_ATM
 
     def volume(self):
         return self.molecule().volume()

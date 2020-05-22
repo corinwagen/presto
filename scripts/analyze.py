@@ -36,7 +36,7 @@ for filename in glob.iglob(args["files"], recursive=True):
     print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": 20}))
     print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
     print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
-    print(f"PRESSURE:\t\t\t{np.mean(pressures):.5f} atm (± {np.std(pressures):.5f})")
+    print(f"PRESSURE:\t\t\t{np.mean(pressures):.2f} atm (± {np.std(pressures):.2f})")
     print(plot(np.mean(pressures[:(len(pressures)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
     if args["movie"]:
