@@ -59,7 +59,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         # if you use this, it's your own problem to check that you did it right!
         self.potential = potential
 
-    def next(self, frame, forwards=True):
+    def old_next(self, frame, forwards=True):
         calculator = frame.trajectory.calculator
         timestep = frame.trajectory.timestep
         if forwards == False:
@@ -104,6 +104,41 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         a_full = forces / frame.masses()
 
         return energy, x_full, v_full, a_full
+
+    def next(self, frame, forwards=True):
+        """
+        Using the approach from http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
+        """
+        calculator = frame.trajectory.calculator
+        timestep = frame.trajectory.timestep
+        if forwards == False:
+            timestep = timestep * -1
+
+        xi = 6 * math.pi * self.viscosity * frame.radii() / frame.trajectory.masses
+        sigma = np.sqrt(2 * xi * presto.constants.BOLTZMANN_CONSTANT * frame.bath_temperature / frame.trajectory.masses)
+
+        # exclude those beyond the radius
+        no_apply_to = np.linalg.norm(frame.positions, axis=1) < self.radius
+        xi[no_apply_to] = 0
+        sigma[no_apply_to] = 0
+        xi = xi.reshape(-1,1)
+        sigma = sigma.reshape(-1,1)
+
+        rand1 = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
+        rand2 = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
+
+        C = 0.5 * (timestep ** 2) * (frame.accelerations - (xi * frame.velocities)) + sigma * (timestep ** 1.5) * ((0.5 * rand1) + (rand2 / (2 * math.sqrt(3))))
+
+        x_full = frame.positions + timestep * frame.velocities + C
+
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+        forces[frame.inactive_mask()] = 0
+        a_full = forces / frame.masses()
+
+        v_full = frame.velocities + 0.5 * timestep * (a_full + frame.accelerations) - timestep * xi * frame.velocities + sigma * math.sqrt(timestep) * rand1 - xi * C
+
+        return energy, x_full, v_full, a_full
+
 
 def spherical_harmonic_potential(radius, force_constant=0.004184):
     """

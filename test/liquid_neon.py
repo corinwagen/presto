@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, filename="neon.log", format='%(asctime)s
 
 start = cctk.XYZFile.read_file("test/static/30-Ne.xyz").molecule
 traj = presto.trajectory.EquilibrationTrajectory(
-    timestep=0.25,
+    timestep=0.5,
     atomic_numbers=start.atomic_numbers,
     high_atoms=np.array([]),
     inactive_atoms=np.array([]),
