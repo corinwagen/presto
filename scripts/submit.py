@@ -46,6 +46,6 @@ for filename in glob.iglob(args["files"], recursive=True):
     with open("control.sh", "w+") as file:
         file.write(text)
     print(f"{work_dir}/control.sh created")
-    
+
     subprocess.call(['/bin/bash', '-i', '-c', "sbatch control.sh"])
 

@@ -12,6 +12,7 @@ class Trajectory():
     Attributes:
         timestep (float): in fs
         frames (list of presto.Frame):
+        stop_time (float): how long to run for
 
         high_atoms (np.ndarray): to calculate at high level of theory, list of 1-indexed atom numbers
         active_atoms (np.ndarray): non-frozen atoms, list of 1-indexed atom numbers
@@ -330,11 +331,11 @@ class Trajectory():
 
             f_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=f_filename)
             f_traj.termination_function = termination_function
-            f_traj.max_time = max_time
+            f_traj.stop_time = stop_time
 
             r_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=r_filename, forwards=False)
             r_traj.termination_function = termination_function
-            r_traj.max_time = max_time
+            r_traj.stop_time = stop_time
 
             return f_traj, r_traj
 
@@ -356,7 +357,7 @@ class Trajectory():
         )
 
         f_traj.termination_function = termination_function
-        f_traj.max_time = max_time
+        f_traj.stop_time = stop_time
         f_traj.initialize(frame=frame, new_velocities=new_velocities)
 
         r_traj = ReactionTrajectory(
@@ -371,7 +372,7 @@ class Trajectory():
 
         r_traj.forwards = False
         r_traj.termination_function = termination_function
-        r_traj.max_time = max_time
+        r_traj.stop_time = stop_time
         r_traj.initialize(frame=frame, new_velocities=new_velocities)
 
         assert os.path.exists(f_filename), f"didn't save to {f_filename} successfully"
@@ -405,8 +406,6 @@ class ReactionTrajectory(Trajectory):
     Attributes:
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted.
             takes ``Frame`` argument as option and returns ``True``/``False``.
-        max_time (float): how long to run forward and reverse trajectories
-        forwards (Bool): whether or not to propagate in reverse or forward
     """
 
     def initialize(self, frame, new_velocities, **kwargs):
@@ -439,7 +438,7 @@ class ReactionTrajectory(Trajectory):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         time_since_finished = 0
 
-        for t in np.arange(self.timestep * len(self.frames), self.max_time, self.timestep):
+        for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
             if time_since_finished >= time_after_finished:
                 self.finished = True
                 return
@@ -459,7 +458,6 @@ class EquilibrationTrajectory(Trajectory):
     Attributes:
         bath_scheduler (function): takes current time and returns target temperature
             alternatively, pass a number if you want a constant-temperature bath
-        stop_time (float): when to stop equilibrating
     """
 
     def __init__(self, **kwargs):
@@ -569,7 +567,7 @@ def join(traj1, traj2):
         calculator = traj1.calculator,
         integrator = traj1.integrator,
         termination_function = traj1.termination_function,
-        max_time = traj1.max_time,
+        stop_time = traj1.stop_time,
         forwards = True,
     )
 

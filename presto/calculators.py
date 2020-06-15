@@ -38,12 +38,22 @@ class Calculator():
         pass
 
 class XTBCalculator(Calculator):
+    """
+    Attributes:
+        charge (int):
+        multiplicity (int):
+        gfn (int):
+        parallel (int):
+        constraints (list): list of XTB constraints in xcontrol format: e.g. ["distance: 1, 2, 1.4"]
+            See https://xtb-docs.readthedocs.io/en/latest/xcontrol.html for more details.
+            Distances are given in Å, while angles are given in degrees.
+    """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(),):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, int)
-        assert isinstance(parallel, int) #### for some reason this doesn't work :/
+        assert isinstance(parallel, int)
 
         self.charge = charge
         self.multiplicity = multiplicity
@@ -57,8 +67,11 @@ class XTBCalculator(Calculator):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
         self.COUNTER = 0
-    
+
     def randomize_id(self):
+        """
+        Re-randomize the id.
+        """
         self.UNIQUE_ID = random.choice(string.ascii_letters)
         for i in range(7):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
@@ -71,7 +84,8 @@ class XTBCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
-            pipe ():
+            pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
+            print_timing (Bool):
 
         Returns:
             energy (float): in Hartree
@@ -101,19 +115,23 @@ class XTBCalculator(Calculator):
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
         # run job and wait for completion
-        command = ["bash", "run_xtb.sh",
-                   f"presto-{this_unique_id}",
-                   f"{self.charge}",
-                   f"{self.multiplicity - 1}",
-                   f"{self.gfn}",
-                   f"{self.parallel}",
-                   XTB_PATH]
+        command = [
+            "bash", "run_xtb.sh",
+            f"presto-{this_unique_id}",
+            f"{self.charge}",
+            f"{self.multiplicity - 1}",
+            f"{self.gfn}",
+            f"{self.parallel}",
+            XTB_PATH,
+        ]
+
         start = time.time()
         process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
         end = time.time()
         if print_timing:
             print(f"\nxtb call {this_unique_id} took {end-start:.3f} s.")
         exit_code = process.returncode
+#        print(process.stdout)
 
         # get results
         job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
@@ -173,7 +191,8 @@ class XTBCalculator(Calculator):
         # delete job directory
         os.chdir(XTB_SCRIPT_DIRECTORY)
         try:
-            shutil.rmtree(job_directory)
+#            shutil.rmtree(job_directory)
+            pass
         except Exception as e:
             print(e)
             print(f"warning: could not remove ${job_directory} but continuing")
@@ -193,7 +212,7 @@ class GaussianCalculator(Calculator):
 
     def __init__(self, charge=0, multiplicity=1,
                  link0={"mem":"1GB", "nprocshared":"4"},
-                 route_card="#p hf 3-21g force",
+                 route_card="#p hf/3-21g force",
                  footer=None):
         if not re.search("force", route_card):
             raise ValueError("need a force job to calculate forces")
@@ -225,8 +244,8 @@ class GaussianCalculator(Calculator):
             atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
-            pipe ():
-            increment (int): extra increment for counter
+            pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
+            print_timing (Bool):
 
         Returns:
             energy (float): in Hartree
@@ -360,3 +379,89 @@ class ONIOMCalculator(Calculator):
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
         return energy, forces
+
+class OpenFFCalculator(Calculator):
+    def __init__(self, smiles_components, charge=0, multiplicity=1,):
+        #### we load these here because it's likely there may be non-OpenMM projects
+#        from simtk.unit import unit_definitions as u
+
+        self.charge = charge
+        self.multiplicity = multiplicity
+        self.smiles_components = smiles_components
+        self.simulation = None
+        self.mapping = None
+
+#        self.force_units = u.amu * u.angstrom * u.angstrom / u.femtosecond
+#        self.energy_units = u.kilocalories_per_mole
+
+    def initialize(self, molecule):
+        from simtk import openmm
+        import openforcefield as off
+        from openforcefield.typing.engines.smirnoff import ForceField
+        forcefield = ForceField("openff_unconstrained-1.2.0.offxml")
+
+        #### build OpenForceField topology
+        topology = off.topology.Topology()
+        self.mapping = list()
+        for fragment, smiles in zip(molecule.fragment(), self.smiles_components):
+            smiles_mol = cctk.Molecule.new_from_smiles(smiles).assign_connectivity()
+            offm = off.topology.Molecule.from_smiles(smiles)
+            topology.add_molecule(offm)
+
+            fragment.assign_connectivity()
+            iso, mapping = cctk.Molecule.are_isomorphic(fragment, smiles_mol, return_ordering=True)
+            assert iso, f"fragment is not isomorphic to smiles {smiles}"
+            self.mapping += mapping
+
+        #### set up OpenMM system
+        forcefield.get_parameter_handler('Electrostatics').method = 'PME'
+        system = forcefield.create_openmm_system(topology)
+        integrator = openmm.VerletIntegrator(1.0) # we won't use this
+        simulation = openmm.app.Simulation(topology.to_openmm(), system, integrator)
+        self.simulation = simulation
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
+        """
+        Gets the electronic energy and Cartesian forces for the specified geometry.
+
+        Args:
+            atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
+            positions (cctk.OneIndexedArray): the atomic positions in angstroms
+            high_atoms (np.ndarray): do nothing with this
+            pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
+            print_timing (Bool):
+
+        Returns:
+            energy (float): in Hartree
+            forces (cctk.OneIndexedArray): in amu Å per fs**2
+        """
+
+        if self.simulation is None:
+            molecule = cctk.Molecule(atomic_numbers, positions).assign_connectivity()
+            self.initialize(molecule)
+
+        positions = positions[self.mapping] * 0.1 # convert to nm
+        positions = positions.view(np.ndarray).tolist()
+
+        # run job
+        start = time.time()
+
+        s = self.simulation
+        s.context.setPositions(positions)
+        state = s.context.getState(getEnergy=True, getForces=True)
+        energy = state.getPotentialEnergy() #/ self.energy_units * constants.HARTREE_PER_KCAL
+        forces = state.getForces(asNumpy=True) #/ self.force_units
+
+        end = time.time()
+        if print_timing:
+            print(f"\nOpenMM call took {end-start:.3f} s.")
+
+        # return result
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
+
+

@@ -1,7 +1,6 @@
 import numpy as np
 import math, copy, cctk
 from scipy import constants
-from pyhull.convex_hull import ConvexHull
 
 import presto
 
@@ -41,7 +40,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
             needs to return ``cctk.OneIndexedArray``
     """
 
-    def __init__(self, viscosity, convert_from_pascal_seconds=True, radius=0, potential=None, maxiter=1, tolerance=0.00001):
+    def __init__(self, viscosity, convert_from_pascal_seconds=True, radius=0, potential=None):
         assert isinstance(viscosity, (int, float)), "viscosity must be numeric"
         if convert_from_pascal_seconds:
             viscosity = viscosity * presto.constants.AMU_A_FS_PER_PASCAL_SECOND
@@ -49,12 +48,6 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         assert isinstance(radius, (int, float)), "radius must be numeric"
         self.radius = radius
-
-        assert isinstance(maxiter, int), "max num iterations must be integer"
-        self.maxiter = maxiter
-
-        assert isinstance(tolerance, (int, float)), "tolerance must be numeric"
-        self.tolerance = tolerance
 
         # if you use this, it's your own problem to check that you did it right!
         self.potential = potential
@@ -160,7 +153,7 @@ def spherical_harmonic_potential(radius, force_constant=0.004184):
 
     def force(positions):
         radii = np.linalg.norm(positions, axis=1)
-        forces = -1 * force_constant * (positions - positions/radii.reshape(-1,1) * radius)
+        forces = -0.5 * force_constant * (positions - positions/radii.reshape(-1,1) * radius)
         forces = forces * np.linalg.norm(positions - positions/radii.reshape(-1,1) * radius, axis=1).reshape(-1,1)
         inside = radii < radius
         forces.view(np.ndarray)[inside,:] = 0

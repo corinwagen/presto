@@ -10,6 +10,7 @@
 # gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2)
 # parallel_threads:    how many processors to use
 # xtb_path:            the xtb home directory where the GFN parameters are
+# input_path:          the path to the detailed "xcontrol" input file, if needed
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -59,6 +60,7 @@ fi
 # create job directory and put input file in it
 mkdir ${unique_id}
 mv ${unique_id}.xyz ${unique_id}
+
 cd ${unique_id}
 
 # run job
