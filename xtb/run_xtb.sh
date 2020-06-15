@@ -10,6 +10,7 @@
 # gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2)
 # parallel_threads:    how many processors to use
 # xtb_path:            the xtb home directory where the GFN parameters are
+# input_path:          the path to the detailed "xcontrol" input file, if needed
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -26,6 +27,7 @@ unpaired=${3}
 gfn=${4}
 parallel=${5}
 xtb_path=${6}
+input_path=${7}
 
 # set XTBPATH
 if [ ! -d ${xtb_path} ]; then
@@ -59,6 +61,11 @@ fi
 # create job directory and put input file in it
 mkdir ${unique_id}
 mv ${unique_id}.xyz ${unique_id}
+
+if [ -n ${input_path} ]; then
+    mv ${input_path} ${unique_id}/${input_path}
+fi
+
 cd ${unique_id}
 
 # run job
@@ -73,11 +80,21 @@ pwd
 ls
 echo Starting job...
 if [ ${parallel} -gt 1 ]; then
-    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz    ${unique_id}.out
-    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    if [ -n ${input_path} ]; then
+        echo xtb --input ${input_path} --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --verbose --input ${input_path} --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    else
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz    ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    fi
 else
-    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+    if [ -n ${input_path} ]; then
+        echo xtb --input ${input_path} --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --verbose --input ${input_path} --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+    else
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+    fi
 fi
 echo Job finished.
 

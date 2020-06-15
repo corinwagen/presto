@@ -32,6 +32,7 @@ class TestXTB(unittest.TestCase):
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=0)
         energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=True)
         self.assertLessEqual(abs(energy+1.0083914049), 0.00000001)
+        print(forces)
 
     def test_big(self):
         molecule = cctk.XYZFile.read_file("test/static/nazarov-elim-solvated.xyz").molecule
@@ -41,3 +42,16 @@ class TestXTB(unittest.TestCase):
         energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=True)
         #print(energy)
         self.assertLessEqual(abs(energy+966.42822051408), 0.00000001)
+
+    def test_constraint(self):
+        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
+        atomic_numbers = hydrogen_molecule.atomic_numbers
+        positions = hydrogen_molecule.geometry
+#        xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=2, constraints=["DISTANCE: 0, 1, 0.8"])
+        xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=2, constraints=["DISTANCE: 1, 2, 0.8"])
+        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=True)
+#        self.assertLessEqual(abs(energy+1.0083914049), 0.00000001)
+        self.assertLessEqual(abs(energy+0.90379671599), 0.00000001)
+        print(forces)
+
+
