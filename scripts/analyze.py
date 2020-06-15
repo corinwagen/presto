@@ -17,13 +17,17 @@ for filename in glob.iglob(args["files"], recursive=True):
     if re.search("submit", filename):
         continue
 
-    traj = presto.trajectory.Trajectory(checkpoint_filename=filename)
-    print(f"{len(traj.frames)} frames loaded from {filename}")
+    traj = presto.trajectory.Trajectory(checkpoint_filename=filename, load_idxs=slice(args["cutoff"], None, None))
+    print(f"{len(traj.frames)} frames loaded from {filename} ({traj.num_frames()} total)")
     if traj.finished:
         print("trajectory finished!")
 
-    temps = np.array([f.temperature() for f in traj.frames][args["cutoff"]:])
-    energies = np.array([f.energy for f in traj.frames][args["cutoff"]:-1])
+    volumes = np.array([f.volume() for f in traj.frames])
+    radii = np.cbrt(volumes * 3 / (4 * math.pi))
+    print(f"Mean radius of {np.mean(radii):.2f} Å (± {np.std(radii):.2f} Å)") 
+
+    temps = np.array([f.temperature() for f in traj.frames])
+    energies = np.array([f.energy for f in traj.frames][:-1])
     rel_energies = energies - np.min(energies)
     rel_energies = energies * 627.509
 
@@ -38,7 +42,7 @@ for filename in glob.iglob(args["files"], recursive=True):
     print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
     if args["pressure"]:
-        pressures = np.array([f.pressure() for f in traj.frames][args["cutoff"]:])
+        pressures = np.array([f.pressure() for f in traj.frames])
         print(f"PRESSURE:\t\t\t{np.mean(pressures):.5f} atm (± {np.std(pressures):.5f})")
         print(plot(np.mean(pressures[:(len(pressures)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 

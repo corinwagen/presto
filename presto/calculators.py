@@ -316,6 +316,10 @@ class ONIOMCalculator(Calculator):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
+        assert len(high_atoms) > 0, "no point in doing ONIOM without a high layer!"
+        assert isinstance(atomic_numbers, cctk.OneIndexedArray), "need to pass one-indexed array for indexing to work properly"
+        assert isinstance(positions, cctk.OneIndexedArray), "need to pass one-indexed array for indexing to work properly"
+
         high_atomic_numbers = atomic_numbers[high_atoms]
         high_positions = positions[high_atoms]
 
@@ -350,11 +354,6 @@ class ONIOMCalculator(Calculator):
         process_hh.join()
         process_hl.join()
         process_ll.join()
-
-        # this is the non-multiprocessing way. lame!
-#        e_hh, f_hh = self.high_calculator.evaluate(high_atomic_numbers, high_positions)
-#        e_hl, f_hl = self.low_calculator.evaluate(high_atomic_numbers, high_positions)
-#        e_ll, f_ll = self.low_calculator.evaluate(atomic_numbers, positions)
 
         energy = e_hh + e_ll - e_hl
         forces = f_ll

@@ -39,5 +39,4 @@ class TestXTB(unittest.TestCase):
         positions = molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=2, parallel=4)
         energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=True)
-        #print(energy)
         self.assertLessEqual(abs(energy+966.42822051408), 0.00000001)
