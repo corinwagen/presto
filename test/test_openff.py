@@ -17,7 +17,6 @@ class TestOpenFF(unittest.TestCase):
         positions = molecule.geometry
 
         off_calculator = calculators.OpenFFCalculator(charge=0, multiplicity=1, smiles_components=["C1=CC=C(C=C1)F"])
-        print(positions)
         energy, forces = off_calculator.evaluate(atomic_numbers, positions)
 
 #        self.assertLessEqual(abs(energy), 0.00000001)

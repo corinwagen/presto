@@ -413,6 +413,9 @@ class OpenFFCalculator(Calculator):
             assert iso, f"fragment is not isomorphic to smiles {smiles}"
             self.mapping += mapping
 
+        print([[a.topology_atom_index for a in b.atoms] for b in topology.topology_bonds])
+        print(mapping)
+
         #### set up OpenMM system
         forcefield.get_parameter_handler('Electrostatics').method = 'PME'
         system = forcefield.create_openmm_system(topology)
