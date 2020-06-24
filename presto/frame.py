@@ -217,4 +217,6 @@ class Frame():
         return self.trajectory.masses.reshape(-1,1).view(cctk.OneIndexedArray)
 
     def radii(self):
-        return np.array([presto.constants.vdw_radius(z) for z in self.trajectory.atomic_numbers]).view(cctk.OneIndexedArray)
+        vdw_radii = {z: cctk.helper_functions.get_vdw_radius(z) for z in set(self.trajectory.atomic_numbers)}
+        radii_by_num = np.array([vdw_radii[z] for z in self.trajectory.atomic_numbers]).view(cctk.OneIndexedArray)
+        return radii_by_num

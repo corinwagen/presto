@@ -19,7 +19,6 @@ class Trajectory():
 
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
         masses (cctk.OneIndexedArray): list of masses
-        radii (cctk.OneIndexedArray): list of VDW radii
 
         calculator (presto.Calculator):
         integrator (presto.Integrator):
@@ -30,7 +29,7 @@ class Trajectory():
         checkpoint_filename (str):
     """
 
-    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, **kwargs):
+    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, stop_time=None, **kwargs):
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
@@ -81,13 +80,20 @@ class Trajectory():
             assert isinstance(forwards, bool), "forwards must be bool"
             self.forwards = forwards
 
+        if not hasattr(self, "stop_time"):
+            assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
+            assert stop_time > 0, "stop_time needs to be positive!"
+            self.stop_time = stop_time
+
     def __str__(self):
         return f"presto trajectory with {len(self.frames)} frames"
 
     def set_inactive_atoms(self, inactive_atoms):
+        assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
-        for atom in inactive_atoms:
-            active_atoms.remove(atom)
+        if len(inactive_atoms):
+            for atom in inactive_atoms:
+                active_atoms.remove(atom)
         active_atoms = np.array(active_atoms)
         self.active_atoms = active_atoms
 
@@ -151,45 +157,27 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self):
+    def load_from_checkpoint(self, frames=slice(0)):
+        """
+        Loads frames from ``self.checkpoint_filename``.
 
-        #### TODO = add options for load all or just some frames
+        Args:
+            frames (Slice object): if not all frames are desired, a Slice object can be passed
 
+        Returns:
+            nothing
+        """
         assert self.has_checkpoint(), "can't load without checkpoint file"
         with h5py.File(self.checkpoint_filename, "r") as h5:
-            if hasattr(self, "timestep"):
-                assert self.timestep == h5.attrs['timestep']
-            else:
-                self.timestep = h5.attrs['timestep']
-
-            if hasattr(self, "high_atoms"):
-                assert np.array_equal(self.high_atoms, h5.attrs['high_atoms'])
-            else:
-                self.high_atoms = h5.attrs["high_atoms"][:]
-
-            if hasattr(self, "active_atoms"):
-                pass
-            else:
-                self.active_atoms = h5.attrs["active_atoms"][:]
-
-            if hasattr(self, "atomic_numbers"):
-                assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
-            else:
-                self.atomic_numbers = h5.attrs["atomic_numbers"]
-
-            #### too many problems with resampling isotopes
-#            if hasattr(self, "masses"):
-#                assert np.array_equal(self.masses, h5.attrs["masses"])
-#            else:
+            self.atomic_numbers = h5.attrs["atomic_numbers"]
             self.masses = h5.attrs["masses"]
-
             self.finished = h5.attrs['finished']
 
-            all_energies = h5.get("all_energies")
-            all_positions = h5.get("all_positions")
-            all_velocities= h5.get("all_velocities")
-            all_accels = h5.get("all_accelerations")
-            temperatures = h5.get("bath_temperatures")
+            all_energies = h5.get("all_energies")[frames]
+            all_positions = h5.get("all_positions")[frames]
+            all_velocities= h5.get("all_velocities")[frames]
+            all_accels = h5.get("all_accelerations")[frames]
+            temperatures = h5.get("bath_temperatures")[frames]
 
             assert len(all_positions) == len(all_energies)
             assert len(all_velocities) == len(all_energies)
@@ -215,7 +203,7 @@ class Trajectory():
             num = len(h5.get("all_energies"))
         return num
 
-    def save(self):
+    def save(self, keep_all=False):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
         if self.has_checkpoint():
@@ -259,14 +247,11 @@ class Trajectory():
         else:
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
-                # store general data about the trajectory
-                h5.attrs['timestep'] = self.timestep
-                h5.attrs['high_atoms'] = self.high_atoms
-                h5.attrs['active_atoms'] = self.active_atoms
                 h5.attrs['atomic_numbers'] = self.atomic_numbers
                 h5.attrs['masses'] = self.masses
                 h5.attrs['finished'] = self.finished
                 h5.attrs['forwards'] = self.forwards
+
                 n_atoms = len(self.atomic_numbers)
 
                 energies = np.asarray([frame.energy for frame in self.frames])
@@ -289,7 +274,11 @@ class Trajectory():
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,),
                             compression="gzip", compression_opts=9)
 
-        self.frames = [self.frames[-1]]
+        # lower memory usage
+        if keep_all:
+            pass
+        else:
+            self.frames = [self.frames[-1]]
 
     def write_movie(self, filename):
         ensemble = self.as_ensemble()
@@ -437,13 +426,7 @@ class EquilibrationTrajectory(Trajectory):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        stop_time = kwargs.get("stop_time")
         bath_scheduler = kwargs.get("bath_scheduler")
-
-        assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
-        assert stop_time > 0, "stop_time needs to be positive!"
-
-        self.stop_time = stop_time
 
         if hasattr(bath_scheduler, "__call__"):
             self.bath_scheduler = bath_scheduler

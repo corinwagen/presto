@@ -6,7 +6,6 @@ timestep: 0.5
 high_atoms: 1-57
 inactive_atoms: 2, 48, 51
 stop_time: 25000
-structure: test.xyz
 
 integrator: 
     type: langevin
@@ -14,7 +13,7 @@ integrator:
     viscosity: 0.0001
 
 potential:
-    type: spherical harmonic
+    type: spherical_harmonic
     radius: 12
 
 calculator: 

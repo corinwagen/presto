@@ -1,8 +1,6 @@
-import configparser
-import os
-import re
-import pathlib
-import yaml
+import configparser, os, re, pathlib, yaml, cctk
+import numpy as np
+import presto
 
 #### OVERALL PRESTO CONFIGURATION
 
@@ -48,7 +46,17 @@ print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
-def load(file):
+def build(file, checkpoint, geometry=None):
+    """
+    Build a *presto* trajectory from a ``.yml`` config file.
+
+    The config file does not specify the actual structure (geometry and atomic numbers). This can come from one of two sources:
+    1. An existing ``presto`` trajectory saved as an ``.hdf5`` file.
+    2. An ``.xyz`` file.
+    """
+    assert isinstance(file, str), "``file`` must be a string."
+    assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
+
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)
@@ -71,6 +79,7 @@ def load(file):
 
     assert "stop_time" in settings, "Need `stop_time` in config YAML file."
     assert isinstance(settings["stop_time"], int), "`stop_time` must be an integer."
+    args["stop_time"] = settings["stop_time"]
 
     p = None
     if "potential" in settings:
@@ -79,17 +88,36 @@ def load(file):
     i = build_integrator(settings["integrator"], potential=p)
     c = build_calculator(settings["calculator"])
 
+    mol = None
+    args["checkpoint_filename"] = checkpoint
+    if os.path.exists(checkpoint):
+        pass
+    else:
+        if geometry is not None:
+            assert isinstance(geometry, str), "``geometry``must be a string!"
+            assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+
+            mol = cctk.XYZFile.read_file(geometry).molecule
+            args["atomic_numbers"] = mol.atomic_numbers
+        else:
+            raise ValueError("No checkpoint file; need a geometry ``.xyz`` file for this to work!")
+
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
         assert "bath_scheduler" in settings, "Need `bath_scheduler` in config YAML file for type=`equilibration`!"
         s = build_bath_scheduler(settings["bath_scheduler"])
 
-        t = presto.trajectories.EquilibrationTrajectory(
+        t = presto.trajectory.EquilibrationTrajectory(
             calculator=c,
             integrator=i,
             timestep=settings["timestep"],
+            bath_scheduler=s,
             **args,
         )
+
+        if len(t.frames) == 0:
+            assert mol is not None, "need geometry, since there are no frames"
+            t.initialize(mol.geometry)
 
         return t
     if settings["type"].lower() == "reaction":
@@ -101,7 +129,7 @@ def load(file):
 
         return t
 
-def build_integrator_settings(settings, potential=None):
+def build_integrator(settings, potential=None):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for integrator"
     assert isinstance(settings["type"], str), "Integrator `type` must be a string"
@@ -121,7 +149,7 @@ def build_integrator_settings(settings, potential=None):
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
-def build_calculator_settings(settings):
+def build_calculator(settings):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for calculator"
     assert isinstance(settings["type"], str), "Calculator `type` must be a string"
@@ -130,8 +158,8 @@ def build_calculator_settings(settings):
         assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
         assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
         return presto.calculators.ONIOMCalculator(
-            high_calculator=build_calculator_settings(settings["high_calculator"]),
-            low_calculator=build_calculator_settings(settings["low_calculator"]),
+            high_calculator=build_calculator(settings["high_calculator"]),
+            low_calculator=build_calculator(settings["low_calculator"]),
         )
     elif settings["type"].lower() == "gaussian":
         charge = 0
@@ -143,7 +171,7 @@ def build_calculator_settings(settings):
         if "multiplicity" in settings:
             assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
             assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            charge = settings["multiplicity"]
+            multiplicity = settings["multiplicity"]
 
         link0 = None
         if "link0" in settings:
@@ -158,11 +186,12 @@ def build_calculator_settings(settings):
         footer = None
         if "footer" in settings:
             assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
+            footer = settings["footer"]
 
         if link0 is not None:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=route_card, footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer)
         else:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=route_card, footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer)
 
     elif settings["type"].lower() == "xtb":
         charge = 0
@@ -240,7 +269,7 @@ def build_bath_scheduler(settings):
 
         return sched
 
-    elif settings["type"].lower() == "constant"
+    elif settings["type"].lower() == "constant":
         assert "target_temp" in settings, "Need `target_temp` for this bath scheduler!"
         assert isinstance(settings["target_temp"], (float, int)), "`target_temp` must be numeric!"
         assert settings["target_temp"] > 0, "`target_temp` must be positive!"
@@ -257,9 +286,9 @@ def parse_atom_list(string):
         try:
             if re.search("-", item):
                 start, stop = item.split("-")
-                atoms = atoms + range(start, stop + 1)
+                atoms = atoms + list(range(int(start), int(stop) + 1))
             else:
                 atoms.append(int(item))
         except Exception as e:
             raise ValueError(f"Error parsing list item {item} - needs to be integers (3) or ranges (4-7).")
-    return np.array(set(atoms)) # keep only distinct atoms
+    return np.array(list(set(atoms))) # keep only distinct atoms

@@ -2,7 +2,6 @@ import numpy as np
 import os, random, string, re, cctk, ctypes, copy, shutil, time
 import subprocess as sp
 import multiprocessing as mp
-import openforcefield as off
 
 import xtb
 
@@ -405,6 +404,7 @@ class OpenFFCalculator(Calculator):
         self.energy_unit = u.kilocalories_per_mol
 
     def initialize(self):
+        import openforcefield as off
         from openforcefield.typing.engines.smirnoff import ForceField as forcefield
 
         #### build OpenForceField topology
