@@ -19,7 +19,6 @@ class Trajectory():
 
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
         masses (cctk.OneIndexedArray): list of masses
-        radii (cctk.OneIndexedArray): list of VDW radii
 
         calculator (presto.Calculator):
         integrator (presto.Integrator):
@@ -30,7 +29,7 @@ class Trajectory():
         checkpoint_filename (str):
     """
 
-    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=None, checkpoint_filename=None, load_idxs=..., **kwargs):
+    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, stop_time=None, **kwargs):
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
@@ -85,6 +84,11 @@ class Trajectory():
         elif not hasattr(self, "forwards"):
             self.forwards = True
 
+        if not hasattr(self, "stop_time"):
+            assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
+            assert stop_time > 0, "stop_time needs to be positive!"
+            self.stop_time = stop_time
+
     def __str__(self):
         return f"presto trajectory with {len(self.frames)} frames"
 
@@ -92,9 +96,11 @@ class Trajectory():
         """
         Since sometimes it's easier to specify the inactive atoms than the inactive atoms, this method updates ``self.active_atoms`` with the complement of ``inactive_atoms``.
         """
+        assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
-        for atom in inactive_atoms:
-            active_atoms.remove(atom)
+        if len(inactive_atoms):
+            for atom in inactive_atoms:
+                active_atoms.remove(atom)
         active_atoms = np.array(active_atoms)
         self.active_atoms = active_atoms
 
@@ -114,10 +120,12 @@ class Trajectory():
                 raise ValueError("no checkpoint filename given!")
 
         if self.has_checkpoint():
-            self.save() # stores only one frame in local memory
+            self.load_from_checkpoint()
+
+        if len(self.frames) == 0:
+            self.initialize(**kwargs)
         else:
-            if len(self.frames) == 0:
-                self.initialize(**kwargs)
+            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
 
         if self.finished:
             logger.info("Trajectory already finished!")
@@ -157,45 +165,27 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self, idxs=...):
+    def load_from_checkpoint(self, frames=slice(None)):
+        """
+        Loads frames from ``self.checkpoint_filename``.
+
+        Args:
+            frames (Slice object): if not all frames are desired, a Slice object can be passed
+
+        Returns:
+            nothing
+        """
         assert self.has_checkpoint(), "can't load without checkpoint file"
         with h5py.File(self.checkpoint_filename, "r") as h5:
-            if hasattr(self, "timestep"):
-                assert self.timestep == h5.attrs['timestep']
-            else:
-                self.timestep = h5.attrs['timestep']
-
-            if hasattr(self, "high_atoms"):
-                pass
-            else:
-                self.high_atoms = h5.attrs["high_atoms"][:]
-
-            if hasattr(self, "active_atoms"):
-                pass
-            else:
-                self.active_atoms = h5.attrs["active_atoms"][:]
-
-            if hasattr(self, "atomic_numbers"):
-                assert np.array_equal(self.atomic_numbers, h5.attrs['atomic_numbers'])
-            else:
-                self.atomic_numbers = h5.attrs["atomic_numbers"][:].view(cctk.OneIndexedArray)
-
+            self.atomic_numbers = h5.attrs["atomic_numbers"]
             self.masses = h5.attrs["masses"]
-
             self.finished = h5.attrs['finished']
 
-            all_energies = h5.get("all_energies")[idxs]
-            all_positions = h5.get("all_positions")[idxs]
-            all_velocities= h5.get("all_velocities")[idxs]
-            all_accels = h5.get("all_accelerations")[idxs]
-            temperatures = h5.get("bath_temperatures")[idxs]
-
-            if not isinstance(all_energies, np.ndarray):
-                all_energies = np.array([all_energies])
-                all_positions = np.array([all_positions])
-                all_velocities = np.array([all_velocities])
-                all_accels = np.array([all_accels])
-                temperatures = np.array([temperatures])
+            all_energies = h5.get("all_energies")[frames]
+            all_positions = h5.get("all_positions")[frames]
+            all_velocities= h5.get("all_velocities")[frames]
+            all_accels = h5.get("all_accelerations")[frames]
+            temperatures = h5.get("bath_temperatures")[frames]
 
             assert len(all_positions) == len(all_energies)
             assert len(all_velocities) == len(all_energies)
@@ -221,7 +211,7 @@ class Trajectory():
             num = len(h5.get("all_energies"))
         return num
 
-    def save(self):
+    def save(self, keep_all=False):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
         if self.has_checkpoint():
@@ -263,16 +253,14 @@ class Trajectory():
                 all_temps[-new_n_frames:] = new_temps
                 logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
         else:
+            print(f"saving to {self.checkpoint_filename}")
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
-                # store general data about the trajectory
-                h5.attrs['timestep'] = self.timestep
-                h5.attrs['high_atoms'] = self.high_atoms
-                h5.attrs['active_atoms'] = self.active_atoms
                 h5.attrs['atomic_numbers'] = self.atomic_numbers
                 h5.attrs['masses'] = self.masses
                 h5.attrs['finished'] = self.finished
                 h5.attrs['forwards'] = self.forwards
+
                 n_atoms = len(self.atomic_numbers)
 
                 energies = np.asarray([frame.energy for frame in self.frames])
@@ -295,7 +283,11 @@ class Trajectory():
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,),
                             compression="gzip", compression_opts=9)
 
-        self.frames = [self.frames[-1]]
+        # lower memory usage
+        if keep_all:
+            pass
+        else:
+            self.frames = [self.frames[-1]]
 
     def write_movie(self, filename):
         ensemble = self.as_ensemble()
@@ -408,7 +400,11 @@ class ReactionTrajectory(Trajectory):
             takes ``Frame`` argument as option and returns ``True``/``False``.
     """
 
-    def initialize(self, frame, new_velocities, **kwargs):
+    @classmethod
+    def new_from_checkpoint(self):
+        pass
+
+    def initialize(self, frame, new_velocities=None, **kwargs):
         """
         Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -426,6 +422,11 @@ class ReactionTrajectory(Trajectory):
             return
 
         assert isinstance(frame, presto.frame.Frame), "need a valid frame"
+
+        if new_velocities is None:
+            random_gaussian = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
+            random_gaussian[frame.active_mask()] = 0
+            new_velocities = random_gaussian * np.sqrt(frame.bath_temperature * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
 
         positions = frame.positions
         velocities = frame.velocities + new_velocities.view(cctk.OneIndexedArray)
@@ -463,13 +464,7 @@ class EquilibrationTrajectory(Trajectory):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        stop_time = kwargs.get("stop_time")
         bath_scheduler = kwargs.get("bath_scheduler")
-
-        assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
-        assert stop_time > 0, "stop_time needs to be positive!"
-
-        self.stop_time = stop_time
 
         if hasattr(bath_scheduler, "__call__"):
             self.bath_scheduler = bath_scheduler

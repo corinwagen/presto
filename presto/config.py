@@ -1,8 +1,6 @@
-import configparser
-import os
-import re
-import pathlib
-import yaml
+import configparser, os, re, pathlib, yaml, cctk
+import numpy as np
+import presto
 
 #### OVERALL PRESTO CONFIGURATION
 
@@ -48,19 +46,30 @@ print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
-def load(file):
+def build(file, checkpoint, geometry=None):
+    """
+    Build a *presto* trajectory from a ``.yml`` config file.
+
+    The config file does not specify the actual structure (geometry and atomic numbers). This can come from one of two sources:
+    1. An existing ``presto`` trajectory saved as an ``.hdf5`` file.
+    2. An ``.xyz`` file.
+    """
+    assert isinstance(file, str), "``file`` must be a string."
+    assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
+
+    args = dict()
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)
 
     assert "timestep" in settings, "Need `timestep` in config YAML file."
     assert isinstance(settings["timestep"], (float, int)), "`timestep` must be numeric."
+    args["timestep"] = settings["timestep"]
 
     assert "integrator" in settings, "Need `integrator` in config YAML file."
     assert "calculator" in settings, "Need `calculator` in config YAML file."
     assert "type" in settings, "Need `type` in config YAML file."
 
-    args = {}
     if "active_atoms" in settings:
         args["active_atoms"] = parse_atom_list(settings["active_atoms"])
     elif "inactive_atoms" in settings:
@@ -71,6 +80,7 @@ def load(file):
 
     assert "stop_time" in settings, "Need `stop_time` in config YAML file."
     assert isinstance(settings["stop_time"], int), "`stop_time` must be an integer."
+    args["stop_time"] = settings["stop_time"]
 
     p = None
     if "potential" in settings:
@@ -79,29 +89,53 @@ def load(file):
     i = build_integrator(settings["integrator"], potential=p)
     c = build_calculator(settings["calculator"])
 
+    mol = None
+    args["checkpoint_filename"] = checkpoint
+    if geometry is not None:
+        assert isinstance(geometry, str), "``geometry``must be a string!"
+        assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+
+        mol = cctk.XYZFile.read_file(geometry).molecule
+        if not os.path.exists(checkpoint):
+            args["atomic_numbers"] = mol.atomic_numbers
+    else:
+        assert os.path.exists(checkpoint), "No checkpoint file; need a geometry ``.xyz`` file for this to work!"
+
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
         assert "bath_scheduler" in settings, "Need `bath_scheduler` in config YAML file for type=`equilibration`!"
         s = build_bath_scheduler(settings["bath_scheduler"])
 
-        t = presto.trajectories.EquilibrationTrajectory(
+        t = presto.trajectory.EquilibrationTrajectory(
             calculator=c,
             integrator=i,
-            timestep=settings["timestep"],
+            bath_scheduler=s,
             **args,
         )
 
+        if len(t.frames) == 0:
+            assert mol is not None, "need geometry, since there are no frames"
+            print("initializing")
+            t.initialize(mol.geometry)
+            print(t)
+
         return t
+
     if settings["type"].lower() == "reaction":
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
 
-        t = presto.trajectories.ReactionTrajectory(
+        t = presto.trajectory.ReactionTrajectory(
+            calculator=c,
+            integrator=i,
+            termination_function=f,
+            **args,
         )
 
+        assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
         return t
 
-def build_integrator_settings(settings, potential=None):
+def build_integrator(settings, potential=None):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for integrator"
     assert isinstance(settings["type"], str), "Integrator `type` must be a string"
@@ -121,7 +155,7 @@ def build_integrator_settings(settings, potential=None):
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
-def build_calculator_settings(settings):
+def build_calculator(settings):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for calculator"
     assert isinstance(settings["type"], str), "Calculator `type` must be a string"
@@ -130,8 +164,8 @@ def build_calculator_settings(settings):
         assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
         assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
         return presto.calculators.ONIOMCalculator(
-            high_calculator=build_calculator_settings(settings["high_calculator"]),
-            low_calculator=build_calculator_settings(settings["low_calculator"]),
+            high_calculator=build_calculator(settings["high_calculator"]),
+            low_calculator=build_calculator(settings["low_calculator"]),
         )
     elif settings["type"].lower() == "gaussian":
         charge = 0
@@ -143,7 +177,7 @@ def build_calculator_settings(settings):
         if "multiplicity" in settings:
             assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
             assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            charge = settings["multiplicity"]
+            multiplicity = settings["multiplicity"]
 
         link0 = None
         if "link0" in settings:
@@ -158,11 +192,12 @@ def build_calculator_settings(settings):
         footer = None
         if "footer" in settings:
             assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
+            footer = settings["footer"]
 
         if link0 is not None:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=route_card, footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer)
         else:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=route_card, footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer)
 
     elif settings["type"].lower() == "xtb":
         charge = 0
@@ -257,9 +292,36 @@ def parse_atom_list(string):
         try:
             if re.search("-", item):
                 start, stop = item.split("-")
-                atoms = atoms + range(start, stop + 1)
+                atoms = atoms + list(range(int(start), int(stop) + 1))
             else:
                 atoms.append(int(item))
         except Exception as e:
             raise ValueError(f"Error parsing list item {item} - needs to be integers (3) or ranges (4-7).")
-    return np.array(set(atoms)) # keep only distinct atoms
+    return np.array(list(set(atoms))) # keep only distinct atoms
+
+def build_termination_function(settings):
+    constraints = list(settings.keys())
+
+    def term(frame):
+        m = frame.molecule().assign_connectivity()
+        for row in constraints:
+            words = list(filter(None, row.split(" ")))
+            if words[0] == "bond":
+                assert len(words) == 3, f"Termination condition ``bond`` must be of form ``bond atom1 atom2`` -- {row} is invalid!"
+                if m.get_bond_order(words[1], words[2]):
+                    return True
+            elif words[0] == "distance":
+                assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
+                if words[3] == "greater_than":
+                    if m.get_distance(words[1], words[2]) > words[4]:
+                        return True
+                elif words[3] == "less_than":
+                    if m.get_distance(words[1], words[2]) < words[4]:
+                        return True
+                else:
+                    raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")
+            else:
+                raise ValueError(f"Invalid constraint type {words[0]} -- must be ``bond`` or ``distance``")
+        return False
+
+    return term

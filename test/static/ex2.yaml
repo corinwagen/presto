@@ -1,6 +1,6 @@
 # presto config file
 
-type: equilibration
+type: reaction
 
 timestep: 0.5
 high_atoms: 1-57
