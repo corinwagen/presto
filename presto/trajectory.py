@@ -114,10 +114,11 @@ class Trajectory():
 
         if self.has_checkpoint():
             self.load_from_checkpoint()
-            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
+
+        if len(self.frames) == 0:
+            self.initialize(**kwargs)
         else:
-            if len(self.frames) == 0:
-                self.initialize(**kwargs)
+            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
 
         if self.finished:
             logger.info("Trajectory already finished!")
@@ -157,7 +158,7 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self, frames=slice(0)):
+    def load_from_checkpoint(self, frames=slice(None)):
         """
         Loads frames from ``self.checkpoint_filename``.
 
@@ -245,6 +246,7 @@ class Trajectory():
                 all_temps[-new_n_frames:] = new_temps
                 logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
         else:
+            print(f"saving to {self.checkpoint_filename}")
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 h5.attrs['atomic_numbers'] = self.atomic_numbers
@@ -371,7 +373,7 @@ class ReactionTrajectory(Trajectory):
     def new_from_checkpoint(self):
         pass
 
-    def initialize(self, frame, new_velocities, **kwargs):
+    def initialize(self, frame, new_velocities=None, **kwargs):
         """
         Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -389,6 +391,11 @@ class ReactionTrajectory(Trajectory):
             return
 
         assert isinstance(frame, presto.frame.Frame), "need a valid frame"
+
+        if new_velocities is None:
+            random_gaussian = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
+            random_gaussian[frame.active_mask()] = 0
+            new_velocities = random_gaussian * np.sqrt(frame.bath_temperature * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
 
         positions = frame.positions
         velocities = frame.velocities + new_velocities.view(cctk.OneIndexedArray)

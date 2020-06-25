@@ -57,18 +57,19 @@ def build(file, checkpoint, geometry=None):
     assert isinstance(file, str), "``file`` must be a string."
     assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
 
+    args = dict()
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)
 
     assert "timestep" in settings, "Need `timestep` in config YAML file."
     assert isinstance(settings["timestep"], (float, int)), "`timestep` must be numeric."
+    args["timestep"] = settings["timestep"]
 
     assert "integrator" in settings, "Need `integrator` in config YAML file."
     assert "calculator" in settings, "Need `calculator` in config YAML file."
     assert "type" in settings, "Need `type` in config YAML file."
 
-    args = {}
     if "active_atoms" in settings:
         args["active_atoms"] = parse_atom_list(settings["active_atoms"])
     elif "inactive_atoms" in settings:
@@ -90,17 +91,15 @@ def build(file, checkpoint, geometry=None):
 
     mol = None
     args["checkpoint_filename"] = checkpoint
-    if os.path.exists(checkpoint):
-        pass
-    else:
-        if geometry is not None:
-            assert isinstance(geometry, str), "``geometry``must be a string!"
-            assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+    if geometry is not None:
+        assert isinstance(geometry, str), "``geometry``must be a string!"
+        assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
 
-            mol = cctk.XYZFile.read_file(geometry).molecule
+        mol = cctk.XYZFile.read_file(geometry).molecule
+        if not os.path.exists(checkpoint):
             args["atomic_numbers"] = mol.atomic_numbers
-        else:
-            raise ValueError("No checkpoint file; need a geometry ``.xyz`` file for this to work!")
+    else:
+        assert os.path.exists(checkpoint), "No checkpoint file; need a geometry ``.xyz`` file for this to work!"
 
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
@@ -110,23 +109,30 @@ def build(file, checkpoint, geometry=None):
         t = presto.trajectory.EquilibrationTrajectory(
             calculator=c,
             integrator=i,
-            timestep=settings["timestep"],
             bath_scheduler=s,
             **args,
         )
 
         if len(t.frames) == 0:
             assert mol is not None, "need geometry, since there are no frames"
+            print("initializing")
             t.initialize(mol.geometry)
+            print(t)
 
         return t
+
     if settings["type"].lower() == "reaction":
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
 
-        t = presto.trajectories.ReactionTrajectory(
+        t = presto.trajectory.ReactionTrajectory(
+            calculator=c,
+            integrator=i,
+            termination_function=f,
+            **args,
         )
 
+        assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
         return t
 
 def build_integrator(settings, potential=None):
@@ -292,3 +298,30 @@ def parse_atom_list(string):
         except Exception as e:
             raise ValueError(f"Error parsing list item {item} - needs to be integers (3) or ranges (4-7).")
     return np.array(list(set(atoms))) # keep only distinct atoms
+
+def build_termination_function(settings):
+    constraints = list(settings.keys())
+
+    def term(frame):
+        m = frame.molecule().assign_connectivity()
+        for row in constraints:
+            words = list(filter(None, row.split(" ")))
+            if words[0] == "bond":
+                assert len(words) == 3, f"Termination condition ``bond`` must be of form ``bond atom1 atom2`` -- {row} is invalid!"
+                if m.get_bond_order(words[1], words[2]):
+                    return True
+            elif words[0] == "distance":
+                assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
+                if words[3] == "greater_than":
+                    if m.get_distance(words[1], words[2]) > words[4]:
+                        return True
+                elif words[3] == "less_than":
+                    if m.get_distance(words[1], words[2]) < words[4]:
+                        return True
+                else:
+                    raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")
+            else:
+                raise ValueError(f"Invalid constraint type {words[0]} -- must be ``bond`` or ``distance``")
+        return False
+
+    return term
