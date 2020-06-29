@@ -311,7 +311,7 @@ class Trajectory():
             ensemble.add_molecule(frame.molecule(), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
-    def spawn(self, frame_idx=-1, termination_function=None, max_time=None, f_filename=None, r_filename=None):
+    def spawn_reaction_trajectory(self, termination_function, stop_time, f_filename=None, r_filename=None):
         """
         Args:
             termination_function:
@@ -401,13 +401,14 @@ class ReactionTrajectory(Trajectory):
     Attributes:
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted.
             takes ``Frame`` argument as option and returns ``True``/``False``.
+        time_after_finished (float/int): how long (in fs) to continue propagation after termination conditions reached
     """
 
     @classmethod
     def new_from_checkpoint(self):
         pass
 
-    def initialize(self, frame, new_velocities=None, **kwargs):
+    def initialize(self, frame, new_velocities=None, time_after_finished=100, **kwargs):
         """
         Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -435,12 +436,15 @@ class ReactionTrajectory(Trajectory):
         velocities = frame.velocities + new_velocities.view(cctk.OneIndexedArray)
         accelerations = frame.accelerations
 
+        assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
+        self.time_after_finished = time_after_finished
+
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, frame.bath_temperature)]
         self.save()
 
-    def propagate(self, checkpoint_interval, time_after_finished=50):
+    def propagate(self, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        time_since_finished = 0
+        time_since_finished = self.time_after_finished
 
         for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
             if time_since_finished >= time_after_finished:
