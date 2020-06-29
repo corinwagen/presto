@@ -1,6 +1,8 @@
 import numpy as np
 import math, copy, cctk
 
+from cctk.helper_functions import get_vdw_radius
+
 import presto
 
 class Frame():
@@ -217,6 +219,6 @@ class Frame():
         return self.trajectory.masses.reshape(-1,1).view(cctk.OneIndexedArray)
 
     def radii(self):
-        vdw_radii = {z: cctk.helper_functions.get_vdw_radius(z) for z in set(self.trajectory.atomic_numbers)}
+        vdw_radii = {z: get_vdw_radius(z) for z in set(self.trajectory.atomic_numbers)}
         radii_by_num = np.array([vdw_radii[z] for z in self.trajectory.atomic_numbers]).view(cctk.OneIndexedArray)
         return radii_by_num

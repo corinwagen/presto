@@ -46,7 +46,7 @@ print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
-def build(file, checkpoint, geometry=None):
+def build(file, checkpoint, geometry=None, **args):
     """
     Build a *presto* trajectory from a ``.yml`` config file.
 
@@ -57,7 +57,6 @@ def build(file, checkpoint, geometry=None):
     assert isinstance(file, str), "``file`` must be a string."
     assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
 
-    args = dict()
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)
