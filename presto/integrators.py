@@ -1,7 +1,6 @@
 import numpy as np
 import math, copy, cctk
 from scipy import constants
-from pyhull.convex_hull import ConvexHull
 
 import presto
 

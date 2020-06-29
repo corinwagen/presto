@@ -54,13 +54,11 @@ class XTBCalculator(Calculator):
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, int)
         assert isinstance(parallel, int)
-        assert isinstance(constraints, list)
 
         self.charge = charge
         self.multiplicity = multiplicity
         self.gfn = gfn
         self.parallel = parallel
-        self.constraints = constraints
 
         # select a unique 8-letter string that will
         # be used to identify this calculator
@@ -116,18 +114,6 @@ class XTBCalculator(Calculator):
         # write out job
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
-        # create input file for detailed constraints
-        input_path = ""
-        if len(self.constraints) > 0:
-            input_path = "constraints.inp"
-            text = "$constrain\n"
-            for constraint in self.constraints:
-                text += f"\t{constraint}\n"
-            text += "$end\n"
-
-            with open(input_path, "w+") as input_file:
-                input_file.write(text)
-
         # run job and wait for completion
         command = [
             "bash", "run_xtb.sh",
@@ -137,7 +123,6 @@ class XTBCalculator(Calculator):
             f"{self.gfn}",
             f"{self.parallel}",
             XTB_PATH,
-            input_path,
         ]
 
         start = time.time()
@@ -146,8 +131,7 @@ class XTBCalculator(Calculator):
         if print_timing:
             print(f"\nxtb call {this_unique_id} took {end-start:.3f} s.")
         exit_code = process.returncode
-
-        print(process.stdout)
+#        print(process.stdout)
 
         # get results
         job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
@@ -351,6 +335,10 @@ class ONIOMCalculator(Calculator):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
+        assert len(high_atoms) > 0, "no point in doing ONIOM without a high layer!"
+        assert isinstance(atomic_numbers, cctk.OneIndexedArray), "need to pass one-indexed array for indexing to work properly"
+        assert isinstance(positions, cctk.OneIndexedArray), "need to pass one-indexed array for indexing to work properly"
+
         high_atomic_numbers = atomic_numbers[high_atoms]
         high_positions = positions[high_atoms]
 
@@ -394,31 +382,45 @@ class ONIOMCalculator(Calculator):
 
 class OpenFFCalculator(Calculator):
     def __init__(self, smiles_components, charge=0, multiplicity=1,):
+        #### we load these here because it's likely there may be non-OpenMM projects
+#        from simtk.unit import unit_definitions as u
+
         self.charge = charge
         self.multiplicity = multiplicity
         self.smiles_components = smiles_components
         self.simulation = None
+        self.mapping = None
 
-        from simtk.unit import unit_definitions as u
-        self.force_unit = u.amu * u.angstrom * u.angstrom / u.femtosecond
-        self.energy_unit = u.kilocalories_per_mol
+#        self.force_units = u.amu * u.angstrom * u.angstrom / u.femtosecond
+#        self.energy_units = u.kilocalories_per_mole
 
-    def initialize(self):
+    def initialize(self, molecule):
+        from simtk import openmm
         import openforcefield as off
-        from openforcefield.typing.engines.smirnoff import ForceField as forcefield
+        from openforcefield.typing.engines.smirnoff import ForceField
+        forcefield = ForceField("openff_unconstrained-1.2.0.offxml")
 
         #### build OpenForceField topology
         topology = off.topology.Topology()
-        for smiles in self.smiles_components:
-            mol = off.topology.Molecule.from_smiles(smiles)
-            topology.add_molecule(mol)
+        self.mapping = list()
+        for fragment, smiles in zip(molecule.fragment(), self.smiles_components):
+            smiles_mol = cctk.Molecule.new_from_smiles(smiles).assign_connectivity()
+            offm = off.topology.Molecule.from_smiles(smiles)
+            topology.add_molecule(offm)
+
+            fragment.assign_connectivity()
+            iso, mapping = cctk.Molecule.are_isomorphic(fragment, smiles_mol, return_ordering=True)
+            assert iso, f"fragment is not isomorphic to smiles {smiles}"
+            self.mapping += mapping
+
+        print([[a.topology_atom_index for a in b.atoms] for b in topology.topology_bonds])
+        print(mapping)
 
         #### set up OpenMM system
         forcefield.get_parameter_handler('Electrostatics').method = 'PME'
-        system = forcefield.create_openmm_system(off_topology)
-        integrator = openmm.DummyIntegrator()
+        system = forcefield.create_openmm_system(topology)
+        integrator = openmm.VerletIntegrator(1.0) # we won't use this
         simulation = openmm.app.Simulation(topology.to_openmm(), system, integrator)
-#        simulation.context.setPositions(mdt_trajectory.openmm_positions(0))
         self.simulation = simulation
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
@@ -438,7 +440,11 @@ class OpenFFCalculator(Calculator):
         """
 
         if self.simulation is None:
-            self.initialize()
+            molecule = cctk.Molecule(atomic_numbers, positions).assign_connectivity()
+            self.initialize(molecule)
+
+        positions = positions[self.mapping] * 0.1 # convert to nm
+        positions = positions.view(np.ndarray).tolist()
 
         # run job
         start = time.time()
@@ -446,8 +452,8 @@ class OpenFFCalculator(Calculator):
         s = self.simulation
         s.context.setPositions(positions)
         state = s.context.getState(getEnergy=True, getForces=True)
-        energy = state.getPotentialEnergy().value_in_units(self.energy_units) * constants.HARTREE_PER_KCAL
-        forces = state.getForces(asNumpy=True).value_in_units(self.force_units)
+        energy = state.getPotentialEnergy() #/ self.energy_units * constants.HARTREE_PER_KCAL
+        forces = state.getForces(asNumpy=True) #/ self.force_units
 
         end = time.time()
         if print_timing:
