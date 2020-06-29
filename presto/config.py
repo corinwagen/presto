@@ -46,13 +46,20 @@ print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
-def build(file, checkpoint, geometry=None):
+def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1):
     """
     Build a *presto* trajectory from a ``.yml`` config file.
 
     The config file does not specify the actual structure (geometry and atomic numbers). This can come from one of two sources:
-    1. An existing ``presto`` trajectory saved as an ``.hdf5`` file.
+    1. An existing ``presto`` trajectory saved as an ``.chk`` file.
     2. An ``.xyz`` file.
+
+    Args:
+        file (str): path to config ``yaml`` file
+        checkpoint (str): path to checkpoint file for this run
+        geometry (str): path to geometry ``.xyz`` file
+        oldchk (str): path to checkpoint file for previous run
+        oldchk_idx (int): which frame from ``oldchk`` to use as starting point
     """
     assert isinstance(file, str), "``file`` must be a string."
     assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
@@ -74,6 +81,8 @@ def build(file, checkpoint, geometry=None):
         args["active_atoms"] = parse_atom_list(settings["active_atoms"])
     elif "inactive_atoms" in settings:
         args["inactive_atoms"] = parse_atom_list(settings["inactive_atoms"])
+    else:
+        args["inactive_atoms"] = list()
 
     if "high_atoms" in settings:
         args["high_atoms"] = parse_atom_list(settings["high_atoms"])
@@ -91,15 +100,22 @@ def build(file, checkpoint, geometry=None):
 
     mol = None
     args["checkpoint_filename"] = checkpoint
-    if geometry is not None:
-        assert isinstance(geometry, str), "``geometry``must be a string!"
-        assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
-
-        mol = cctk.XYZFile.read_file(geometry).molecule
-        if not os.path.exists(checkpoint):
+    if not os.path.exists(checkpoint):
+        if geometry is not None:
+            assert isinstance(geometry, str), "``geometry``must be a string!"
+            assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+            mol = cctk.XYZFile.read_file(geometry).molecule
             args["atomic_numbers"] = mol.atomic_numbers
-    else:
-        assert os.path.exists(checkpoint), "No checkpoint file; need a geometry ``.xyz`` file for this to work!"
+
+        elif oldchk is not None:
+            assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
+            with h5py.File(oldchk, "r") as h5:
+                atomic_numbers = h5.attrs["atomic_numbers"]
+                positions = h5.get("all_positions")[oldchk_idx]
+                mol = cctk.Molecule(atomic_numbers, positions)
+                args["atomic_numbers"] = mol.atomic_numbers
+        else:
+            raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
 
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
@@ -115,15 +131,17 @@ def build(file, checkpoint, geometry=None):
 
         if len(t.frames) == 0:
             assert mol is not None, "need geometry, since there are no frames"
-            print("initializing")
             t.initialize(mol.geometry)
-            print(t)
 
         return t
 
     if settings["type"].lower() == "reaction":
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
+
+        if "time_after_finished" in settings:
+            assert isinstance(settings["time_after_finished"], (float, int)), "Need `time_after_finished` to be numeric!"
+            args["time_after_finished"] = settings["time_after_finished"]
 
         t = presto.trajectory.ReactionTrajectory(
             calculator=c,

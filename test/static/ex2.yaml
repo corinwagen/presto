@@ -35,3 +35,7 @@ bath_scheduler:
 termination_function:
     constraint1: bond 2 48
     constraint2: bond 48 51
+
+termination_function:
+    constraint1: bond 2 48
+    constraint2: bond 48 51
