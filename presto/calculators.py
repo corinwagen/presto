@@ -191,7 +191,7 @@ class XTBCalculator(Calculator):
         # delete job directory
         os.chdir(XTB_SCRIPT_DIRECTORY)
         try:
-#            shutil.rmtree(job_directory)
+            shutil.rmtree(job_directory)
             pass
         except Exception as e:
             print(e)

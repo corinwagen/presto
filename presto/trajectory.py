@@ -401,6 +401,7 @@ class ReactionTrajectory(Trajectory):
     Attributes:
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted.
             takes ``Frame`` argument as option and returns ``True``/``False``.
+            optionally, can return 1 for forward and 2 for reverse (to differentiate recrossing from productive).
         time_after_finished (float/int): how long (in fs) to continue propagation after termination conditions reached
     """
 
@@ -454,12 +455,13 @@ class ReactionTrajectory(Trajectory):
             if self.termination_function(self.frames[-1]) or time_since_finished > 0:
                 logger.info(f"Termination function satisfied, running for {time_after_finished} additional fs ({time_since_finished} completed thus far)")
                 time_since_finished += self.timestep
+                exit_code = self.termination_function(self.frames[-1])
 
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save()
 
-        self.finished = True
+        self.finished = exit_code
 
 class EquilibrationTrajectory(Trajectory):
     """
@@ -551,15 +553,18 @@ def join(traj1, traj2):
         combined ``ReactionTrajectory``
     """
     logger.info("Joining forward and reverse reaction trajectories....")
-    assert isinstance(traj1, ReactionTrajectory), "need a ReactionTrajectory"
-    assert isinstance(traj2, ReactionTrajectory), "need a ReactionTrajectory"
+    assert isinstance(traj1, ReactionTrajectory), "Need a ReactionTrajectory"
+    assert isinstance(traj2, ReactionTrajectory), "Need a ReactionTrajectory"
 
-    assert traj1.forwards == True, "first trajectory must be forwards"
-    assert traj2.forwards == False, "second trajectory must be reverse"
+    assert traj1.forwards == True, "First trajectory must be forwards!"
+    assert traj2.forwards == False, "Second trajectory must be reverse!"
 
-    assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "positions are same"
-    assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "velocities are same"
-    assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "accelerations are same"
+    assert traj1.finished, "First trajectory must be finished!"
+    assert traj2.finished, "Second trajectory must be finished!"
+
+    assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
+    assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
+    assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "Link accelerations must be same!"
 
     new_traj = ReactionTrajectory(
         timestep = traj1.timestep,
@@ -578,6 +583,10 @@ def join(traj1, traj2):
     r_frames.reverse()
 
     new_traj.frames = r_frames + f_frames
+
+    if traj1.finished == 2:
+        #### if the first traj finished with the reverse condition, reverse order
+        new_traj.frames = new_traj.frames[::-1]
 
     return new_traj
 

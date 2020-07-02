@@ -35,7 +35,7 @@ check_directory("XTB_SCRIPT_DIRECTORY", XTB_SCRIPT_DIRECTORY)
 XTB_PATH = config['xtb']['XTB_PATH']
 if XTB_PATH.lower() == "@auto":
     CONDA_PATH = os.getenv('CONDA_PREFIX')
-    assert CONDA_PATH is not None, "Could not get a value for CONDA_PATH when trying to autodetect XTBPATH.  Aborting."
+    assert CONDA_PATH is not None, "Could not get a value for CONDA_PATH when trying to autodetect XTBPATH. Aborting. (Do you have the environment activated?)"
     XTB_PATH = f"{CONDA_PATH}/share/xtb"
 else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
@@ -46,7 +46,7 @@ print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
-def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1):
+def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     """
     Build a *presto* trajectory from a ``.yml`` config file.
 
@@ -317,24 +317,26 @@ def parse_atom_list(string):
     return np.array(list(set(atoms))) # keep only distinct atoms
 
 def build_termination_function(settings):
-    constraints = list(settings.keys())
-
     def term(frame):
         m = frame.molecule().assign_connectivity()
-        for row in constraints:
+        for name, row in settings.items():
+            exit_code = 1
+            if re.search("r$", name):
+                exit_code = 2
+
             words = list(filter(None, row.split(" ")))
             if words[0] == "bond":
                 assert len(words) == 3, f"Termination condition ``bond`` must be of form ``bond atom1 atom2`` -- {row} is invalid!"
                 if m.get_bond_order(words[1], words[2]):
-                    return True
+                    return exit_code
             elif words[0] == "distance":
                 assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
                 if words[3] == "greater_than":
                     if m.get_distance(words[1], words[2]) > words[4]:
-                        return True
+                        return exit_code
                 elif words[3] == "less_than":
                     if m.get_distance(words[1], words[2]) < words[4]:
-                        return True
+                        return exit_code
                 else:
                     raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")
             else:
