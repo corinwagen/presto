@@ -405,7 +405,18 @@ class ReactionTrajectory(Trajectory):
     def new_from_checkpoint(self):
         pass
 
-    def initialize(self, frame, new_velocities=None, time_after_finished=100, **kwargs):
+    def __init__(self, termination_function=None, time_after_finished=100, **kwargs):
+        super().__init__(**kwargs)
+
+        assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
+        self.time_after_finished = time_after_finished
+
+        assert hasattr("__call__", termination_function), "termination_function must be a function!"
+        self.termination_function = termination_function
+
+        return self
+
+    def initialize(self, frame, new_velocities=None, **kwargs):
         """
         Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -432,9 +443,6 @@ class ReactionTrajectory(Trajectory):
         positions = frame.positions
         velocities = frame.velocities + new_velocities.view(cctk.OneIndexedArray)
         accelerations = frame.accelerations
-
-        assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
-        self.time_after_finished = time_after_finished
 
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, frame.bath_temperature)]
         self.save()
@@ -479,6 +487,8 @@ class EquilibrationTrajectory(Trajectory):
             self.bath_scheduler = sched
         else:
             raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
+
+        return self
 
     def initialize(self, positions, **kwargs):
         """
