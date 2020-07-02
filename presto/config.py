@@ -64,7 +64,6 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1):
     assert isinstance(file, str), "``file`` must be a string."
     assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
 
-    args = dict()
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)

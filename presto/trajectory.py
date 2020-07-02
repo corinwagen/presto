@@ -34,7 +34,10 @@ class Trajectory():
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
         if self.has_checkpoint():
-            self.load_from_checkpoint(idxs=load_idxs)
+            if "load_frames" in kwargs:
+                self.load_from_checkpoint(kwargs["load_frames"])
+            else:
+                self.load_from_checkpoint()
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
