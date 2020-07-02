@@ -4,6 +4,8 @@
 
 Corin Wagen and Eugene Kwan
 
+https://pubs-acs-org.ezp-prod1.hul.harvard.edu/doi/pdf/10.1021/ct050289g - good theory
+
 
 **acknowledgements** (running list)
 
