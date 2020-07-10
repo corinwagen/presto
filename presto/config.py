@@ -1,4 +1,4 @@
-import configparser, os, re, pathlib, yaml, cctk
+import configparser, os, re, pathlib, yaml, cctk, h5py
 import numpy as np
 import presto
 
@@ -97,27 +97,27 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     i = build_integrator(settings["integrator"], potential=p)
     c = build_calculator(settings["calculator"])
 
-    mol = None
     args["checkpoint_filename"] = checkpoint
-    if not os.path.exists(checkpoint):
-        if geometry is not None:
-            assert isinstance(geometry, str), "``geometry``must be a string!"
-            assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
-            mol = cctk.XYZFile.read_file(geometry).molecule
-            args["atomic_numbers"] = mol.atomic_numbers
-
-        elif oldchk is not None:
-            assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
-            with h5py.File(oldchk, "r") as h5:
-                atomic_numbers = h5.attrs["atomic_numbers"]
-                positions = h5.get("all_positions")[oldchk_idx]
-                mol = cctk.Molecule(atomic_numbers, positions)
-                args["atomic_numbers"] = mol.atomic_numbers
-        else:
-            raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
-
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
+        mol = None
+        if not os.path.exists(checkpoint):
+            if geometry is not None:
+                assert isinstance(geometry, str), "``geometry``must be a string!"
+                assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+                mol = cctk.XYZFile.read_file(geometry).molecule
+                args["atomic_numbers"] = mol.atomic_numbers
+
+            elif oldchk is not None:
+                assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
+                with h5py.File(oldchk, "r") as h5:
+                    atomic_numbers = h5.attrs["atomic_numbers"]
+                    positions = h5.get("all_positions")[oldchk_idx]
+                    mol = cctk.Molecule(atomic_numbers, positions)
+                    args["atomic_numbers"] = mol.atomic_numbers
+            else:
+                raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
+
         assert "bath_scheduler" in settings, "Need `bath_scheduler` in config YAML file for type=`equilibration`!"
         s = build_bath_scheduler(settings["bath_scheduler"])
 
@@ -135,6 +135,19 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         return t
 
     if settings["type"].lower() == "reaction":
+        if not os.path.exists(checkpoint):
+            assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"
+
+            x, v, a, temp = None, None, None, None
+            with h5py.File(oldchk, "r") as h5:
+                atomic_numbers = h5.attrs["atomic_numbers"]
+                x = h5.get("all_positions")[oldchk_idx]
+                v = h5.get("all_velocities")[oldchk_idx]
+                a = h5.get("all_accelerations")[oldchk_idx]
+                temp = h5.get("bath_temperatures")[oldchk_idx]
+
+                args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
 
@@ -148,6 +161,9 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
             termination_function=f,
             **args,
         )
+
+        if not os.path.exists(checkpoint):
+            t.initialize(positions=x.view(cctk.OneIndexedArray), velocities=v.view(cctk.OneIndexedArray), accelerations=a.view(cctk.OneIndexedArray), bath_temp=temp)
 
         assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
         return t
@@ -300,6 +316,8 @@ def build_bath_scheduler(settings):
         def sched(time):
             return settings["target_temp"]
 
+        return sched
+
     else:
         raise ValueError(f"Unknown bath scheduler type {settings['type']}! Allowed options are `linear` or `constant`.")
 
@@ -327,15 +345,15 @@ def build_termination_function(settings):
             words = list(filter(None, row.split(" ")))
             if words[0] == "bond":
                 assert len(words) == 3, f"Termination condition ``bond`` must be of form ``bond atom1 atom2`` -- {row} is invalid!"
-                if m.get_bond_order(words[1], words[2]):
+                if m.get_bond_order(int(words[1]), int(words[2])):
                     return exit_code
             elif words[0] == "distance":
                 assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
                 if words[3] == "greater_than":
-                    if m.get_distance(words[1], words[2]) > words[4]:
+                    if m.get_distance(int(words[1]), int(words[2])) > int(words[4]):
                         return exit_code
                 elif words[3] == "less_than":
-                    if m.get_distance(words[1], words[2]) < words[4]:
+                    if m.get_distance(int(words[1]), int(words[2])) < int(words[4]):
                         return exit_code
                 else:
                     raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")
