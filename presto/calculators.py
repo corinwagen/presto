@@ -44,12 +44,9 @@ class XTBCalculator(Calculator):
         multiplicity (int):
         gfn (int):
         parallel (int):
-        constraints (list): list of XTB constraints in xcontrol format: e.g. ["distance: 1, 2, 1.4"]
-            See https://xtb-docs.readthedocs.io/en/latest/xcontrol.html for more details.
-            Distances are given in Å, while angles are given in degrees.
     """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(),):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, ):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, int)
