@@ -1,7 +1,8 @@
 import numpy as np
 import math, copy, cctk
 
-from cctk.helper_functions import get_vdw_radius
+import cctk
+from cctk.helper_functions import get_symbol, get_vdw_radius
 
 import presto
 

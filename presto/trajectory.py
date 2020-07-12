@@ -1,5 +1,5 @@
 import numpy as np
-import math, copy, cctk, os, re, logging
+import math, copy, cctk, os, re, logging, time
 
 import h5py
 import presto
@@ -153,22 +153,47 @@ class Trajectory():
         """
         pass
 
-    def has_checkpoint(self):
+    def has_checkpoint(self, max_wait=100):
         if self.checkpoint_filename is None:
             return False
+
         if os.path.exists(self.checkpoint_filename):
-            with h5py.File(self.checkpoint_filename, "r+") as h5:
-                all_energies = h5.get("all_energies")
-                if all_energies is None:
-                    return False
-                if len(all_energies) > 0:
-                    return True
-                else:
-                    return False
+            return True
         else:
             return False
 
-    def load_from_checkpoint(self, frames=slice(None)):
+        #### TODO - prevent lockfile collisions here and in num_frames
+
+#            lockfile = f"{self.checkpoint_filename}.lock"
+#
+#            while os.path.exists(lockfile):
+#                max_wait += -1
+#                time.sleep(1)
+#
+#                if max_wait < 0:
+#                    raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
+#
+#            # create new lockfile
+#            with open(lockfile, "w") as lf:
+#                pass
+#
+#            status = False
+#            with h5py.File(self.checkpoint_filename, "r+") as h5:
+#                all_energies = h5.get("all_energies")
+#                if all_energies is None:
+#                    status = False
+#                elif len(all_energies) > 0:
+#                    status = True
+#                else:
+#                    status = False
+#
+#            os.remove(lockfile)
+#            return status
+#
+#        else:
+#            return False
+
+    def load_from_checkpoint(self, frames=slice(None), max_wait=100):
         """
         Loads frames from ``self.checkpoint_filename``.
 
@@ -179,9 +204,26 @@ class Trajectory():
             nothing
         """
         assert self.has_checkpoint(), "can't load without checkpoint file"
+
+        lockfile = f"{self.checkpoint_filename}.lock"
+        while os.path.exists(lockfile):
+            max_wait += -1
+            time.sleep(1)
+
+            if max_wait < 0:
+                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
+
+        # create new lockfile
+        with open(lockfile, "w") as lf:
+            pass
+
         with h5py.File(self.checkpoint_filename, "r") as h5:
-            self.atomic_numbers = h5.attrs["atomic_numbers"]
-            self.masses = h5.attrs["masses"]
+            atomic_numbers = h5.attrs["atomic_numbers"]
+            self.atomic_numbers = cctk.OneIndexedArray(atomic_numbers)
+
+            masses = h5.attrs["masses"]
+            self.masses = cctk.OneIndexedArray(masses)
+
             self.finished = h5.attrs['finished']
 
             all_energies = h5.get("all_energies")[frames]
@@ -205,6 +247,8 @@ class Trajectory():
                     bath_temperature=temperatures[i]
                 ))
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
+
+        os.remove(lockfile)
         return
 
     def num_frames(self):
@@ -214,9 +258,22 @@ class Trajectory():
             num = len(h5.get("all_energies"))
         return num
 
-    def save(self, keep_all=False):
+    def save(self, keep_all=False, max_wait=100):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
+
+        lockfile = f"{self.checkpoint_filename}.lock"
+        while os.path.exists(lockfile):
+            max_wait += -1
+            time.sleep(1)
+
+            if max_wait < 0:
+                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
+
+        # create new lockfile
+        with open(lockfile, "w") as lf:
+            pass
+
         if self.has_checkpoint():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
@@ -228,6 +285,7 @@ class Trajectory():
                 now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
+                    os.remove(lockfile)
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
@@ -259,8 +317,8 @@ class Trajectory():
             print(f"saving to {self.checkpoint_filename}")
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
-                h5.attrs['atomic_numbers'] = self.atomic_numbers
-                h5.attrs['masses'] = self.masses
+                h5.attrs['atomic_numbers'] = self.atomic_numbers.view(np.ndarray)
+                h5.attrs['masses'] = self.masses.view(np.ndarray)
                 h5.attrs['finished'] = self.finished
                 h5.attrs['forwards'] = self.forwards
 
@@ -285,6 +343,8 @@ class Trajectory():
                 temps = np.asarray([frame.bath_temperature for frame in self.frames])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,),
                             compression="gzip", compression_opts=9)
+
+        os.remove(lockfile)
 
         # lower memory usage
         if keep_all:
@@ -401,6 +461,7 @@ class ReactionTrajectory(Trajectory):
     Attributes:
         termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted.
             takes ``Frame`` argument as option and returns ``True``/``False``.
+            optionally, can return 1 for forward and 2 for reverse (to differentiate recrossing from productive).
         time_after_finished (float/int): how long (in fs) to continue propagation after termination conditions reached
     """
 
@@ -414,19 +475,21 @@ class ReactionTrajectory(Trajectory):
         assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
         self.time_after_finished = time_after_finished
 
-        assert hasattr("__call__", termination_function), "termination_function must be a function!"
+        assert hasattr(termination_function, "__call__"), "termination_function must be a function!"
         self.termination_function = termination_function
 
-        return self
-
-    def initialize(self, frame, new_velocities=None, **kwargs):
+    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, bath_temp=None, new_velocities=None, **kwargs):
         """
         Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
 
+        Can pass either a frame object, or the relevant attributes (frame gets precedence).
+
         Args:
             frame (presto.frame.Frame): equilibrated frame
             new_velocities (cctk.OneIndexedArray): array of velocities to add to equilibrated frame (for previously-frozen atoms)
+            velocities, accelerations, positions (cctk.OneIndexedArray): values from frame (instead of frame object)
+            bath_temperature (float):
 
         Returns:
             frame
@@ -436,38 +499,57 @@ class ReactionTrajectory(Trajectory):
             self.load_from_checkpoint()[-1]
             return
 
-        assert isinstance(frame, presto.frame.Frame), "need a valid frame"
+        if frame is not None:
+            assert isinstance(frame, presto.frame.Frame), "need a valid frame"
+
+            positions = frame.positions
+            velocities = frame.velocities
+            accelerations = frame.accelerations
+            bath_temp = frame.bath_temperature
+
+        else:
+            assert positions is not None, "no Frame supplied, need positions"
+            assert velocities is not None, "no Frame supplied, need velocities"
+            assert accelerations is not None, "no Frame supplied, need accelerations"
+            assert bath_temp is not None, "no Frame supplied, need bath temperature"
+
+            assert isinstance(positions, cctk.OneIndexedArray)
+            assert isinstance(velocities, cctk.OneIndexedArray)
+            assert isinstance(accelerations, cctk.OneIndexedArray)
+            assert isinstance(bath_temp, (float, int, np.integer)) 
+
+        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temp)
 
         if new_velocities is None:
-            random_gaussian = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
-            random_gaussian[frame.active_mask()] = 0
-            new_velocities = random_gaussian * np.sqrt(frame.bath_temperature * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+            random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
+            random_gaussian[new_frame.active_mask()] = 0
+            new_velocities = random_gaussian * np.sqrt(bath_temp * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
 
-        positions = frame.positions
-        velocities = frame.velocities + new_velocities.view(cctk.OneIndexedArray)
-        accelerations = frame.accelerations
+        new_frame.velocities += new_velocities.view(cctk.OneIndexedArray)
 
-        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, frame.bath_temperature)]
+        self.frames = [new_frame]
         self.save()
 
     def propagate(self, checkpoint_interval):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        time_since_finished = self.time_after_finished
+        time_since_finished = 0
 
         for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
-            if time_since_finished >= time_after_finished:
+            if time_since_finished >= self.time_after_finished:
                 self.finished = True
                 return
 
             if self.termination_function(self.frames[-1]) or time_since_finished > 0:
                 logger.info(f"Termination function satisfied, running for {time_after_finished} additional fs ({time_since_finished} completed thus far)")
                 time_since_finished += self.timestep
+                exit_code = self.termination_function(self.frames[-1])
 
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save()
 
-        self.finished = True
+        self.save()
+        self.finished = exit_code
 
 class EquilibrationTrajectory(Trajectory):
     """
@@ -490,8 +572,6 @@ class EquilibrationTrajectory(Trajectory):
             self.bath_scheduler = sched
         else:
             raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
-
-        return self
 
     def initialize(self, positions, **kwargs):
         """
@@ -561,15 +641,18 @@ def join(traj1, traj2):
         combined ``ReactionTrajectory``
     """
     logger.info("Joining forward and reverse reaction trajectories....")
-    assert isinstance(traj1, ReactionTrajectory), "need a ReactionTrajectory"
-    assert isinstance(traj2, ReactionTrajectory), "need a ReactionTrajectory"
+    assert isinstance(traj1, ReactionTrajectory), "Need a ReactionTrajectory"
+    assert isinstance(traj2, ReactionTrajectory), "Need a ReactionTrajectory"
 
-    assert traj1.forwards == True, "first trajectory must be forwards"
-    assert traj2.forwards == False, "second trajectory must be reverse"
+    assert traj1.forwards == True, "First trajectory must be forwards!"
+    assert traj2.forwards == False, "Second trajectory must be reverse!"
 
-    assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "positions are same"
-    assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "velocities are same"
-    assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "accelerations are same"
+    assert traj1.finished, "First trajectory must be finished!"
+    assert traj2.finished, "Second trajectory must be finished!"
+
+    assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
+    assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
+    assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "Link accelerations must be same!"
 
     new_traj = ReactionTrajectory(
         timestep = traj1.timestep,
@@ -588,6 +671,10 @@ def join(traj1, traj2):
     r_frames.reverse()
 
     new_traj.frames = r_frames + f_frames
+
+    if traj1.finished == 2:
+        #### if the first traj finished with the reverse condition, reverse order
+        new_traj.frames = new_traj.frames[::-1]
 
     return new_traj
 
