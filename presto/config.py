@@ -192,7 +192,7 @@ def build_integrator(settings, potential=None):
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
-def build_calculator(settings):
+def build_calculator(settings, constraints=list()):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for calculator"
     assert isinstance(settings["type"], str), "Calculator `type` must be a string"
@@ -203,6 +203,7 @@ def build_calculator(settings):
         return presto.calculators.ONIOMCalculator(
             high_calculator=build_calculator(settings["high_calculator"]),
             low_calculator=build_calculator(settings["low_calculator"]),
+            constraints=constraints,
         )
     elif settings["type"].lower() == "gaussian":
         charge = 0
@@ -232,9 +233,9 @@ def build_calculator(settings):
             footer = settings["footer"]
 
         if link0 is not None:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints)
         else:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer)
+            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints)
 
     elif settings["type"].lower() == "xtb":
         charge = 0
@@ -259,7 +260,7 @@ def build_calculator(settings):
             assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
             parallel = settings["parallel"]
 
-        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel)
+        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
@@ -371,19 +372,19 @@ def build_constraints(settings):
     constraints = list()
     for row in list(settings.values()):
         words = list(filter(None, row.split(" ")))
-        atom1 = words[0]
-        atom2 = words[1]
-        equil = words[2]
+        atom1 = int(words[0])
+        atom2 = int(words[1])
+        equil = float(words[2])
 
         if len(words) > 3:
-            k = words[3]
+            k = float(words[3])
             if len(words) > 4:
-                p = words[4]
-                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, power=p, force_constant=k)
+                p = int(words[4])
+                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, power=p, force_constant=k))
             else:
-                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, force_constant=k)
+                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, force_constant=k))
         else:
-            constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil)
+            constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil))
 
     return constraints
 
