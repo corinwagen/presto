@@ -131,8 +131,11 @@ class Frame():
         active_mask  = active_mask.astype(bool)
         return active_mask
 
-    def molecule(self):
-        return cctk.Molecule(self.trajectory.atomic_numbers, self.positions)
+    def molecule(self, idxs=None):
+        if idxs is not None:
+            return cctk.Molecule(self.trajectory.atomic_numbers[idxs], self.positions[idxs])
+        else:
+            return cctk.Molecule(self.trajectory.atomic_numbers, self.positions)
 
     def remove_com_motion(self):
         # move centroid to origin
