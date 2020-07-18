@@ -353,8 +353,8 @@ class Trajectory():
         else:
             self.frames = [self.frames[-1]]
 
-    def write_movie(self, filename):
-        ensemble = self.as_ensemble()
+    def write_movie(self, filename, idxs=None):
+        ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")
         if re.search("pdb$", filename):
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
@@ -366,10 +366,10 @@ class Trajectory():
         else:
             raise ValueError(f"error writing {filename}: this filetype isn't currently supported!")
 
-    def as_ensemble(self):
+    def as_ensemble(self, idxs=None):
         ensemble = cctk.ConformationalEnsemble()
         for frame in self.frames[:-1]:
-            ensemble.add_molecule(frame.molecule(), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
+            ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
     def spawn_reaction_trajectory(self, termination_function, stop_time, f_filename=None, r_filename=None):
@@ -536,21 +536,22 @@ class ReactionTrajectory(Trajectory):
         time_since_finished = 0
 
         for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
-            if time_since_finished >= self.time_after_finished:
-                self.finished = True
-                return
-
-            if self.termination_function(self.frames[-1]) or time_since_finished > 0:
-                logger.info(f"Termination function satisfied, running for {time_after_finished} additional fs ({time_since_finished} completed thus far)")
-                time_since_finished += self.timestep
-                exit_code = self.termination_function(self.frames[-1])
-
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save(keep_all=keep_all)
 
-        self.save(keep_all=keep_all)
-        self.finished = exit_code
+            exit_code = self.termination_function(self.frames[-1])
+
+            if exit_code or time_since_finished > 0:
+                time_since_finished += self.timestep
+
+            if time_since_finished >= self.time_after_finished:
+                if exit_code:
+                    self.save(keep_all=keep_all)
+                    self.finished = exit_code
+                    return
+                else: # we just got lucky/random but it wasn't really finished, reset and try again
+                    time_since_finished = 0
 
 class EquilibrationTrajectory(Trajectory):
     """
