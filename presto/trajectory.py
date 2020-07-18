@@ -107,7 +107,7 @@ class Trajectory():
         active_atoms = np.array(active_atoms)
         self.active_atoms = active_atoms
 
-    def run(self, checkpoint_interval=10, **kwargs):
+    def run(self, checkpoint_interval=10, keep_all=False, **kwargs):
         """
         Run the trajectory.
 
@@ -135,8 +135,8 @@ class Trajectory():
             return self
         else:
             logger.info("Propagating trajectory.")
-            self.propagate(checkpoint_interval)
-            self.save()
+            self.propagate(checkpoint_interval, keep_all=keep_all)
+            self.save(keep_all=keep_all)
             return self
 
     def initialize(self):
@@ -252,11 +252,13 @@ class Trajectory():
         return
 
     def num_frames(self):
-        assert self.has_checkpoint(), "can't load without checkpoint file"
-        num = 0
-        with h5py.File(self.checkpoint_filename, "r") as h5:
-            num = len(h5.get("all_energies"))
-        return num
+        if self.has_checkpoint():
+            num = 0
+            with h5py.File(self.checkpoint_filename, "r") as h5:
+                num = len(h5.get("all_energies"))
+            return num
+        else:
+            return len(self.frames)
 
     def save(self, keep_all=False, max_wait=100):
         if self.checkpoint_filename is None:
@@ -314,7 +316,6 @@ class Trajectory():
                 all_temps[-new_n_frames:] = new_temps
                 logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
         else:
-            print(f"saving to {self.checkpoint_filename}")
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 h5.attrs['atomic_numbers'] = self.atomic_numbers.view(np.ndarray)
@@ -530,7 +531,7 @@ class ReactionTrajectory(Trajectory):
         self.frames = [new_frame]
         self.save()
 
-    def propagate(self, checkpoint_interval):
+    def propagate(self, checkpoint_interval, keep_all=False):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         time_since_finished = 0
 
@@ -546,9 +547,9 @@ class ReactionTrajectory(Trajectory):
 
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save()
+                self.save(keep_all=keep_all)
 
-        self.save()
+        self.save(keep_all=keep_all)
         self.finished = exit_code
 
 class EquilibrationTrajectory(Trajectory):
@@ -619,12 +620,13 @@ class EquilibrationTrajectory(Trajectory):
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
         self.save()
 
-    def propagate(self, checkpoint_interval):
+    def propagate(self, checkpoint_interval, keep_all=False):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         for t in np.arange(self.timestep * self.num_frames(), self.stop_time, self.timestep):
             self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save()
+                self.save(keep_all=keep_all)
+        self.save(keep_all=keep_all)
         self.finished = True
 
 

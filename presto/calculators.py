@@ -5,8 +5,7 @@ import multiprocessing as mp
 
 import xtb
 
-from presto import constants
-from presto import config
+from presto import constants, config, constraint
 
 ############################
 ### Directory Parameters ###
@@ -35,7 +34,37 @@ class Calculator():
         pass
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe):
+        """
+        Return energy, forces
+        """
         pass
+
+
+class NullCalculator(Calculator):
+    """
+    Does nothing except evaluate constraints. Mostly for testing purposes, but I guess you could also model something insanely boring this way.
+    """
+    def __init__(self, constraints=list()):
+        for c in constraints:
+            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+        self.constraints = constraints
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+        energy = 0
+        forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
+
+        for c in self.constraints:
+            f, e = c.evaluate(positions)
+            energy += e
+            forces += f
+
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
+
 
 class XTBCalculator(Calculator):
     """
@@ -46,7 +75,7 @@ class XTBCalculator(Calculator):
         parallel (int):
     """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, ):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list()):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, int)
@@ -197,6 +226,12 @@ class XTBCalculator(Calculator):
         # restore working directory
         os.chdir(old_working_directory)
 
+        # apply constraints
+        for c in self.constraints:
+            f, e = c.evaluate(positions)
+            energy += e
+            forces += f
+
         # return result
         if pipe is not None:
             assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
@@ -207,10 +242,15 @@ class XTBCalculator(Calculator):
 
 class GaussianCalculator(Calculator):
 
-    def __init__(self, charge=0, multiplicity=1,
-                 link0={"mem":"1GB", "nprocshared":"4"},
-                 route_card="#p hf/3-21g force",
-                 footer=None):
+    def __init__(
+            self,
+            charge=0,
+            multiplicity=1,
+            link0={"mem":"1GB", "nprocshared":"4"},
+            route_card="#p hf/3-21g force",
+            footer=None
+            constraints=list()
+        ):
         if not re.search("force", route_card):
             raise ValueError("need a force job to calculate forces")
 
@@ -219,6 +259,10 @@ class GaussianCalculator(Calculator):
         self.link0 = link0
         self.route_card = route_card
         self.footer = footer
+
+        for c in constraints:
+            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+        self.constraints = constraints
 
         # select a unique 8-letter string that will
         # be used to identify this calculator
@@ -306,6 +350,12 @@ class GaussianCalculator(Calculator):
         # restore working directory
         os.chdir(old_working_directory)
 
+        # apply constraints
+        for c in self.constraints:
+            f, e = c.evaluate(positions)
+            energy += e
+            forces += f
+
         # return result
         if pipe is not None:
             assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
@@ -318,11 +368,15 @@ class ONIOMCalculator(Calculator):
     """
     Composes two other calculators, and computes forces according to the ONIOM embedding scheme.
     """
-    def __init__(self, high_calculator, low_calculator):
+    def __init__(self, high_calculator, low_calculator, constraints=list()):
         assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
         assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
         self.high_calculator = high_calculator
         self.low_calculator = low_calculator
+
+        for c in constraints:
+            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+        self.high_calculator.constraints = constraints
 
         #### prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)
@@ -455,6 +509,12 @@ class OpenFFCalculator(Calculator):
         end = time.time()
         if print_timing:
             print(f"\nOpenMM call took {end-start:.3f} s.")
+
+        # apply constraints
+        for c in self.constraints:
+            f, e = c.evaluate(positions)
+            energy += e
+            forces += f
 
         # return result
         if pipe is not None:

@@ -94,8 +94,12 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     if "potential" in settings:
         p = build_potential(settings["potential"])
 
+    constraints = list()
+    if "constraints" in settings:
+        constraints = build_constraints(settings["constraints"])
+
     i = build_integrator(settings["integrator"], potential=p)
-    c = build_calculator(settings["calculator"])
+    c = build_calculator(settings["calculator"], constraints=constraints)
 
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"
@@ -362,3 +366,25 @@ def build_termination_function(settings):
         return False
 
     return term
+
+def build_constraints(settings):
+    constraints = list()
+    for row in list(settings.values()):
+        words = list(filter(None, row.split(" ")))
+        atom1 = words[0]
+        atom2 = words[1]
+        equil = words[2]
+
+        if len(words) > 3:
+            k = words[3]
+            if len(words) > 4:
+                p = words[4]
+                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, power=p, force_constant=k)
+            else:
+                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, force_constant=k)
+        else:
+            constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil)
+
+    return constraints
+
+

@@ -4,3 +4,4 @@ import presto.integrators
 import presto.frame
 import presto.trajectory
 import presto.analysis
+import presto.constraint
