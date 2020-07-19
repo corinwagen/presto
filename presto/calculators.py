@@ -86,6 +86,10 @@ class XTBCalculator(Calculator):
         self.gfn = gfn
         self.parallel = parallel
 
+        for c in constraints:
+            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+        self.constraints = constraints
+
         # select a unique 8-letter string that will
         # be used to identify this calculator
         self.UNIQUE_ID = random.choice(string.ascii_letters)
