@@ -248,7 +248,7 @@ class GaussianCalculator(Calculator):
             multiplicity=1,
             link0={"mem":"1GB", "nprocshared":"4"},
             route_card="#p hf/3-21g force",
-            footer=None
+            footer=None,
             constraints=list()
         ):
         if not re.search("force", route_card):
