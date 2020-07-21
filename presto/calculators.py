@@ -381,6 +381,7 @@ class ONIOMCalculator(Calculator):
         for c in constraints:
             assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
         self.high_calculator.constraints = constraints
+        self.constraints = constraints
 
         #### prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)

@@ -520,7 +520,7 @@ class ReactionTrajectory(Trajectory):
             assert isinstance(positions, cctk.OneIndexedArray)
             assert isinstance(velocities, cctk.OneIndexedArray)
             assert isinstance(accelerations, cctk.OneIndexedArray)
-            assert isinstance(bath_temp, (float, int, np.integer)) 
+            assert isinstance(bath_temp, (float, int, np.integer))
 
         new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temp)
 
