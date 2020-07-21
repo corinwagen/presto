@@ -28,14 +28,14 @@ try:
         if args["exclusive"]:
             text += "#SBATCH --exclusive=mcs\n"
         text += f"#SBATCH -J presto_{name}\n\n"
-        text += f"python {args['python']} {chk}"
+        text += f"python {args['python']} {name}.yaml {chk}"
 
         with open(f"control_{name}.sh", "w+") as file:
             file.write(text)
         print(f"control_{name}.sh created")
 
-        # annoyingly, you have to reload conda for w/e reason
-        subprocess.call(['/bin/bash', '-i', '-c', f"source deactivate; source activate openmm; sbatch control_{name}.sh "])
+#        # annoyingly, you have to reload conda for w/e reason
+#        subprocess.call(['/bin/bash', '-i', '-c', f"source deactivate; source activate openmm; sbatch control_{name}.sh "])
 
 except KeyboardInterrupt as k:
     print("cancelled!")

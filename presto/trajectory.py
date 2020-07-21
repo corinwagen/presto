@@ -354,6 +354,9 @@ class Trajectory():
             self.frames = [self.frames[-1]]
 
     def write_movie(self, filename, idxs=None):
+        if idxs is None:
+            idxs = self.high_atoms
+
         ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")
         if re.search("pdb$", filename):

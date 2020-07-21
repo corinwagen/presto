@@ -6,7 +6,13 @@ import presto
 
 # this module loads the configuration file
 CONFIGURATION_FILE = "presto.config"
-assert os.path.isfile(CONFIGURATION_FILE), f"Fatal error: presto configuration file '{CONFIGURATION_FILE}' not found!"
+if os.path.isfile(CONFIGURATION_FILE):
+    pass
+elif os.path.isfile(os.path.expanduser(f"~/{CONFIGURATION_FILE}")):
+    CONFIGURATION_FILE = os.path.expanduser(f"~/{CONFIGURATION_FILE}")
+else:
+    raise ValueError(f"Fatal error: presto configuration file '{CONFIGURATION_FILE}' not found in current directory or {os.path.expanduser(f'~/{CONFIGURATION_FILE}')}")
+
 config = configparser.ConfigParser()
 config.read(CONFIGURATION_FILE)
 
