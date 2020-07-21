@@ -86,6 +86,10 @@ class XTBCalculator(Calculator):
         self.gfn = gfn
         self.parallel = parallel
 
+        for c in constraints:
+            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+        self.constraints = constraints
+
         # select a unique 8-letter string that will
         # be used to identify this calculator
         self.UNIQUE_ID = random.choice(string.ascii_letters)
@@ -249,7 +253,7 @@ class GaussianCalculator(Calculator):
             link0={"mem":"1GB", "nprocshared":"4"},
             route_card="#p hf/3-21g force",
             footer=None,
-            constraints=list()
+            constraints=list(),
         ):
         if not re.search("force", route_card):
             raise ValueError("need a force job to calculate forces")
@@ -377,6 +381,7 @@ class ONIOMCalculator(Calculator):
         for c in constraints:
             assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
         self.high_calculator.constraints = constraints
+        self.constraints = constraints
 
         #### prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)

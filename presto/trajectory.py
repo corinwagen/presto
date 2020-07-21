@@ -354,6 +354,9 @@ class Trajectory():
             self.frames = [self.frames[-1]]
 
     def write_movie(self, filename, idxs=None):
+        if idxs is None:
+            idxs = self.high_atoms
+
         ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")
         if re.search("pdb$", filename):
@@ -517,7 +520,7 @@ class ReactionTrajectory(Trajectory):
             assert isinstance(positions, cctk.OneIndexedArray)
             assert isinstance(velocities, cctk.OneIndexedArray)
             assert isinstance(accelerations, cctk.OneIndexedArray)
-            assert isinstance(bath_temp, (float, int, np.integer)) 
+            assert isinstance(bath_temp, (float, int, np.integer))
 
         new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temp)
 

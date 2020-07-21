@@ -13,8 +13,8 @@ parser.add_argument("--interval", "-i", type=int, default=10)
 parser.add_argument("name", type=str)
 parser.add_argument("python", type=str)
 parser.add_argument("geometry", type=str)
-parser.add_argument("solvent", type=str)
-parser.add_argument("solv_num", type=str)
+parser.add_argument("solvent", type=str, default="")
+parser.add_argument("solv_num", type=str, default="")
 
 args = vars(parser.parse_args(sys.argv[1:]))
 name = args["name"]
