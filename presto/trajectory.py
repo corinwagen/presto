@@ -225,6 +225,7 @@ class Trajectory():
             self.masses = cctk.OneIndexedArray(masses)
 
             self.finished = h5.attrs['finished']
+            self.forwards = h5.attrs['forwards']
 
             all_energies = h5.get("all_energies")[frames]
             all_positions = h5.get("all_positions")[frames]

@@ -9,11 +9,9 @@ parser = argparse.ArgumentParser(prog="analyze.py")
 parser.add_argument("-m", "--monitor", default=False, action="store_true")
 parser.add_argument("--movie", default=False)
 parser.add_argument("config")
-parser.add_argument("filename")
+parser.add_argument("files", nargs="+")
 
 args = vars(parser.parse_args(sys.argv[1:]))
-
-files = glob.glob(args["filename"], recursive=True)
 
 constraints = None
 monitor = list()
@@ -33,7 +31,7 @@ with open(args["config"], "r+") as f:
 
 print("\n\033[3mTrajectories:\033[0m")
 print(f"\033[1m{'Filename':40s}\t{'Initial':8s}\t{'Final':8s}\t{'Total Time'}\033[0m")
-for filename in files:
+for filename in args["files"]:
     traj = presto.config.build(args["config"], filename)
 
     exit_code = traj.finished

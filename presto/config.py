@@ -29,7 +29,7 @@ def check_directory(field_name, directory):
     directory_exists = os.path.isdir(directory)
     if not directory_exists:
         print(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
-        exit()
+#        exit()
 
 # check configuration parameters
 GAUSSIAN_SCRIPT_DIRECTORY = resolve_directory(config['gaussian']['GAUSSIAN_SCRIPT_DIRECTORY'])

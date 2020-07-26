@@ -12,9 +12,9 @@ parser.add_argument("--exclusive", default=False, action="store_true")
 parser.add_argument("--interval", "-i", type=int, default=10)
 parser.add_argument("name", type=str)
 parser.add_argument("python", type=str)
-parser.add_argument("geometry", type=str)
-parser.add_argument("solvent", type=str, default="")
-parser.add_argument("solv_num", type=str, default="")
+parser.add_argument("arg1", type=str)
+parser.add_argument("arg2", type=str, default="")
+parser.add_argument("arg3", type=str, default="")
 
 args = vars(parser.parse_args(sys.argv[1:]))
 name = args["name"]
@@ -42,7 +42,7 @@ text += f"#SBATCH -t {args['time']}\n"
 if args["exclusive"]:
     text += "#SBATCH --exclusive=mcs\n"
 text += f"#SBATCH -J presto_{name}\n\n"
-text += f"python {args['python']} {args['name']} {args['geometry']} {args['solvent']} {args['solv_num']}"
+text += f"python {args['python']} {args['name']} {args['arg1']} {args['arg2']} {args['arg3']}"
 
 with open("control.sh", "w+") as file:
     file.write(text)

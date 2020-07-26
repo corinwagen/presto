@@ -9,7 +9,6 @@ import presto
 
 parser = argparse.ArgumentParser(prog="wham.py")
 parser.add_argument("-c", "--config", type=str, default="wham.yaml")
-parser.add_argument("-t", "--temp", type=float, default=298)
 parser.add_argument("type", type=str)
 parser.add_argument("atom1", type=int)
 parser.add_argument("atom2", type=int)
