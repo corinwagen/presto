@@ -1,4 +1,4 @@
-import unittest, cctk
+import unittest, cctk, os
 import numpy as np
 
 import sys

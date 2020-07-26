@@ -377,21 +377,24 @@ def build_termination_function(settings):
 def build_constraints(settings):
     constraints = list()
     for row in list(settings.values()):
-        words = list(filter(None, row.split(" ")))
-        atom1 = int(words[0])
-        atom2 = int(words[1])
-        equil = float(words[2])
+        assert "atom1" in row, "need ``atom1`` defined for constraint!"
+        assert isinstance(row["atom1"], (int, list)), "``atom1`` must be integer or list of integers!"
+        assert "atom2" in row, "need ``atom2`` defined for constraint!"
+        assert isinstance(row["atom2"], (int, list)), "``atom2`` must be integer or list of integers!"
+        assert "equilibrium" in row, "need equilibrium distance ``equilibrium`` defined for constraint!"
+        assert isinstance(row["equilibrium"], (int, float)), "``equilibrium`` must be numeric!"
 
-        if len(words) > 3:
-            k = float(words[3])
-            if len(words) > 4:
-                p = int(words[4])
-                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, power=p, force_constant=k))
-            else:
-                constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil, force_constant=k))
-        else:
-            constraints.append(presto.constraint.PairwisePolynomialConstraint(atom1, atom2, equil))
+        args = {"atom1": row["atom1"], "atom2": row["atom2"], "equilibrium": row["equilibrium"]}
 
+        if "power" in row:
+            assert isinstance(row["power"], int), "``power`` must be integer!"
+            args["power" ] = row["power"]
+
+        if "force_constant" in row:
+            assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
+            args["force_constant"] = row["force_constant"]
+
+        constraints.append(presto.constraint.PairwisePolynomialConstraint(**args))
     return constraints
 
 

@@ -37,4 +37,14 @@ termination_function:
     constraint2: bond 48 51
 
 constraints:
-    constraint1: 48 51 2 100 2
+    constraint1:
+        atom1: 48
+        atom2: 51
+        equilibrium: 2
+        force_constant: 100
+        power: 2
+    constraint2: 
+        atom1: [1, 2, 3, 4, 5]
+        atom2: 51
+        equilibrium: 1
+        force_constant: 10
