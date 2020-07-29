@@ -82,3 +82,50 @@ class PairwisePolynomialConstraint(Constraint):
         energy = self.force_constant / self.power * delta ** self.power
 
         return forces, energy
+
+class Anchor(Constraint):
+    """
+    Applies a weak potential fixing an atom towards a given coordinate in space.
+
+    Analogous to Singleton's "zeroatom" keyword.
+
+    Attributes:
+        atom (int): number of atom
+        coordinate (np.ndarray): desired coordinate
+        power (float): dependence on distance
+        force_constant (float): force constant
+    """
+
+    def __init__(self, atom, coordinate=np.zeros(3), power=2, force_constant=1, convert_from_kcal=True):
+        assert isinstance(atom, int), "atom number must be integer"
+        assert isinstance(coordinate, np.ndarray), "coordinate must be 3d np.ndarray"
+        assert isinstance(power, (int, float)), "power must be numeric"
+        assert isinstance(force_constant, (int, float)), "force_constant must be numeric"
+
+        if convert_from_kcal:
+            force_constant *= 0.0004184
+
+        self.atom = atom
+        self.coordinate = coordinate
+        self.power = power
+        self.force_constant = force_constant
+
+    def evaluate(self, positions):
+        assert isinstance(positions, cctk.OneIndexedArray), "positions must be one-indexed array"
+        x = positions[self.atom]
+
+        delta = np.linalg.norm(x)
+        direction = (-1 * x)/np.linalg.norm(x)
+
+        forces = np.zeros(positions.shape).view(cctk.OneIndexedArray)
+
+        # weirdly, this doesn't work
+#        forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
+
+        f = delta ** (self.power - 1) * self.force_constant * direction
+        forces[self.atom] = f
+
+        energy = self.force_constant / self.power * delta ** self.power
+
+        return forces, energy
+

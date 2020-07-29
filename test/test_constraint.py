@@ -62,3 +62,13 @@ class TestConstraint(unittest.TestCase):
         print(plot(distances[::4], {"height": 12}))
 
         os.remove(t.checkpoint_filename)
+
+    def test_anchor(self):
+        anchor = presto.constraint.Anchor(1)
+        position = cctk.OneIndexedArray([[1,0,0], [0,0,0]])
+        position[1] = np.asarray([1, 1, 1])
+
+        f, e = anchor.evaluate(position)
+        for x in list(f[1]):
+            self.assertTrue(x + 0.0004184 < 0.000001)
+        self.assertTrue(e - 0.0006275999999999999 < 0.000001)

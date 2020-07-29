@@ -332,16 +332,22 @@ class GaussianCalculator(Calculator):
         if print_timing:
             print(f"\nGaussian call {this_unique_id} took {end-start:.3f} s.")
 
-        # get results
-        job_directory = f"{GAUSSIAN_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
-        os.chdir(job_directory)
-        gaussian_file = cctk.GaussianFile.read_file(output_filename)
-        ensemble = gaussian_file.ensemble
-        molecule = ensemble.molecules[-1]
-        properties_dict = ensemble.get_properties_dict(molecule)
-        energy = properties_dict["energy"]
-        forces = properties_dict["forces"]
-        forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+        energy, forces = None, None
+        try:
+            # get results
+            job_directory = f"{GAUSSIAN_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
+            os.chdir(job_directory)
+            gaussian_file = cctk.GaussianFile.read_file(output_filename)
+            ensemble = gaussian_file.ensemble
+            molecule = ensemble.molecules[-1]
+            properties_dict = ensemble.get_properties_dict(molecule)
+            energy = properties_dict["energy"]
+            forces = properties_dict["forces"]
+            forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+        except:
+            os.chdir(old_working_directory)
+            shutil.copyfile(f"{job_directory}/{output_filename}", output_filename)
+            raise ValueError(f"can't parse Gaussian output file - copied to {old_working_directory}/{output_filename} for your perusal")
 
         # delete job directory
         os.chdir(GAUSSIAN_SCRIPT_DIRECTORY)

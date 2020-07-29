@@ -38,7 +38,7 @@ export XTBHOME=${xtb_path}
 # setup parallelism
 # assumes openmp is available
 if [ ${parallel} -gt 1 ]; then
-    export OMP_STACKSIZE=1G
+    export OMP_STACKSIZE=4G
     export OMP_NUM_THREADS=${parallel},1
     export OMP_MAX_ACTIVE_LEVELS=1
     export MKL_NUM_THREADS=${parallel}
