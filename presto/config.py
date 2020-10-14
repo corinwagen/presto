@@ -106,7 +106,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     if "anchor" in settings:
         assert isinstance(settings["anchor"], int), "``anchor`` must be an atomic number!"
-        constraints.append(presto.constraint.Anchor(settings["anchor"]))
+        constraints.insert(0, presto.constraint.Anchor(settings["anchor"]))
 
     i = build_integrator(settings["integrator"], potential=p)
     c = build_calculator(settings["calculator"], constraints=constraints)

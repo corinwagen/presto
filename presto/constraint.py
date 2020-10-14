@@ -96,7 +96,7 @@ class Anchor(Constraint):
         force_constant (float): force constant
     """
 
-    def __init__(self, atom, coordinate=np.zeros(3), power=2, force_constant=1, convert_from_kcal=True):
+    def __init__(self, atom, coordinate=np.zeros(3), power=2, force_constant=5, convert_from_kcal=True):
         assert isinstance(atom, int), "atom number must be integer"
         assert isinstance(coordinate, np.ndarray), "coordinate must be 3d np.ndarray"
         assert isinstance(power, (int, float)), "power must be numeric"
@@ -118,10 +118,6 @@ class Anchor(Constraint):
         direction = (-1 * x)/np.linalg.norm(x)
 
         forces = np.zeros(positions.shape).view(cctk.OneIndexedArray)
-
-        # weirdly, this doesn't work
-#        forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
-
         f = delta ** (self.power - 1) * self.force_constant * direction
         forces[self.atom] = f
 

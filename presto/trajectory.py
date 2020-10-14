@@ -354,9 +354,11 @@ class Trajectory():
         else:
             self.frames = [self.frames[-1]]
 
-    def write_movie(self, filename, idxs=None):
-        if idxs is None:
+    def write_movie(self, filename, idxs="high"):
+        if idxs == "high":
             idxs = self.high_atoms
+        elif idxs == "all":
+            idxs = None
 
         ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")

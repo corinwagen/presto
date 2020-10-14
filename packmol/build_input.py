@@ -37,13 +37,17 @@ assert "output" in args.keys(), "need output file"
 
 assert len(args["solvent"]) == len(args["num_atoms"]), "missing solvents/num_atoms, lists must be same size!"
 
+print("Building packmol input file...")
+
 #### build first half of packmol input file
 text = "#\n# input file built automatically by build_input.py\n# presto\n\n"
 text += "tolerance 2.0\nfiletype xyz\n\n"
 text += f"structure {args['file']}\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\n  centerofmass\nend structure\n\n"
 
+print(f"Loading input file {args['file']} and calculating volume...")
 volume = cctk.XYZFile.read_file(args["file"]).molecule.volume()
 
+print(f"Loading solvent {args['solvent']} information...")
 #### load solvent file
 for s, n in zip(args["solvent"], args["num_atoms"]):
     with pkg_resources.path(solvents, f"{s}.xyz") as file:
@@ -67,7 +71,7 @@ text += f"output {args['output']}"
 #### write temporary packmol input file
 with open("temp.inp", "w+") as file:
     file.write(text)
-print(f"temp.inp created")
+print(f"temp.inp created!")
 
 #### call packmol!
 subprocess.call(['/bin/bash', '-i', '-c', "packmol < temp.inp"])
