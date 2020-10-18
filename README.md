@@ -6,6 +6,19 @@ Corin Wagen and Eugene Kwan
 
 https://pubs-acs-org.ezp-prod1.hul.harvard.edu/doi/pdf/10.1021/ct050289g - good theory
 
+**requirements**
+
+Gaussian 16 or xtb.
+
+pyyaml
+numpy
+tabulate
+
+**setup**
+
+Determine location for /scratch/ directories, and copy run_gaussian.sh / run_xtb.sh there.
+Create customized submission script.
+
 
 **acknowledgements** (running list)
 
