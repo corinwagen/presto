@@ -51,7 +51,7 @@ There are numerous challenges with running molecular dynamics that are not prese
 
 **Eugene Kwan** for assistance with software design and extensive technical help.
 
-**Dan Gezelter** for helpful discussions and advice about best practices in molecular dynamics.
+**Daniel Gezelter** for helpful discussions and advice about best practices in molecular dynamics.
 
 **Stefan Grimme** and **Sebastian Ehlert** for help with *xtb*.
 
