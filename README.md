@@ -28,38 +28,36 @@ There are numerous challenges with running molecular dynamics that are not prese
 ## Dependencies
 
 ### External:
-[Gaussian 16](https://gaussian.com/gaussian16/)
-
-[*xtb*](https://github.com/grimme-lab/xtb)
-
-[*PACKMOL*](http://m3g.iqm.unicamp.br/packmol/home.shtml) (recommended)
-
+- [Gaussian 16](https://gaussian.com/gaussian16/)
+- [*xtb*](https://github.com/grimme-lab/xtb)
+- [*PACKMOL*](http://m3g.iqm.unicamp.br/packmol/home.shtml) (recommended)
 
 ### Internal:
-[`numpy`](https://numpy.org/)
-
-`pyyaml`
-
-`tabulate`
+- [`numpy`](https://numpy.org/)
+- `pyyaml`
+- `tabulate`
 
 ## Getting Started
 
 *in progress*
-Determine location for /scratch/ directories, and copy run_gaussian.sh / run_xtb.sh there.
-Create customized submission script.
+
+- Install git repo (pip!)
+- Determine location for /scratch/ directories, and copy run_gaussian.sh / run_xtb.sh there.
+- Create customized submission script.
+- test?
 
 
 ## Acknowledgements
 
-_Eugene Kwan_ for assistance with software design and extensive technical help.
+**Eugene Kwan** for assistance with software design and extensive technical help.
 
-_Dan Gezelter_ for helpful discussions and advice about best practices in molecular dynamics.
+**Dan Gezelter** for helpful discussions and advice about best practices in molecular dynamics.
 
-_Stefan Grimme_ and _Sebastian Ehlert_ for help with *xtb*.
+**Stefan Grimme** and **Sebastian Ehlert** for help with *xtb*.
 
 
 ## License
 
 This project is licensed under the Apache License, Version 2.0. Please see `LICENSE` for full terms and conditions.
 
-Copyright 2020 by Corin Wagen
+*Copyright 2020 by Corin Wagen*
