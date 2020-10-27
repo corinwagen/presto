@@ -6,6 +6,10 @@
 
 *presto* is a Python 3-based package that runs QM/QM' molecular dynamics simulations of small organic molecules in spheres of explicit solvent (50-250 solvent molecules). *presto* is loosely based on Singleton’s *PROGDYN*, as described in recent publications on the [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328) and [hydrochlorination of dienes](https://pubs.acs.org/doi/10.1021/jacs.0c06295), but is written in a modern and object-oriented style which permits easier extension and modification.
 
+**IMPORTANT:**
+*presto* is currently in "alpha": testing is ongoing and no guarantees as to correctness or API consistency can be made at this time. 
+As of Fall 2020 the package approximately works, but bugs are certainly present in a project of this size.
+
 ## Description
 
 
