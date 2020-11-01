@@ -1,0 +1,28 @@
+# presto config file
+    
+type: equilibration
+
+timestep: 1
+high_atoms: 1-11
+inactive_atoms: 1-11
+stop_time: 10000
+
+integrator: 
+    type: langevin
+    radius: 8
+    viscosity: 0.0001
+
+potential:
+    type: spherical_harmonic
+    radius: 10.5
+
+calculator: 
+    type: xtb
+    gfn : 0
+    parallel: 8
+
+bath_scheduler: 
+    type: linear
+    start_temp: 1000
+    target_temp: 298
+    target_time: 5000

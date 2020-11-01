@@ -1,0 +1,14 @@
+find approx TS by DFT
+solvate system:
+    python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitrile -n 50
+    radius comes out to 10.2 Å
+run preequil, equil
+    sbatch control.sh
+    python analyze.py -c 0 preequil.yaml preequil.chk
+
+equil:
+    if you don't put Cl constraint you get oxonium formation
+
+analysis
+    python analyze.py -c 0 equil.yaml equil.chk
+    python analyze_reaction.py -m rxn.yaml equil.chk
