@@ -7,8 +7,8 @@ import presto
 
 parser = argparse.ArgumentParser(prog="analyze.py")
 parser.add_argument("--movie", "-m", default=False) # "high" or "all"
-parser.add_argument("--pressure", "-p", default=False, action="store_true")
 parser.add_argument("--volume", "-v", default=False, action="store_true")
+parser.add_argument("--angular_momentum", "-L", default=False, action="store_true")
 parser.add_argument("--cutoff", "-c", default=500, type=int)
 parser.add_argument("config_filename", type=str)
 parser.add_argument("checkpoint_filename", type=str)
@@ -36,6 +36,10 @@ print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} K (± {np.std(temps):.2f})")
 print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": height}))
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
 print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":height}))
+if args["angular_momentum"]:
+    Ls = np.array([f.L() for f in traj.frames])
+    print(f"Ls:\t\t\t{np.mean(Ls):.5f} (± {np.std(Ls):.5f})")
+    print(plot(np.mean(Ls[:(len(Ls)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
 if args["movie"]:
     movie_path = re.sub("chk$", "pdb", args["checkpoint_filename"])
