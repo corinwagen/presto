@@ -150,6 +150,15 @@ The files can be monitored using ``analyze_reaction.py``:
 $ python analyze_reaction.py rxn.yaml wham/*.chk
 ```
 
+When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham*. 
+The appropriate ``metadata.txt`` file is also written (see *wham* documentation for a full explanation).
+
+```
+$ cd wham
+$ python wham.py analyze 1 7 1.7 2.3 100 "*.chk"
+$ wham 1.7 2.3 100 0.001 298 0 metadata.txt wham-output
+```
+
 ## Step 4: Run Trajectories
 
 ## Step 4: Analysis/Results
