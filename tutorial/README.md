@@ -58,15 +58,15 @@ Once the solvent preequilibration is done, equilibration of the whole system can
 This equilibration uses an ONIOM calculator with two constraints:
 one for the C–N distance and one for the C–Cl distance. 
 These constraints prevent collapse to starting material or product, freezing the system in a conformation near the transition state.
+
+
 *Note that systems restrained in this fashion are fundamentally unphysical and tend to try to "escape" the high-energy configuration by any means possible.
 Any unconstrained reaction that the system can undergo to lower its energy is likely to occur; 
-so be sure to visualize your results frequently to make sure nothing bizarre has happened!*
+be sure to visualize your results frequently to make sure nothing bizarre has happened!*
 
-An additional "anchor" is also put in place on C1 to prevent the solute from leaving the center of the sphere.
+(An additional "anchor" is also put in place on C1 to prevent the solute from leaving the center of the sphere.)
 
 ```
-# presto config file
-
 type: equilibration
 
 timestep: 1
@@ -132,7 +132,7 @@ $ python analyze_reaction.py -m rxn.yaml equil.chk
 
 To find the actual transition state, the potential energy surface in explicit solvent must be calculated.
 We will use the weighted histogram analysis method (WHAM) to do this, 
-using the [*wham* program from the Grossfield lab](http://membrane.urmc.rochester.edu/?page_id=126).
+using the [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) program from the Grossfield lab.
 
 Since the nucleophile has two identical nucleophilic nitrogens, we opted to scan along the C–Cl distance for simplicity.
 The script ``wham/wham.py`` generates new ``.yaml`` files and starting configurations from the equilibrated system, which can be run in parallel.
@@ -151,7 +151,7 @@ $ python analyze_reaction.py rxn.yaml wham/*.chk
 ```
 
 When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham*. 
-The appropriate ``metadata.txt`` file is also written (see *wham* documentation for a full explanation).
+The appropriate ``metadata.txt`` file is also written (see the documentation for *wham* for a full explanation of these options and files).
 
 ```
 $ cd wham
