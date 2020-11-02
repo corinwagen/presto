@@ -85,6 +85,10 @@ class Frame():
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
         K = np.multiply(m.view(np.ndarray), np.power(v, 2))
         F = 3 * len(self.trajectory.active_atoms) - 3
+
+        if F == 0: # single particle
+            F = 3
+
         return float(np.sum(K) / (F * presto.constants.BOLTZMANN_CONSTANT))
 
     def pressure(self):
@@ -143,81 +147,38 @@ class Frame():
         self.positions = self.positions - centroid
         assert np.linalg.norm(np.sum(self.positions, axis=0)) < 0.0001, "didn't center well enough!"
 
-        #### subtract out center-of-mass translational motion
+        #### subtract out center-of-mass translational motion (linear momentum)
         com_translation = np.sum(self.masses() * self.velocities, axis=0)
         correction_tran = np.tile(com_translation / np.sum(self.masses()), (len(self.velocities),1))
         self.velocities = self.velocities - correction_tran
         assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
         return self
 
-        ##### I CANNOT GET THIS TO WORK SO I'm RETURNING BEFORE IT - WILL COME BACK TO THIS
-
-        e1 = np.array([1,0,0])
-        e2 = np.array([0,1,0])
-        e3 = np.array([0,0,1])
-
-        avg_mass = np.mean(self.masses())
+        #### subtract out center-of-mass rotational motion - not working
         com_rotation = np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)
+        print(com_rotation)
 
-        correction_x = np.cross(self.positions, np.tile(np.multiply(com_rotation, e1), (len(self.velocities),1)).view(cctk.OneIndexedArray))
-        correction_x = correction_x / (np.sum(np.linalg.norm(np.cross(self.positions, e1), axis=1) ** 2) * avg_mass)
-        correction_y = np.cross(self.positions, np.tile(np.multiply(com_rotation, e2), (len(self.velocities),1)).view(cctk.OneIndexedArray))
-        correction_y = correction_y / (np.sum(np.linalg.norm(np.cross(self.positions, e2), axis=1) ** 2) * avg_mass)
-        correction_z = np.cross(self.positions, np.tile(np.multiply(com_rotation, e3), (len(self.velocities),1)).view(cctk.OneIndexedArray))
-        correction_z = correction_z / (np.sum(np.linalg.norm(np.cross(self.positions, e3), axis=1) ** 2) * avg_mass)
+        repeat_com_rotation = np.tile(com_rotation, (self.positions.shape[0], 1))
+        parallel_position_vectors = np.dot(self.positions, com_rotation).reshape(-1,1) / np.dot(com_rotation, com_rotation) * repeat_com_rotation
+        perp_position_vectors = self.positions - parallel_position_vectors
 
-        correction = np.cross(self.positions, np.tile(com_rotation, (len(self.velocities),1)).view(cctk.OneIndexedArray))
-        correction = correction / (np.sum(np.linalg.norm(np.cross(self.positions, e3), axis=1) ** 2) * avg_mass)
+        correction = np.cross(
+            perp_position_vectors,
+            com_rotation,
+        ).view(cctk.OneIndexedArray)
 
-        #        self.velocities = self.velocities - correction_x.view(cctk.OneIndexedArray) - correction_y.view(cctk.OneIndexedArray) - correction_z.view(cctk.OneIndexedArray)
+        scale = np.power(np.linalg.norm(perp_position_vectors, axis=1), 2).reshape(-1,1) * self.masses()
+        scale = self.masses()
+        correction = correction / scale
+
+        correction_applied = np.sum(np.cross(correction, self.masses() * self.positions), axis=0)
+        correction = correction * np.linalg.norm(com_rotation) / (np.linalg.norm(correction_applied))
         self.velocities = self.velocities - correction.view(cctk.OneIndexedArray)
-        print(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0))
-        print(np.linalg.norm(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)))
-        assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
+        assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "COM rotation correction introduced translation!"
         assert np.linalg.norm(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)) < 0.0001, "didn't remove COM rotation well enough!"
-
         return self
-
-        ### subtract out center-of-mass rotational motion - this was really difficult for me to figure out :/
-        print(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0))
-        L = np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)
-        w = np.linalg.inv(self._get_inertia_tensor()) * L
-        correction_r = np.cross(w.view(cctk.OneIndexedArray), self.positions, axis=0).view(cctk.OneIndexedArray)
-        self.velocities = self.velocities - correction_r
-        print(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0))
-        assert np.linalg.norm(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)) < 0.0001, "didn't remove COM rotation well enough!"
-        assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
-
-        return self
-
-    def _get_inertia_tensor(self):
-        #### adapted from https://github.com/OpenMD/OpenMD/blob/master/src/brains/Thermo.cpp
-        assert np.linalg.norm(np.sum(self.positions, axis=0)) < 0.0001, "didn't center well enough!"
-        assert np.linalg.norm(np.sum(self.trajectory.masses.reshape(-1,1) * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
-
-        xx, xy, xz, yy, yz, zz = 0, 0, 0, 0, 0, 0
-        for x, m in zip(self.positions, self.trajectory.masses):
-            xx += x[1]*x[1]*m
-            yy += x[2]*x[2]*m
-            zz += x[3]*x[3]*m
-
-            xy += x[1]*x[2]*m
-            xz += x[1]*x[3]*m
-            yz += x[2]*x[3]*m
-
-        I = np.zeros(shape=(3,3))
-
-        I[0,0] = yy + zz
-        I[0,1] = -xy
-        I[0,2] = -xz
-        I[1,0] = -xy
-        I[1,1] = xx + zz
-        I[1,2] = -yz
-        I[2,0] = -xz
-        I[2,1] = -yz
-        I[2,2] = xx + yy
-
-        return I
 
     def masses(self):
         return self.trajectory.masses.reshape(-1,1).view(cctk.OneIndexedArray)
@@ -226,3 +187,7 @@ class Frame():
         vdw_radii = {z: get_vdw_radius(z) for z in set(self.trajectory.atomic_numbers)}
         radii_by_num = np.array([vdw_radii[z] for z in self.trajectory.atomic_numbers]).view(cctk.OneIndexedArray)
         return radii_by_num
+
+    def L(self):
+        """ Angular momentum """
+        return np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)

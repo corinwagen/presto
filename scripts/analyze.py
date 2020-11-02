@@ -23,7 +23,7 @@ if traj.finished:
 if args["volume"]:
     volumes = np.array([f.volume() for f in traj.frames[::100]]) # sample every 100 pts for speed
     radii = np.cbrt(volumes * 3 / (4 * math.pi))
-    print(f"Mean radius of {np.mean(radii):.2f} Å (± {np.std(radii):.2f} Å)") 
+    print(f"Mean radius of {np.mean(radii):.2f} Å (± {np.std(radii):.2f} Å)")
 
     mean_p = np.sum(traj.masses) / (np.mean(volumes) * 0.6022 ) # N_A * (10 ** 8) ** 3 to get to g/mL
     print(f"Mean density of {mean_p:.3f} g/mL")
