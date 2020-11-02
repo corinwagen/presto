@@ -17,7 +17,11 @@ $ python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitr
 ```
 
 The radius of the resultant solvated system was 10.2 Å, and the system had 311 atoms in total. 
-(Larger solutes will require correspondingly larger solvation shells.)
+As the following image shows, this just barely manages to solvate this tiny system:
+larger solutes will require correspondingly larger solvation shells.
+(It would probably be better to use more solvent here too, but I want to keep the tutorial relatively fast.)
+
+![solvated system](solvated.png)
 
 ## Step 2: Equilibrate System
 
