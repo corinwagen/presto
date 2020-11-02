@@ -17,7 +17,11 @@ $ python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitr
 ```
 
 The radius of the resultant solvated system was 10.2 Å, and the system had 311 atoms in total. 
-(Larger solutes will require correspondingly larger solvation shells.)
+As the following image shows, this just barely manages to solvate this tiny system:
+larger solutes will require correspondingly larger solvation shells.
+(It would probably be better to use more solvent here too, but I want to keep the tutorial relatively fast.)
+
+![solvated system](solvated.png)
 
 ## Step 2: Equilibrate System
 
@@ -58,15 +62,15 @@ Once the solvent preequilibration is done, equilibration of the whole system can
 This equilibration uses an ONIOM calculator with two constraints:
 one for the C–N distance and one for the C–Cl distance. 
 These constraints prevent collapse to starting material or product, freezing the system in a conformation near the transition state.
+
+
 *Note that systems restrained in this fashion are fundamentally unphysical and tend to try to "escape" the high-energy configuration by any means possible.
 Any unconstrained reaction that the system can undergo to lower its energy is likely to occur; 
-so be sure to visualize your results frequently to make sure nothing bizarre has happened!*
+be sure to visualize your results frequently to make sure nothing bizarre has happened!*
 
-An additional "anchor" is also put in place on C1 to prevent the solute from leaving the center of the sphere.
+(An additional "anchor" is also put in place on C1 to prevent the solute from leaving the center of the sphere.)
 
 ```
-# presto config file
-
 type: equilibration
 
 timestep: 1
@@ -132,7 +136,7 @@ $ python analyze_reaction.py -m rxn.yaml equil.chk
 
 To find the actual transition state, the potential energy surface in explicit solvent must be calculated.
 We will use the weighted histogram analysis method (WHAM) to do this, 
-using the [*wham* program from the Grossfield lab](http://membrane.urmc.rochester.edu/?page_id=126).
+using the [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) program from the Grossfield lab.
 
 Since the nucleophile has two identical nucleophilic nitrogens, we opted to scan along the C–Cl distance for simplicity.
 The script ``wham/wham.py`` generates new ``.yaml`` files and starting configurations from the equilibrated system, which can be run in parallel.
@@ -148,6 +152,15 @@ The files can be monitored using ``analyze_reaction.py``:
 
 ```
 $ python analyze_reaction.py rxn.yaml wham/*.chk
+```
+
+When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham*. 
+The appropriate ``metadata.txt`` file is also written (see the documentation for *wham* for a full explanation of these options and files).
+
+```
+$ cd wham
+$ python wham.py analyze 1 7 1.7 2.3 100 "*.chk"
+$ wham 1.7 2.3 100 0.001 298 0 metadata.txt wham-output
 ```
 
 ## Step 4: Run Trajectories
