@@ -20,6 +20,10 @@ print(f"{len(traj.frames)} frames loaded from {args['checkpoint_filename']} ({tr
 if traj.finished:
     print("trajectory finished!")
 
+if args["angular_momentum"]:
+    Ls = np.array([f.L() for f in traj.frames])
+    print(f"Angular Momentum:\t\t\t{np.mean(Ls):.5f} (± {np.std(Ls):.5f})")
+
 temps = np.array([f.temperature() for f in traj.frames])
 energies = np.array([f.energy for f in traj.frames][:-1])
 rel_energies = energies - np.min(energies)
@@ -36,10 +40,6 @@ print(f"TEMPERATURE:\t\t{np.mean(temps):.2f} K (± {np.std(temps):.2f})")
 print(plot(np.mean(temps[:(len(temps)//scale)*scale].reshape(-1,scale), axis=1), {"height": height}))
 print(f"ENERGY:\t\t\t{np.mean(energies):.2f} (± {np.std(energies)*627.509:.2f} kcal/mol)")
 print(plot(np.mean(rel_energies[:(len(rel_energies)//scale)*scale].reshape(-1,scale), axis=1), {"height":height}))
-if args["angular_momentum"]:
-    Ls = np.array([f.L() for f in traj.frames])
-    print(f"Ls:\t\t\t{np.mean(Ls):.5f} (± {np.std(Ls):.5f})")
-    print(plot(np.mean(Ls[:(len(Ls)//scale)*scale].reshape(-1,scale), axis=1), {"height":20}))
 
 if args["movie"]:
     movie_path = re.sub("chk$", "pdb", args["checkpoint_filename"])
