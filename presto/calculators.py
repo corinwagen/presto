@@ -140,8 +140,6 @@ class XTBCalculator(Calculator):
 
         # create molecule
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
-
-        # write out job
         cctk.XYZFile.write_molecule_to_file(input_filename, molecule, title="presto")
 
         # run job and wait for completion
@@ -281,7 +279,7 @@ class GaussianCalculator(Calculator):
         for i in range(7):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False, qc=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -290,7 +288,8 @@ class GaussianCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
-            print_timing (Bool):
+            print_timing (bool):
+            qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails
 
         Returns:
             energy (float): in Hartree
@@ -317,7 +316,11 @@ class GaussianCalculator(Calculator):
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
         # write out job
-        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, self.route_card, self.link0, self.footer)
+        route_card = self.route_card
+        if qc:
+            print("warning: initial DIIS convergence failed, trying quadradic convergence")
+            route_card = f"{self.route_card} scf=qc"
+        cctk.GaussianFile.write_molecule_to_file(input_filename, molecule, route_card, self.link0, self.footer)
 
         # run job
         start = time.time()
@@ -345,9 +348,14 @@ class GaussianCalculator(Calculator):
             forces = properties_dict["forces"]
             forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
         except:
-            os.chdir(old_working_directory)
-            shutil.copyfile(f"{job_directory}/{output_filename}", output_filename)
-            raise ValueError(f"can't parse Gaussian output file - copied to {old_working_directory}/{output_filename} for your perusal")
+            # worth trying quadratic convergence for those random cases
+            try:
+                assert qc is False
+                self.evaluate(atomic_numbers, positions, high_atoms, pipe, print_timing, qc=True)
+            except:
+                os.chdir(old_working_directory)
+                shutil.copyfile(f"{job_directory}/{output_filename}", output_filename)
+                raise ValueError(f"can't parse Gaussian output file - copied to {old_working_directory}/{output_filename} for your perusal")
 
         # delete job directory
         os.chdir(GAUSSIAN_SCRIPT_DIRECTORY)

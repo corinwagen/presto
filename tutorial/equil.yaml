@@ -10,8 +10,7 @@ anchor: 1
 
 integrator: 
     type: langevin
-    radius: 8
-    viscosity: 0.001 # increased from 0.0001 owing to problems with temp control
+    viscosity: 0.0001
 
 potential:
     type: spherical_harmonic
