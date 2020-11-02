@@ -15,7 +15,7 @@ As of Fall 2020 the package approximately works, but bugs are certainly present 
 
 Conventional quantum chemical calculations (such as *ab initio* wavefunction methods and density functional theory) can describe chemical reactivity with high accuracy, but scale poorly with increasing system size. As a consequence, most computational analyses of organic reactions are performed in the gas phase with implicit solvation, which is unable to describe the behavior of many common species (e.g. ion pairs). In contrast, molecular dynamics permits the study of large, explicitly solvated systems, but the underlying molecular mechanics-based Hamiltonian renders such simulations unable to describe changes in bonding. *presto* seeks to combine elements of both approaches to permit the study of reactivity in explicit solvent. 
 
-Following precedent by Singleton and others, *presto* employs the [ONIOM scheme developed by Morokuma](https://pubs.acs.org/doi/10.1021/cr5004419) to embed an accurate “high” system (typically modelled using DFT) inside a larger “low” system (modelled using semiempirical methods). Internally, *presto* repeatedly writes coordinates to each individual program and reads the corresponding energy and forces using [*cctk*](https://cctk.readthedocs.io/en/latest/). Currently, *presto* is compatible with Gaussian 16 and Stefan Grimme’s [*xtb*](https://github.com/grimme-lab/xtb/), but support for other programs can easily be added.
+Following precedent by Singleton and others, *presto* employs the [ONIOM scheme](https://pubs.acs.org/doi/10.1021/cr5004419) developed by Morokuma to embed an accurate “high” system (typically modelled using DFT) inside a larger “low” system (modelled using semiempirical methods). Internally, *presto* repeatedly writes coordinates to each individual program and reads the corresponding energy and forces using [*cctk*](https://cctk.readthedocs.io/en/latest/). Currently, *presto* is compatible with Gaussian 16 and Stefan Grimme’s [*xtb*](https://github.com/grimme-lab/xtb/), but support for other programs can easily be added.
 
 The speed of *presto* is entirely limited by the speed of the force calculations, which in turn depend on the size of the system. For medium-sized systems (10–20 heavy atoms) each individual DFT calculation takes about 30–90 seconds. The recommended timestep is 0.5 or 1.0 femtoseconds, resulting in an overall simulation speed of 1–2 picoseconds/day. If a faster simulation is desired, *xtb*-based methods can be used for both components of the ONIOM system: as with all computational projects, judicious benchmarking is key for determining the minimum acceptable level of theory. 
 
@@ -34,12 +34,14 @@ There are numerous challenges with running molecular dynamics that are not prese
 ### External:
 - [Gaussian 16](https://gaussian.com/gaussian16/)
 - [*xtb*](https://github.com/grimme-lab/xtb)
-- [*PACKMOL*](http://m3g.iqm.unicamp.br/packmol/home.shtml) (recommended)
+- [*PACKMOL*](http://m3g.iqm.unicamp.br/packmol/home.shtml) (recommended, must be accessible via ``packmol`` from command line)
+- [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) (recommended)
 
 ### Internal:
 - [`numpy`](https://numpy.org/)
 - `pyyaml`
 - `tabulate`
+- `nglview` (if `Jupyter` visualization is desired)
 
 ## Getting Started
 
