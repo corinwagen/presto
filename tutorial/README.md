@@ -1,12 +1,17 @@
 # Tutorial
 
 For this tutorial, we will examine the reaction of acetyl chloride and sodium azide in acetonitrile.
-[Previous gas-phase results](https://cctk.readthedocs.io/en/latest/tutorial_05.html) suggest that strong nucleophiles avoid a discrete tetrahedral intermediate
-when reacting with acyl chlorides,
+Experimental data, in conjunction with [previous gas-phase results](https://cctk.readthedocs.io/en/latest/tutorial_05.html) 
+suggest that strong nucleophiles avoid a discrete tetrahedral intermediate when reacting with acyl chlorides,
 instead proceeding through a concerted addition-elimination mechanism.
 However, the effect of solvation and explicit counterions on this picture remain unknown.
 
-The simplicity of this system (8 heavy atoms) makes it a relatively facile choice.
+The simplicity of this system (8 heavy atoms) makes it a relatively facile demonstration of *presto*. 
+More complex systems can be run analogously, but will require more careful setup and analysis.
+
+*This tutorial is meant to demonstrate an example workflow from start to finish. 
+All output files are already present in this directory, along with the requisite scripts for analysis.
+The following steps detail how these results were generated and how to analyze them.*
 
 ## Step 1: Generate Solvated System
 
@@ -17,17 +22,17 @@ $ python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitr
 ```
 
 The radius of the resultant solvated system was 10.2 Å, and the system had 311 atoms in total. 
-As the following image shows, this just barely manages to solvate this tiny system:
-larger solutes will require correspondingly larger solvation shells.
+As the following image shows, this just barely manages to solvate this tiny system: larger solutes will require correspondingly larger solvation shells.
 (It would probably be better to use more solvent here too, but I want to keep the tutorial relatively fast.)
 
-![solvated system](solvated.png)
+<img src='solvated.png' width=650>
 
 ## Step 2: Equilibrate System
 
 To equilibrate the system properly, two separate equilibration runs were employed.
 
-The first ("preequilibration") begins at 1000 K with frozen solute and slowly cools the system to room temperature over 5.0 ps, equilibrating for an additional 5.0 ps at room temperature.
+The first ("preequilibration") begins at 1000 K with frozen solute and slowly cools the system to room temperature over 5.0 ps, 
+equilibrating for an additional 5.0 ps at room temperature.
 The corresponding config file (``preequil.yaml``) is shown below. Notice that since only the solvent is being simulated, only ``xtb`` is needed.
 
 ```
@@ -119,7 +124,7 @@ constraints:
         power: 2
 ``` 
 
-On a 2020 Intel Cascade Lake processor, *presto* can run 25 frames in 4–10 minutes (depending on the load from other users). 
+On a 2020 Intel Cascade Lake processor, *presto* can run 25 frames in 4–10 minutes (depending on shared disk load). 
 Accordingly, this 20 ps equilibration should take 2–5 days to run.
 
 To analyze these jobs as they progress, the ``analyze.py`` and ``analyze_reaction.py`` scripts can be used.
@@ -135,9 +140,13 @@ $ python analyze_reaction.py -m rxn.yaml equil.chk
 ## Step 3: Compute Potential Energy Surface in Explicit Solvent
 
 To find the actual transition state, the potential energy surface in explicit solvent must be calculated.
-We will use the weighted histogram analysis method (WHAM) to do this, 
+This can be derived from a series of trajectories where the coordinate of interest is constrained 
+(analogous to a "scan" in Gaussian, albeit where every point is a trajectory).
+We will use the weighted histogram analysis method (WHAM) to construct the PES from the individual trajectories, 
 using the [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) program from the Grossfield lab.
+(*wham* is not computationally intensive and can be run on a laptop or login node).
 
+We have the choice of  analyzing either the forming (C–N) or breaking (C–Cl) bond.
 Since the nucleophile has two identical nucleophilic nitrogens, we opted to scan along the C–Cl distance for simplicity.
 The script ``wham/wham.py`` generates new ``.yaml`` files and starting configurations from the equilibrated system, which can be run in parallel.
 Here, we generate 100 new runs with C1–Cl7 distances ranging from 1.7 Å to 2.3 Å, and run them using ``wham/submit_all.sh``.
@@ -148,18 +157,19 @@ $ python wham.py run 1 7 1.7 2.3 100 "../equil.chk"
 $ bash submit_all.sh
 ```
 
-The files can be monitored using ``analyze_reaction.py``:
+Progress can be monitored using ``analyze_reaction.py``:
 
 ```
 $ python analyze_reaction.py rxn.yaml wham/*.chk
 ```
 
-When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham*. 
+When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham* using ``wham/wham.py analyze``.
+(This may take almost an hour for all of the finished files.)
 The appropriate ``metadata.txt`` file is also written (see the documentation for *wham* for a full explanation of these options and files).
 
 ```
 $ cd wham
-$ python wham.py analyze 1 7 1.7 2.3 100 "*.chk"
+$ python wham.py analyze -C 5000 1 7 1.7 2.3 100 "*.chk"
 $ wham 1.7 2.3 100 0.001 298 0 metadata.txt wham-output
 ```
 
