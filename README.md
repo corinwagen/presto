@@ -40,7 +40,7 @@ There are numerous challenges with running molecular dynamics that are not prese
 ### Internal:
 - [`numpy`](https://numpy.org/)
 - `pyyaml`
-- `tabulate`
+- `tabulate`, `tqdm`, `asciichartpy`
 - `nglview` (if `Jupyter` visualization is desired)
 
 ## Getting Started
