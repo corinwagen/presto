@@ -1,2 +1,2 @@
 Loaded configuration data from /n/home03/cwagen/presto.config.
-slurmstepd: error: *** JOB 6528992 ON holy2c02110 CANCELLED AT 2020-11-03T08:10:23 ***
+slurmstepd: error: *** JOB 6591334 ON holy2a16301 CANCELLED AT 2020-11-03T13:48:29 ***

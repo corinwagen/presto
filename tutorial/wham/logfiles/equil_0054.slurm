@@ -1,6 +1,2 @@
-mkdir: cannot create directory ‘/scratch/cwagen-gaussian’: File exists
-cp: cannot create regular file ‘/scratch/cwagen-gaussian/run_gaussian.sh’: File exists
-mkdir: cannot create directory ‘/scratch/cwagen-xtb’: File exists
-cp: cannot create regular file ‘/scratch/cwagen-xtb/run_xtb.sh’: File exists
 Loaded configuration data from /n/home03/cwagen/presto.config.
-slurmstepd: error: *** JOB 6529072 ON holy2a13106 CANCELLED AT 2020-11-03T08:10:12 ***
+slurmstepd: error: *** JOB 6591357 ON holy7b0910 CANCELLED AT 2020-11-03T13:48:25 ***
