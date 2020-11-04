@@ -15,18 +15,23 @@ The following steps detail how these results were generated and how to analyze t
 
 ## Overview
 
-Ultimately, what we want is to be able to view how atoms are moving in the moment when bonds are forming and breaking: the region around the transition state.
-For truly barrierless reactions, one can just combine the reagents in solvent and watch them come together and react
-(e.g. [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328)).
+Ultimately, we want to view the moment when bonds are forming and breaking: the region around the transition state.
+For truly barrierless reactions (e.g. [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328)), 
+one can simply combine the reagents in solvent and watch them react.
 However, most reactions have a meaningful barrier and  will not react over the timescales we can simulate.
-(Although theoretically one could just run an exceptionally long simulation and wait for a reaction to happen, this is likely to be an exercise in futility.)
-
-Instead, we generally want to start our trajectories from a high-energy point (like a transition state) and watch how they propagate in time, 
+(Although theoretically one could run an exceptionally long simulation and wait for a reaction to happen, this is likely to be an exercise in futility.)
+Instead, we generally want to start our trajectories from a high-energy point (like a transition state) and watch how they propagate from there, 
 which ensures that we're simulating only "interesting" configurations.
-To find the transition state, we need to construct the free energy profile in explicit solvent:
-to do this, we run biased simulations where we constrain the system along the reaction coordinate with narrow harmonic constraints, 
+
+To find the transition state, we need to construct the free energy profile in explicit solvent.
+To do this, we run biased simulations where we constrain the system along the reaction coordinate with narrow harmonic constraints, 
 and them "undo" the biasing potential mathematically to construct the free energy surface.
-(We will use *wham* to do this—for more details, see [this presentation](https://pubs.acs.org/doi/10.1021/jacs.6b07328).)
+(This is somewhat analogous to a scan along a bond distance, but each "point" is comprised of thousands of frames from a trajectory.)
+We will use *wham* to construct the PES from our individual trajectories—for more details, see [this presentation](https://pubs.acs.org/doi/10.1021/jacs.6b07328).
+
+Once we know where the transition state is, we can spawn individual unconstrained trajectories from the appropriate constrained trajectory
+and propagate them forwards and backwards in time to connect products and starting materials. 
+We typically want to spawn several hundred reaction trajectories: luckily, each one should be only a few picoseconds.
 
 The overall workflow then, looks like this:
 1. **Build solvated system** using *PACKMOL*
