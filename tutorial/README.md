@@ -54,9 +54,10 @@ As the following image shows, this just barely manages to solvate this tiny syst
 
 To equilibrate the system properly, two separate equilibration runs were employed.
 
-The first ("preequilibration") begins at 1000 K with frozen solute and slowly cools the system to room temperature over 5.0 ps, 
+The first ("preequilibration") begins at 1000 K with frozen solute (``inactive_atoms``) and slowly cools the system to room temperature over 5.0 ps, 
 equilibrating for an additional 5.0 ps at room temperature.
 The corresponding config file (``preequil.yaml``) is shown below. Notice that since only the solvent is being simulated, only ``xtb`` is needed.
+The timestep for this simulation is 1 fs (``timestep``), so this run will take 10,000 frames to finish (``stop_time`` = 10000 fs = 10 ps). 
 
 ```
 type: equilibration
@@ -171,8 +172,9 @@ using the [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) program from
 
 We have the choice of  analyzing either the forming (C–N) or breaking (C–Cl) bond.
 Since the nucleophile has two identical nucleophilic nitrogens, we opted to scan along the C–Cl distance for simplicity.
-The script ``wham/wham.py`` generates new ``.yaml`` files and starting configurations from the equilibrated system, which can be run in parallel.
-Here, we generate 100 new runs with C1–Cl7 distances ranging from 1.7 Å to 2.3 Å, and run them using ``wham/submit_all.sh``.
+The script ``wham/wham.py`` generates new ``.yaml`` files and starting configurations from the equilibrated system, which can be run in parallel. 
+Here, we generate 100 new runs with C1–Cl7 distances ranging from 1.7 Å to 2.3 Å, and run them using ``wham/submit_all.sh``. 
+(All configuration values for the run other than the ``wham`` biasing constraint can be found in ``wham.yaml``, which is read and copied by ``wham.py``.)
 
 ```
 $ cd wham
@@ -187,8 +189,9 @@ $ python analyze_reaction.py rxn.yaml wham/*.chk
 ```
 
 When the jobs are complete, the data can be exported to ``.csv`` files for import into *wham* using ``wham/wham.py analyze``.
-(This may take almost an hour for all of the finished files.)
 The appropriate ``metadata.txt`` file is also written (see the documentation for *wham* for a full explanation of these options and files).
+Each run is 25.0 ps long, but the first 5.0 ps will be discarded to allow the systems to relax following application of the biasing potential.
+In total, then, this PES is based on 2.0 ns of simulation, or 2 million individual frames!
 
 ```
 $ cd wham
