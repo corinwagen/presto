@@ -1,7 +1,7 @@
 # Tutorial
 
 For this tutorial, we will examine the reaction of acetyl chloride and sodium azide in acetonitrile.
-Experimental data, in conjunction with [previous gas-phase results](https://cctk.readthedocs.io/en/latest/tutorial_05.html) 
+Experimental data, in conjunction with [previous gas-phase results](https://cctk.readthedocs.io/en/latest/tutorial_05.html),
 suggest that strong nucleophiles avoid a discrete tetrahedral intermediate when reacting with acyl chlorides,
 instead proceeding through a concerted addition-elimination mechanism.
 However, the effect of solvation and explicit counterions on this picture remain unknown.
@@ -13,9 +13,32 @@ More complex systems can be run analogously, but will require more careful setup
 All output files are already present in this directory, along with the requisite scripts for analysis.
 The following steps detail how these results were generated and how to analyze them.*
 
-## Step 1: Generate Solvated System
+## Overview
 
-The starting material and product were brought together in GaussView to a rough pre-reactive conformation, and the system was solvated with 50 acetonitrile molecules using ``packmol/build_input.py``:
+Ultimately, what we want is to be able to view how atoms are moving in the moment when bonds are forming and breaking: the region around the transition state.
+For truly barrierless reactions, one can just combine the reagents in solvent and watch them come together and react
+(e.g. [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328)).
+However, most reactions have a meaningful barrier and  will not react over the timescales we can simulate.
+(Although theoretically one could just run an exceptionally long simulation and wait for a reaction to happen, this is likely to be an exercise in futility.)
+
+Instead, we generally want to start our trajectories from a high-energy point (like a transition state) and watch how they propagate in time, 
+which ensures that we're simulating only "interesting" configurations.
+To find the transition state, we need to construct the free energy profile in explicit solvent:
+to do this, we run biased simulations where we constrain the system along the reaction coordinate with narrow harmonic constraints, 
+and them "undo" the biasing potential mathematically to construct the free energy surface.
+(We will use *wham* to do this—for more details, see [this presentation](https://pubs.acs.org/doi/10.1021/jacs.6b07328).)
+
+The overall workflow then, looks like this:
+1. **Build solvated system** using *PACKMOL*
+2. **Equilibrate** to arrive at a reasonable starting configuration
+3. **Compute Potential Energy Surface** using *wham*
+4. **Run Trajectories** starting from transition state
+5. **Extract Results and Analyze**
+6. **Interpretation and Future Work**
+
+## Step 1: Build Solvated System
+
+The starting material and product were brought together in GaussView to a rough pre-reactive conformation (``AcCl_NaN3.xyz``), and the system was solvated with 50 acetonitrile molecules using ``packmol/build_input.py`` (which automatically creates a sphere at the correct density for STP):
 
 ```
 $ python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitrile -n 50
@@ -137,14 +160,14 @@ $ python analyze.py -c 0 preequil.yaml preequil.chk
 $ python analyze_reaction.py -m rxn.yaml equil.chk
 ```
 
-## Step 3: Compute Potential Energy Surface in Explicit Solvent
+## Step 3: Compute Potential Energy Surface
 
 To find the actual transition state, the potential energy surface in explicit solvent must be calculated.
 This can be derived from a series of trajectories where the coordinate of interest is constrained 
 (analogous to a "scan" in Gaussian, albeit where every point is a trajectory).
 We will use the weighted histogram analysis method (WHAM) to construct the PES from the individual trajectories, 
 using the [*wham*](http://membrane.urmc.rochester.edu/?page_id=126) program from the Grossfield lab.
-(*wham* is not computationally intensive and can be run on a laptop or login node).
+(*wham* is not computationally intensive and can be run on a laptop or login node.)
 
 We have the choice of  analyzing either the forming (C–N) or breaking (C–Cl) bond.
 Since the nucleophile has two identical nucleophilic nitrogens, we opted to scan along the C–Cl distance for simplicity.
@@ -175,9 +198,9 @@ $ wham 1.7 2.3 100 0.001 298 0 metadata.txt wham-output
 
 ## Step 4: Run Trajectories
 
-## Step 4: Analysis/Results
+## Step 5: Extract Results and Analyze
 
-## Step 5: Interpretation And Future Work
+## Step 6: Interpretation and Future Work
 
 To properly examine this system (e.g. for publication), 
 - ergodicity = multiple starting configurations
