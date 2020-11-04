@@ -95,7 +95,10 @@ class Trajectory():
             self.stop_time = stop_time
 
     def __str__(self):
-        return f"presto trajectory with {len(self.frames)} frames"
+        return f"Trajectory({len(self.frames)} frames)"
+
+    def __repr__(self):
+        return f"Trajectory({len(self.frames)} frames)"
 
     def set_inactive_atoms(self, inactive_atoms):
         """
@@ -109,12 +112,14 @@ class Trajectory():
         active_atoms = np.array(active_atoms)
         self.active_atoms = active_atoms
 
-    def run(self, checkpoint_interval=10, keep_all=False, **kwargs):
+    def run(self, checkpoint_interval=10, keep_all=False, time=None, **kwargs):
         """
         Run the trajectory.
 
         Args:
             checkpoint_interval (int): interval at which to save (in frames, not fs)
+            keep_all (bool): whether or not to keep all frames in memory
+            num (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
         assert isinstance(self.calculator, presto.calculators.Calculator), "need a valid calculator!"
         assert isinstance(self.integrator, presto.integrators.Integrator), "need a valid integrator!"
@@ -137,7 +142,7 @@ class Trajectory():
             return self
         else:
             logger.info("Propagating trajectory.")
-            self.propagate(checkpoint_interval, keep_all=keep_all)
+            self.propagate(checkpoint_interval, keep_all=keep_all, time=time)
             self.save(keep_all=keep_all)
             return self
 
@@ -147,11 +152,16 @@ class Trajectory():
         """
         pass
 
-    def propagate(self, checkpoint_interval):
+    def propagate(self, checkpoint_interval, keep_all=False, time=None):
         """
         Runs trajectories, checking for completion and saving as necessary.
 
         Will call ``self.save()`` every ``checkpoint_interval`` frames.
+
+        Args:
+            checkpoint_interval (int): interval at which to save (in frames, not fs)
+            keep_all (bool): whether or not to keep all frames in memory
+            time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
         pass
 
@@ -450,7 +460,7 @@ class Trajectory():
         """
         Creates new trajectory from the given checkpoint file.
 
-        Args:   
+        Args:
             checkpoint (str): path to checkpoint file
             frame (int): the index of the desired frame
 
@@ -486,6 +496,12 @@ class ReactionTrajectory(Trajectory):
 
         assert hasattr(termination_function, "__call__"), "termination_function must be a function!"
         self.termination_function = termination_function
+
+    def __str__(self):
+        return f"ReactionTrajectory({len(self.frames)} frames)"
+
+    def __repr__(self):
+        return f"ReactionTrajectory({len(self.frames)} frames)"
 
     def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, bath_temp=None, new_velocities=None, **kwargs):
         """
@@ -539,14 +555,21 @@ class ReactionTrajectory(Trajectory):
         self.frames = [new_frame]
         self.save()
 
-    def propagate(self, checkpoint_interval, keep_all=False):
+    def propagate(self, checkpoint_interval, keep_all=False, time=None):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
         time_since_finished = 0
+
+        elapsed_time = 0
 
         for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
             self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save(keep_all=keep_all)
+
+            elapsed_time += self.timestep
+            if time is not None:
+                if elapsed_time >= time:
+                    return
 
             exit_code = self.termination_function(self.frames[-1])
 
@@ -582,6 +605,12 @@ class EquilibrationTrajectory(Trajectory):
             self.bath_scheduler = sched
         else:
             raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
+
+    def __str__(self):
+        return f"EquilibrationTrajectory({len(self.frames)} frames)"
+
+    def __repr__(self):
+        return f"EquilibrationTrajectory({len(self.frames)} frames)"
 
     def initialize(self, positions, **kwargs):
         """
@@ -629,12 +658,20 @@ class EquilibrationTrajectory(Trajectory):
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
         self.save()
 
-    def propagate(self, checkpoint_interval, keep_all=False):
+    def propagate(self, checkpoint_interval, keep_all=False, time=None):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
+
+        elapsed_time = 0
         for t in np.arange(self.timestep * self.num_frames(), self.stop_time, self.timestep):
+
             self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
             if (len(self.frames) - 1) % checkpoint_interval == 0:
                 self.save(keep_all=keep_all)
+
+            elapsed_time += self.timestep
+            if time is not None:
+                if elapsed_time >= time:
+                    return
         self.save(keep_all=keep_all)
         self.finished = True
 

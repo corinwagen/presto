@@ -40,7 +40,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
             needs to return ``cctk.OneIndexedArray``
     """
 
-    def __init__(self, viscosity, convert_from_pascal_seconds=True, radius=0, potential=None):
+    def __init__(self, viscosity=0.001, convert_from_pascal_seconds=True, radius=0, potential=None):
         assert isinstance(viscosity, (int, float)), "viscosity must be numeric"
         if convert_from_pascal_seconds:
             viscosity = viscosity * presto.constants.AMU_A_FS_PER_PASCAL_SECOND
