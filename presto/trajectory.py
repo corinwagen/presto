@@ -59,6 +59,8 @@ class Trajectory():
         if high_atoms is not None:
             assert isinstance(high_atoms, np.ndarray), "high_atoms must be np.ndarray!"
             self.high_atoms = high_atoms
+        else:
+            self.high_atoms = np.ndarray([])
 
         active_atoms = None
         if "active_atoms" in kwargs:
@@ -68,8 +70,8 @@ class Trajectory():
         elif "inactive_atoms" in kwargs:
             self.set_inactive_atoms(kwargs["inactive_atoms"])
         else:
-            if not hasattr(self, "active_atoms"):
-                raise ValueError("neither active atoms nor inactive atoms specificed!")
+            # assume all atoms are active
+            self.set_inactive_atoms(np.ndarray([]))
 
         if timestep is not None:
             assert timestep > 0, "can't have timestep ≤ 0!"

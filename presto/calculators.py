@@ -71,14 +71,14 @@ class XTBCalculator(Calculator):
     Attributes:
         charge (int):
         multiplicity (int):
-        gfn (int):
+        gfn (int or str):
         parallel (int):
     """
 
     def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list()):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
-        assert isinstance(gfn, int)
+        assert isinstance(gfn, (int, str))
         assert isinstance(parallel, int)
 
         self.charge = charge
@@ -151,6 +151,7 @@ class XTBCalculator(Calculator):
             f"{self.gfn}",
             f"{self.parallel}",
             XTB_PATH,
+            f"{self.UNIQUE_ID}.topo",
         ]
 
         start = time.time()

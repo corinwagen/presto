@@ -1,2 +1,2 @@
+mkdir: cannot create directory ‘/scratch/cwagen-gaussian’: File exists
 Loaded configuration data from /n/home03/cwagen/presto.config.
-slurmstepd: error: *** JOB 6591389 ON holy7c08507 CANCELLED AT 2020-11-03T13:48:12 ***

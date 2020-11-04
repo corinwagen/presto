@@ -7,9 +7,10 @@
 #
 # charge:              total charge of this molecule
 # unpaired:            unpaired electrons (0=singlet, 1=doublet, ...)
-# gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2)
+# gfn:                 whether to use xtb-GFN0 (0) or xtb-GFN2 (2) or xtb-GFNFF ("ff")
 # parallel_threads:    how many processors to use
 # xtb_path:            the xtb home directory where the GFN parameters are
+# topology:            topology file for GFNFF
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -26,6 +27,7 @@ unpaired=${3}
 gfn=${4}
 parallel=${5}
 xtb_path=${6}
+top_path=${7}
 
 # set XTBPATH
 if [ ! -d ${xtb_path} ]; then
@@ -60,6 +62,11 @@ fi
 mkdir ${unique_id}
 mv ${unique_id}.xyz ${unique_id}
 
+# copy topology file
+if [ -f ${top_path} ]; then
+    cp ${top_path} ${unique_id}/gfnff_topo
+fi
+
 cd ${unique_id}
 
 # run job
@@ -74,11 +81,26 @@ pwd
 ls
 echo Starting job...
 if [ ${parallel} -gt 1 ]; then
-    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    if [ ${gfn} == ff ]; then
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    else
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+    fi
 else
-    echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-    xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+    if [ ${gfn} == ff ]; then
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz &> ${unique_id}.out
+    else
+        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+    fi
 fi
 echo Job finished.
+
+# save topology file
+if [ -f gfnff_topo ]; then
+    cp gfnff_topo ../${top_path}
+fi
 
