@@ -3,7 +3,7 @@
 #SBATCH -n 16
 #SBATCH -p serial_requeue
 #SBATCH --mem=40000
-#SBATCH -t 10080
+#SBATCH -t 4320
 #SBATCH -J presto_wham_NAME
 #SBATCH -o logfiles/NAME.slurm
 #SBATCH -e logfiles/NAME.slurm

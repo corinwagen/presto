@@ -27,6 +27,6 @@ integrator:
 potential:
   radius: 10.5
   type: spherical_harmonic
-stop_time: 10000
+stop_time: 25000
 timestep: 1
 type: equilibration

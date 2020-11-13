@@ -261,7 +261,7 @@ def build_calculator(settings, constraints=list()):
 
         gfn = 2
         if "gfn" in settings:
-            assert settings["gfn"] in [0, 1, 2], "Calculator `gfn` must be 0, 1, or 2."
+            assert settings["gfn"] in [0, 1, 2, "ff"], "Calculator `gfn` must be 0, 1, 2, or ``ff``."
             gfn = settings["gfn"]
 
         parallel = 1
