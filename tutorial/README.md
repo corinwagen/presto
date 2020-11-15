@@ -281,7 +281,7 @@ monitor:
 We will use ``spawn.py`` to generate the  ``.chk`` files for the trajectories.
 
 ```
-$ python spawn.py -i 250 wham/equil_0064.chk 5000 80 rxn.yaml trajs/traj
+$ python spawn.py -i 250 wham/equil_0066.chk 5000 80 rxn.yaml trajs/traj
 $ cd trajs
 $ bash submit_all.sh
 ```
@@ -291,4 +291,5 @@ $ bash submit_all.sh
 ## Step 6: Interpretation and Future Work
 
 To properly examine this system (e.g. for publication), 
-- ergodicity = multiple starting configurations
+- ergodicity = multiple starting configurations sampling different approach trajectories more fully.
+- parallel tempering? wham could be run for longer.
