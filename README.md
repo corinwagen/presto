@@ -2,6 +2,9 @@
 
 *Python-based Reactions in Explicit Solvent with Trajectories via ONIOM*
 
+[![PyPI version](https://badge.fury.io/py/presto-md.svg)](https://badge.fury.io/py/presto-md)
+
+
 ## Introduction
 
 *presto* is a Python 3-based package that runs QM/QM' molecular dynamics simulations of small organic molecules in spheres of explicit solvent (50-250 solvent molecules). *presto* is loosely based on Singleton’s *PROGDYN*, as described in recent publications on the [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328) and [hydrochlorination of dienes](https://pubs.acs.org/doi/10.1021/jacs.0c06295), but is written in a modern and object-oriented style which permits easier extension and modification.
