@@ -9,9 +9,14 @@ However, the effect of solvation and explicit counterions on this picture remain
 The simplicity of this system (8 heavy atoms) makes it a relatively facile demonstration of *presto*. 
 More complex systems can be run analogously, but will require more careful setup and analysis.
 
-*This tutorial is meant to demonstrate an example workflow from start to finish. 
+*Warning: studying reactivity in explicit solvent is highly non-trivial.
+The combination of techniques employed here allows us to follow bond-forming and bond-breaking processes with incredible detail,
+but we must be extremely careful not to deceive ourselves. 
+This technique is in its infancy; there are not yet "best practices" for this field, so we must be vigilant ourselves and work as carefully as possible.*
+
+This tutorial is meant to demonstrate an example workflow from start to finish. 
 All output files are already present in this directory, along with the requisite scripts for analysis.
-The following steps detail how these results were generated and how to analyze them.*
+The following steps detail how these results were generated and how to analyze them.
 
 ## Overview
 
@@ -36,10 +41,10 @@ We typically want to spawn several hundred reaction trajectories: luckily, each 
 The overall workflow then, looks like this:
 1. **Build solvated system** using *PACKMOL*
 2. **Equilibrate** to arrive at a reasonable starting configuration
-3. **Compute Potential Energy Surface** using *wham*
-4. **Run Trajectories** starting from transition state
-5. **Extract Results and Analyze**
-6. **Interpretation and Future Work**
+3. **Compute potential energy surface** using *wham*
+4. **Run trajectories** starting from transition state
+5. **Extract results and analyze**
+6. **Interpretation and future work**
 
 ## Step 1: Build Solvated System
 
@@ -234,7 +239,7 @@ Most of the parameters are the same, but this file also contains ``termination_c
 ```
 # presto config file
 
-type: equilibration
+type: reaction
 
 timestep: 1
 high_atoms: 1-11
