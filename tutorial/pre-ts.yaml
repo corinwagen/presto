@@ -1,13 +1,16 @@
 # presto config file
 
-type: reaction
+type: equilibration
 
 timestep: 1
 high_atoms: 1-11
-stop_time: 5000
+stop_time: 20000
+
+anchor: 1
 
 integrator: 
-    type: verlet
+    type: langevin
+    viscosity: 0.0001
 
 potential:
     type: spherical_harmonic
@@ -30,15 +33,11 @@ bath_scheduler:
     type: constant
     target_temp: 298
 
-termination_function:
-    constraint1f: bond 1 9
-    constraint2f: bond 1 10
-    constraint3r: bond 1 7
+constraints:
+    constraint1:
+        atom1: 1
+        atom2: 7
+        equilibrium: 2.11
+        force_constant: 2000
+        power: 2
 
-monitor:
-    var1: distance 1 9
-    var2: distance 1 10
-    var3: distance 1 7
-    var4: distance 10 11
-    var5: distance 11 2
-    var6: distance 11 7

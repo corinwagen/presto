@@ -159,16 +159,15 @@ class XTBCalculator(Calculator):
         end = time.time()
         if print_timing:
             print(f"\nxtb call {this_unique_id} took {end-start:.3f} s.")
-        exit_code = process.returncode
-#        print(process.stdout)
 
         # get results
         job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
-        os.chdir(job_directory)
-        found_energy_file = os.path.isfile("energy")
-        found_gradient_file =  os.path.isfile("gradient")
-
-        if exit_code != 0 or (not found_energy_file) or (not found_gradient_file):
+        try:
+            process.check_returncode()
+            os.chdir(job_directory)
+            assert os.path.isfile("energy")
+            assert os.path.isfile("gradient")
+        except Exception as e:
             xtb_input_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.xyz"
             xtb_output_filename = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}/presto-{this_unique_id}.out"
             print("========= xtb error ========")
@@ -394,13 +393,15 @@ class ONIOMCalculator(Calculator):
         self.low_calculator = low_calculator
 
         for c in constraints:
-            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, constraint.Constraint), f"{c} is not a valid constraint!"
         self.high_calculator.constraints = constraints
         self.constraints = constraints
 
         #### prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)
         self.full_calculator.randomize_id()
+
+        assert self.low_calculator.UNIQUE_ID != self.full_calculator.UNIQUE_ID, "namespace collision!"
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
         """

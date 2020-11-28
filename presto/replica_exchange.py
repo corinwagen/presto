@@ -10,7 +10,8 @@ class ReplicaExchange():
     """
     Runs several trajectories and manages interconversions between them.
 
-    http://www.math.pitt.edu/~cbsg/Materials/Earl_ParallelTempering.pdf
+    Based on:
+        http://www.math.pitt.edu/~cbsg/Materials/Earl_ParallelTempering.pdf
 
     Attributes:
         stop_time (int):
@@ -28,6 +29,7 @@ class ReplicaExchange():
             assert traj.stop_time == trajectories[0].stop_time, "all trajectories must have same ``stop_time``"
             assert np.array_equal(traj.high_atoms, trajectories[0].high_atoms), "all trajectories must have same ``high_atoms``"
             assert np.array_equal(traj.active_atoms, trajectories[0].active_atoms), "all trajectories must have same ``active_atoms``"
+
         self.trajectories = sorted(trajectories, key=lambda x: x.bath_scheduler(0))
         self.stop_time = trajectories[0].stop_time
 
@@ -57,21 +59,21 @@ class ReplicaExchange():
             "finished": self.finished,
             "current_idx": self.current_idx,
         }
-        with open(self.checkpoint_filename, "w") as f:
+        with open(self.checkpoint_filename, "w+") as f:
             yaml.dump(file_dict, f)
+        logger.info(f"Saving ReplicaExchange to {self.checkpoint_filename}.")
         return self
 
     def load(self):
-        if not os.path.exists(self.checkpoint_filename):
-            return
-        with open(self.checkpoint_filename, "r+") as f:
-            file_dict = yaml.safe_load(f)
-            self.stop_time = file_dict["stop_time"]
-            self.swap_interval = file_dict["swap_interval"]
-            self.swaps = file_dict["swaps"]
-            self.finished = file_dict["finished"]
-            self.current_idx = file_dict["current_idx"]
-        logger.info(f"Loaded ReplicaExchange from {self.checkpoint_filename}.")
+        if os.path.exists(self.checkpoint_filename):
+            with open(self.checkpoint_filename, "r+") as f:
+                file_dict = yaml.safe_load(f)
+                self.stop_time = file_dict["stop_time"]
+                self.swap_interval = file_dict["swap_interval"]
+                self.swaps = file_dict["swaps"]
+                self.finished = file_dict["finished"]
+                self.current_idx = file_dict["current_idx"]
+            logger.info(f"Loaded ReplicaExchange from {self.checkpoint_filename}.")
         return self
 
     def run(self):
@@ -80,12 +82,13 @@ class ReplicaExchange():
             return self
 
         processes = [None]*len(self.trajectories)
-        start_time = self.trajectories[0].timestep * self.trajectories[0].num_frames()
-        start_idx = int(start_time / self.swap_interval)
+#        start_time = self.trajectories[0].timestep * self.trajectories[0].num_frames()
+        start_idx = self.current_idx
         for current_idx in range(start_idx, int(self.stop_time/self.swap_interval)):
             for idx, traj in enumerate(self.trajectories):
                 processes[idx] = mp.Process(target=traj.run, kwargs={
                     "time": self.swap_interval,
+                    "checkpoint_interval": min(50, self.swap_interval),
                 })
                 processes[idx].start()
 
@@ -107,14 +110,15 @@ class ReplicaExchange():
         for i in range(len(self.trajectories)-1):
             j = i+1
 
-            E_i = self.trajectories[i].frames[-1].energy
-            E_j = self.trajectories[j].frames[-1].energy
+            E_i = self.trajectories[i].frames[-2].energy
+            E_j = self.trajectories[j].frames[-2].energy
             T_i = self.trajectories[i].bath_scheduler(0)
             T_j = self.trajectories[j].bath_scheduler(0)
             b_i = 1 / (kB*T_i)
             b_j = 1 / (kB*T_j)
 
             p = min(1, np.exp( (E_i - E_j) * (b_i - b_j) ) )
+            logger.info(f"E{i} & E{j}\tp={p}")
 
             if p > random.random():
                 v_i_scaling = np.sqrt(T_j/T_i)
@@ -129,7 +133,7 @@ class ReplicaExchange():
                 self.trajectories[j].frames[-1] = frame_i
 
                 self.swaps.append({"time": time, "i": i, "j": j})
-                logger.info(f"Replicas {i} & {j} swapped after {time} fs!")
+                logger.info(f"\nReplicas {i} & {j} swapped after {time} fs!\t{E_i} {E_j} p={p}")
 
     def report(self):
         counts = np.zeros(shape=len(self.trajectories))
@@ -141,6 +145,6 @@ class ReplicaExchange():
         text = f"Time: {self.current_idx * self.swap_interval} fs\n"
         text += f"Exchange probability: {np.sum(counts)/possible:.2%}\n"
         for i in range(len(self.trajectories) - 1):
-            text += f"\tReplica {i} <=> Replica {i+1}\t{counts[i]/self.current_idx:.2%}\n"
+            text += f"\tReplica {i} <=> Replica {i+1}  \t{counts[i]/self.current_idx:.2%}\n"
 
         return text

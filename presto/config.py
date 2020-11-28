@@ -1,17 +1,18 @@
-import configparser, os, re, pathlib, yaml, cctk, h5py
+import configparser, os, re, pathlib, yaml, cctk, h5py, logging
 import numpy as np
 import presto
 
-#### OVERALL PRESTO CONFIGURATION
+logger = logging.getLogger(__name__)
+
+#### OVERALL PRESTO CONFIGURATION, RUNS ON STARTUP
 
 # this module loads the configuration file
 CONFIGURATION_FILE = "presto.config"
-if os.path.isfile(CONFIGURATION_FILE):
-    pass
-elif os.path.isfile(os.path.expanduser(f"~/{CONFIGURATION_FILE}")):
-    CONFIGURATION_FILE = os.path.expanduser(f"~/{CONFIGURATION_FILE}")
-else:
-    raise ValueError(f"Fatal error: presto configuration file '{CONFIGURATION_FILE}' not found in current directory or {os.path.expanduser(f'~/{CONFIGURATION_FILE}')}")
+if not os.path.isfile(CONFIGURATION_FILE):
+    if "PRESTO_CONFIG" in os.environ:
+        CONFIGURATION_FILE = os.environ["PRESTO_CONFIG"]
+    else:
+        raise ValueError(f"Fatal error: presto configuration file '{CONFIGURATION_FILE}' not found in current directory and $PRESTO_CONFIG not found")
 
 config = configparser.ConfigParser()
 config.read(CONFIGURATION_FILE)
@@ -24,17 +25,15 @@ def resolve_directory(directory):
     directory = re.sub("~", USER_HOME_DIRECTORY, directory)
     return directory
 
-# checks if a directory exists
 def check_directory(field_name, directory):
+    """ Checks if a directory exists."""
     directory_exists = os.path.isdir(directory)
     if not directory_exists:
-        print(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
-#        exit()
+        logging.error(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
 
 # check configuration parameters
 GAUSSIAN_SCRIPT_DIRECTORY = resolve_directory(config['gaussian']['GAUSSIAN_SCRIPT_DIRECTORY'])
 check_directory("GAUSSIAN_SCRIPT_DIRECTORY", GAUSSIAN_SCRIPT_DIRECTORY)
-
 XTB_SCRIPT_DIRECTORY = resolve_directory(config['xtb']['XTB_SCRIPT_DIRECTORY'])
 check_directory("XTB_SCRIPT_DIRECTORY", XTB_SCRIPT_DIRECTORY)
 
@@ -47,8 +46,7 @@ else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
 check_directory("XTB_PATH",XTB_PATH)
 
-# finished
-print(f"Loaded configuration data from {CONFIGURATION_FILE}.")
+logging.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
@@ -91,6 +89,8 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     if "high_atoms" in settings:
         args["high_atoms"] = parse_atom_list(settings["high_atoms"])
+    else:
+        args["high_atoms"] = None
 
     assert "stop_time" in settings, "Need `stop_time` in config YAML file."
     assert isinstance(settings["stop_time"], int), "`stop_time` must be an integer."
@@ -365,10 +365,10 @@ def build_termination_function(settings):
             elif words[0] == "distance":
                 assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
                 if words[3] == "greater_than":
-                    if m.get_distance(int(words[1]), int(words[2])) > int(words[4]):
+                    if m.get_distance(int(words[1]), int(words[2])) > float(words[4]):
                         return exit_code
                 elif words[3] == "less_than":
-                    if m.get_distance(int(words[1]), int(words[2])) < int(words[4]):
+                    if m.get_distance(int(words[1]), int(words[2])) < float(words[4]):
                         return exit_code
                 else:
                     raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")

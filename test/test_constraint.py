@@ -58,8 +58,8 @@ class TestConstraint(unittest.TestCase):
             m = f.molecule()
             distances.append(m.get_distance(1,2))
 
-        from asciichartpy import plot
-        print(plot(distances[::4], {"height": 12}))
+#        from asciichartpy import plot
+#        print(plot(distances[::4], {"height": 12}))
 
         os.remove(t.checkpoint_filename)
 
@@ -71,4 +71,4 @@ class TestConstraint(unittest.TestCase):
         f, e = anchor.evaluate(position)
         for x in list(f[1]):
             self.assertTrue(x + 0.0004184 < 0.000001)
-        self.assertTrue(e - 0.0006275999999999999 < 0.000001)
+        self.assertTrue(e - 0.0031379999999999997 < 0.000001)

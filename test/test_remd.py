@@ -44,16 +44,16 @@ class TestReplicaExchange(unittest.TestCase):
             calculator=presto.calculators.XTBCalculator(),
             integrator=presto.integrators.LangevinIntegrator(),
             bath_scheduler=sched_330k,
-            checkpoint_filename="test/static/remd-chk1.chk",
+            checkpoint_filename="test/static/remd-chk2.chk",
             stop_time = 400,
         )
 
-        x = cctk.OneIndexedArray([[2,0,0], [0,0,0]])
+        x = cctk.OneIndexedArray([[1,0,0], [0,0,0]])
         traj1.initialize(positions=x)
+        x = cctk.OneIndexedArray([[2,0,0], [0,0,0]])
         traj2.initialize(positions=x)
 
         remd = presto.replica_exchange.ReplicaExchange(trajectories=[traj1, traj2], swap_interval=25, checkpoint_filename="test/static/remd.chk")
 
         remd.run()
-        print(remd.report())
 
