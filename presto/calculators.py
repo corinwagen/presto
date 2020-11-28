@@ -3,8 +3,6 @@ import os, random, string, re, cctk, ctypes, copy, shutil, time
 import subprocess as sp
 import multiprocessing as mp
 
-import xtb
-
 from presto import constants, config, constraint
 
 ############################
