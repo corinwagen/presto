@@ -17,6 +17,7 @@ class TestLangevinIntegrator(unittest.TestCase):
             atomic_numbers=zs,
             high_atoms=np.array([]),
             active_atoms=np.array([1]),
+            stop_time=100,
             calculator=presto.calculators.XTBCalculator(),
             integrator=presto.integrators.LangevinIntegrator(viscosity=0.0001),
         )
@@ -47,13 +48,13 @@ class TestSphericalIntegration(unittest.TestCase):
 
         self.assertEqual(f[1], 0)
         self.assertEqual(f[2], 0)
-        self.assertEqual(f[3], -1)
-        self.assertEqual(f[4], 4)
+        self.assertEqual(f[3], -0.5)
+        self.assertEqual(f[4], 2)
 
         x = np.array([[0,0,10]])
         f = potential(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
-        
+
         x = np.array([[0,0,-8]])
         f = potential(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)

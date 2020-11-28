@@ -3,7 +3,7 @@ import numpy as np
 import multiprocessing as mp
 from asciichartpy import plot
 
-sys.path.append("/n/home03/cwagen/Jacobsen/presto/")
+sys.path.append("/n/jacobsen_lab/cwagen/presto/")
 import presto
 
 # usage: python wham.py run 1 17 1.43 2.95 300 "../equil-00*/*_preequil.chk"

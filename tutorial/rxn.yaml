@@ -1,6 +1,6 @@
 # presto config file
 
-type: equilibration
+type: reaction
 
 timestep: 1
 high_atoms: 1-11
@@ -31,7 +31,7 @@ bath_scheduler:
     target_temp: 298
 
 termination_function:
-    constraint1f: bond 1 9 
+    constraint1f: bond 1 9
     constraint2f: bond 1 10
     constraint3r: bond 1 7
 

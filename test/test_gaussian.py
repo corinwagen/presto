@@ -15,11 +15,14 @@ class TestGaussian(unittest.TestCase):
         hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
-        gaussian_calculator = calculators.GaussianCalculator(charge=0, multiplicity=1,
-                                                                    link0={"mem":"1GB", "nprocshared":"1"},
-                                                                    route_card = "#p hf 3-21g force",
-                                                                    footer = None)
-        energy, forces = gaussian_calculator.evaluate(positions,atomic_numbers)
+        gaussian_calculator = calculators.GaussianCalculator(
+            charge=0,
+            multiplicity=1,
+            link0={"mem":"1GB", "nprocshared":"1"},
+            route_card = "#p hf 3-21g force",
+            footer = None
+        )
+        energy, forces = gaussian_calculator.evaluate(atomic_numbers, positions)
         self.assertLessEqual(abs(energy+1.0508014119), 0.00000001)
         expected_forces = [[ 0.21550274, 0, 0],[-0.21550274, 0, 0]]
         actual_forces = [ list(i) for i in forces ]

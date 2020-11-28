@@ -12,6 +12,11 @@ equil:
 wham:
     python wham.py run 1 7 1.7 2.3 100 "../equil.chk"
 
+then run pre-ts
+then :
+
+    python spawn.py -i 250 pre-ts.chk 5000 60 rxn.yaml trajs/traj
+
 analysis
     python analyze.py -c 0 equil.yaml equil.chk
     python analyze_reaction.py -m rxn.yaml equil.chk

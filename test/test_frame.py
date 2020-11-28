@@ -57,7 +57,6 @@ class TestFrame(unittest.TestCase):
         zs = cctk.OneIndexedArray([1] * num_atoms)
         traj = presto.trajectory.Trajectory(
             timestep=0.5,
-#            atomic_numbers=np.array([1,2]).view(cctk.OneIndexedArray),
             atomic_numbers=zs,
             high_atoms=np.array([]),
             active_atoms=np.array([]),
@@ -66,18 +65,10 @@ class TestFrame(unittest.TestCase):
             stop_time = 1000,
         )
 
-#        positions = 5 * np.random.random(size=(num_atoms,3)).view(cctk.OneIndexedArray)
-#        velocities = 5 * np.random.random(size=(num_atoms,3)).view(cctk.OneIndexedArray)
-#        accels = 5 * np.random.random(size=(num_atoms,3)).view(cctk.OneIndexedArray)
-
         positions = cctk.OneIndexedArray([[2,0,0],[-1,0,0],[0,1,0],[0,-1,0]])
         velocities = cctk.OneIndexedArray([[0,2,1],[0,-1,0],[1,0,-2],[-1,0,0]])
         accels = cctk.OneIndexedArray([[0,0,0],[0,0,0],[0,0,0],[0,0,0]])
-#        positions = cctk.OneIndexedArray([[0,1,0],[0,-1,0]])
-#        velocities = cctk.OneIndexedArray([[0,0,2],[0,0,-1]])
-#        accels = cctk.OneIndexedArray([[0,0,0],[0,0,0]])
 
         frame = presto.frame.Frame(traj, positions, velocities, accels)
-#        self.assertFalse(np.linalg.norm(np.sum(traj.masses.reshape(-1,1) * frame.velocities, axis=0)) < 0.0001)
         frame.remove_com_motion()
         self.assertTrue(np.linalg.norm(np.sum(traj.masses.reshape(-1,1) * frame.velocities, axis=0)) < 0.0001)

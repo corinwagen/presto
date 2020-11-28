@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/n/home03/cwagen/Jacobsen/presto/")
+sys.path.append("/n/jacobsen_lab/cwagen/presto/")
 
 import numpy as np
 import presto, argparse, re, glob, yaml, math, os
@@ -26,11 +26,11 @@ with open(args["config"], "r+") as f:
     if "monitor" in settings:
         for row in list(settings["monitor"].values()):
             monitor.append(row.split(" "))
-            
+
     constraints = list(settings["termination_function"].values())
 
 print("\n\033[3mTrajectories:\033[0m")
-print(f"\033[1m{'Filename':40s}\t{'Initial':8s}\t{'Final':8s}\t{'Total Time'}\033[0m")
+print(f"\033[1m{'Filename':40s}\t{'Initial':8s}\t{'Final':8s}\t{'Total Time':8s}\t{'Finished?'}\033[0m")
 for filename in args["files"]:
     traj = presto.config.build(args["config"], filename)
 
@@ -52,14 +52,14 @@ for filename in args["files"]:
         elif words[0] == "distance":
             assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
             if words[3] == "greater_than":
-                if mi.get_distance(int(words[1]), int(words[2])) > int(words[4]):
+                if mi.get_distance(int(words[1]), int(words[2])) > float(words[4]):
                     status_i = idx + 1
-                if mf.get_distance(int(words[1]), int(words[2])) > int(words[4]):
+                if mf.get_distance(int(words[1]), int(words[2])) > float(words[4]):
                     status_f = idx + 1
             elif words[3] == "less_than":
-                if mi.get_distance(int(words[1]), int(words[2])) < int(words[4]):
+                if mi.get_distance(int(words[1]), int(words[2])) < float(words[4]):
                     status_i = idx + 1
-                if mf.get_distance(int(words[1]), int(words[2])) < int(words[4]):
+                if mf.get_distance(int(words[1]), int(words[2])) < float(words[4]):
                     status_f = idx + 1
 
     time = len(traj.frames) * traj.timestep
@@ -67,7 +67,7 @@ for filename in args["files"]:
     filename = filename.rsplit('/',1)[-1]
     filename = re.sub(".chk", "", filename)
 
-    print(f"{filename:40s}\t{status_i:8d}\t{status_f:8d}\t{time:>5.1f}")
+    print(f"{filename:40s}\t{status_i:8d}\t{status_f:8d}\t   {time:>5.1f}\t{traj.finished}")
 
     if args["monitor"]:
         max_width = 100
@@ -77,22 +77,21 @@ for filename in args["files"]:
 
         for coord in monitor:
             Y = None
-            if coord[0] == "distance": 
+            if coord[0] == "distance":
                 Y = [f.molecule().get_distance(int(coord[1]), int(coord[2])) for f in traj.frames]
-            elif coord[0] == "angle": 
+            elif coord[0] == "angle":
                 Y = [f.molecule().get_angle(int(coord[1]), int(coord[2]), int(coord[3])) for f in traj.frames]
-            elif coord[0] == "dihedral": 
+            elif coord[0] == "dihedral":
                 Y = [f.molecule().get_dihedral(int(coord[1]), int(coord[2]), int(coord[3]), int(coord[4])) for f in traj.frames]
             else:
                 print(f"Unrecognized coordinate type {coord[0]}!")
                 break
-            
+
             Y = np.asarray(Y)
 
             print(f"\033[3m{' '.join(coord)}\033[0m")
             print(plot(np.mean(Y[:(len(Y)//scale)*scale].reshape(-1,scale), axis=1), {"height": 10}))
             print("\n")
-         
 
     if args["movie"]:
         assert os.path.exists(args["movie"]), f"can't write to directory {args['movie']}"

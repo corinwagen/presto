@@ -14,7 +14,7 @@ class TestYAML(unittest.TestCase):
         presto.config.build(path, "test/static/ex.chk", "test/static/nazarov-elim-solvated.xyz")
 
         path = "test/static/ex2.yaml"
-        presto.config.build(path, "test/static/ex2.chk", "test/static/nazarov-elim-solvated.xyz")
+        presto.config.build(path, "test/static/ex2.chk", oldchk="test/static/ex.chk")
 
         os.remove("test/static/ex.chk")
         os.remove("test/static/ex2.chk")

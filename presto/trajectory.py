@@ -60,7 +60,7 @@ class Trajectory():
             assert isinstance(high_atoms, np.ndarray), "high_atoms must be np.ndarray!"
             self.high_atoms = high_atoms
         else:
-            self.high_atoms = np.ndarray([])
+            self.high_atoms = None
 
         active_atoms = None
         if "active_atoms" in kwargs:
@@ -168,7 +168,6 @@ class Trajectory():
     def has_checkpoint(self, max_wait=100):
         if self.checkpoint_filename is None:
             return False
-
         if os.path.exists(self.checkpoint_filename):
             return True
         else:
@@ -493,6 +492,7 @@ class ReactionTrajectory(Trajectory):
 
         assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
         self.time_after_finished = time_after_finished
+        self.elapsed_since_finished = 0
 
         assert hasattr(termination_function, "__call__"), "termination_function must be a function!"
         self.termination_function = termination_function
@@ -557,7 +557,6 @@ class ReactionTrajectory(Trajectory):
 
     def propagate(self, checkpoint_interval, keep_all=False, time=None):
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-        time_since_finished = 0
 
         elapsed_time = 0
 
@@ -572,17 +571,16 @@ class ReactionTrajectory(Trajectory):
                     return
 
             exit_code = self.termination_function(self.frames[-1])
+            logger.debug(f"termination status:\t{t} fs\t{exit_code} code")
 
-            if exit_code or time_since_finished > 0:
-                time_since_finished += self.timestep
+            if exit_code or self.elapsed_since_finished > 0:
+                self.elapsed_since_finished += self.timestep
+                logger.info(f"Reaction trajectory finished! {self.elapsed_since_finished:.1f} fs since termination condition met, {self.time_after_finished:.1f} fs desired.")
 
-            if time_since_finished >= self.time_after_finished:
-                if exit_code:
-                    self.save(keep_all=keep_all)
-                    self.finished = exit_code
-                    return
-                else: # we just got lucky/random but it wasn't really finished, reset and try again
-                    time_since_finished = 0
+            if self.elapsed_since_finished >= self.time_after_finished:
+                self.save(keep_all=keep_all)
+                self.finished = exit_code
+                return
 
 class EquilibrationTrajectory(Trajectory):
     """
