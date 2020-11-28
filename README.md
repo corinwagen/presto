@@ -2,6 +2,9 @@
 
 *Python-based Reactions in Explicit Solvent with Trajectories via ONIOM*
 
+[![PyPI version](https://badge.fury.io/py/presto-md.svg)](https://badge.fury.io/py/presto-md)
+
+
 ## Introduction
 
 *presto* is a Python 3-based package that runs QM/QM' molecular dynamics simulations of small organic molecules in spheres of explicit solvent (50-250 solvent molecules). *presto* is loosely based on Singleton’s *PROGDYN*, as described in recent publications on the [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328) and [hydrochlorination of dienes](https://pubs.acs.org/doi/10.1021/jacs.0c06295), but is written in a modern and object-oriented style which permits easier extension and modification.
@@ -9,6 +12,7 @@
 **IMPORTANT:**
 *presto* is currently in "alpha": testing is ongoing and no guarantees as to correctness or API consistency can be made at this time. 
 As of Fall 2020 the package approximately works, but bugs are certainly present in a project of this size.
+If you are interesting in using *presto* or contributing as a developer, please let me know!
 
 ## Description
 
@@ -26,6 +30,8 @@ There are numerous challenges with running molecular dynamics that are not prese
 - An actual microdroplet of organic solvent would evaporate rapidly in the gas phase. To address this, *presto* applies a restoring force to any molecules which stray farther than a user-defined radius from the origin. This enforces a realistic solvent density and prevents evaporative cooling.
 
 - Real reactions are in thermodynamic equilibrium with an external heat bath, and thus maintain a steady temperature by changing their total energy. However, conventional “thermostats” for molecular dynamics simulations result in unphysical dynamics, either by scaling particle velocities (Berendsen) or by inducing collisions with an imaginary heat bath (Langevin). *presto* employs the Langevin thermostat, but only for the outer solvent shells not directly in contact with the system of interest. Since the different layers of the droplet are in thermal equilibrium, this has the effect of controlling the entire system’s temperature while preserving realistic (non-Langevin) dynamics for the solute and its immediate environment.
+
+- For all but the fastest reactions, the timescales accessible by molecular dynamics are insufficient to observe processes of interest. (At room temperature, it will take roughly 17,000 fs to observe a process with ∆G = 4.0 kcal/mol -- which is still a relatively low barrier for an organic reaction!) Accordingly, *presto* permits the addition of pairwise constraining potentials to study non-ground states (akin to a "scan" in electronic structure programs). The transition state can be located using biased sampling methods, and individual reaction trajectories can then be started from the region of the transition state. See the tutorial for more details.
 
 *presto* is under active development by Corin Wagen (cwagen@g.harvard.edu). Please use the issues page for feature requests or bug reports, and contact me if you have more substantive inquiries.
 
@@ -45,12 +51,16 @@ There are numerous challenges with running molecular dynamics that are not prese
 
 ## Getting Started
 
-*in progress*
+1. Install *presto* and associated dependencies using ``pip``:
+```
+$ pip install presto-md
+```
 
-- Install git repo (pip!)
-- Determine location for /scratch/ directories, and copy run_gaussian.sh / run_xtb.sh there.
-- Create customized submission script.
-- test?
+2. *presto* requires scratch directories with which to communicate with external programs. These locations must be 
+
+3. Create a customized submission script:
+
+4. Test:
 
 
 ## Acknowledgements
