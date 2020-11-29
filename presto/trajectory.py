@@ -143,6 +143,7 @@ class Trajectory():
         else:
             logger.info("Propagating trajectory.")
             self.propagate(checkpoint_interval, keep_all=keep_all, time=time)
+            logger.info("Trajectory finished!")
             self.save(keep_all=keep_all)
             return self
 
