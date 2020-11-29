@@ -52,8 +52,8 @@ There are numerous challenges with running molecular dynamics that are not prese
 
 ### Internal:
 - [`numpy`](https://numpy.org/)
-- `pyyaml`
-- `tabulate`, `tqdm`, `asciichartpy`
+- `pyyaml`, `h5py`
+- `matplotlib`, `tabulate`, `tqdm`, `asciichartpy`
 - `nglview` (if `Jupyter` visualization is desired)
 
 ## Getting Started
@@ -68,131 +68,40 @@ You may wish to create a ``conda`` environment for *presto* and associated packa
 $ conda create --name presto python=3.8 
 $ pip install presto-md
 $ conda install -c conda-forge xtb
+$ source activate presto
 ```
 
 #### 2. System-specific configuration:
+
 *presto* requires scratch directories with which to communicate with external programs. 
 These directories are specified by a config file, which *presto* finds via the environment variable ``$PRESTO_CONFIG``.
+You may wish to set this variable in ``~/.bashrc`` by adding the following line (set the path to point to your config file):
+
+```
+export PRESTO_CONFIG="/Users/your_username/presto.config"
+```
 
 Both Gaussian and *xtb* require individual scratch directories with the scripts ``gaussian/run_gaussian.sh`` and ``xtb/run_xtb.sh`` inside them.
-These scripts (located in the repo) should work out-of-the box for most environments, but may require modification for your system.
+These scripts (which can be obtained by cloning the repository) should work out-of-the box for most environments, but may require modification for your system.
+*presto* also needs to know the path to the ``xtb`` executable (``XTB_PATH``), which in most cases can be detected from ``conda`` automatically by specifying ``@auto``.
 
-Here is an example config file:
+Here is an example ``presto.config`` file:
 
 ```
 ### presto configuration ###
 [xtb]
-XTB_PATH = @auto # detect from conda
+XTB_PATH = @auto
 XTB_SCRIPT_DIRECTORY = ~/presto-testing/xtb/
 
 [gaussian]
 GAUSSIAN_SCRIPT_DIRECTORY = ~/presto-testing/gaussian/
 ```
 
-After reading this file, *presto* will expect these directories to be present with the corresponding bash scripts.
+This file should not need to be modified for each job, and can typically be created once and left unchanged.
 
 #### 3. Running your first job
 
-For each trajectory, *presto* requires both a config file and a checkpoint file.
-
-A config file contains information about the run: how the forces will be computed, the desired temperature, runtime, and so forth. 
-Config files are agnostic to molecular structure and can be recycled for many different trajectories; 
-they are written in the ``.yaml`` format and are easily editable by hand.
-
-A checkpoint file contains the masses, positions, forces, and accelerations of individual atoms at each timestep.
-Checkpoint files are written in the ``.hdf5`` format and are not human-readable.
-If your run is very long, the checkpoint file may grow to several gigabytes or more!
-To begin a new run, either an ``.xyz`` geometry or a previous checkpoint file must be supplied to initialize the new checkpoint file.
-
-Here, we will run molecular dynamics on a single benzene molecule using GFN2-xtb.
-
-The config file (``test.yaml``) is shown here:
-
-```
-# presto config file
-type: equilibration
-timestep: 1
-stop_time: 250
-anchor: 1
-
-integrator:
-    type: langevin
-    viscosity: 0.0001
-
-calculator:
-    type: xtb
-    gfn : 2
-    parallel: 8
-
-bath_scheduler:
-    type: constant
-    target_temp: 298
-```
-
-This is a fairly simple config file: for more complex examples, see the attached tutorial.
-(I will write a more comprehensive overview of all possible options and what they mean later).
-
-We also need a starting geometry (``benzene.xyz``):
-
-```
-12
-benzene
- C                 -3.00142242   -0.33428165    0.00000000
- C                 -1.60626242   -0.33428165    0.00000000
- C                 -0.90872442    0.87346935    0.00000000
- C                 -1.60637842    2.08197835   -0.00119900
- C                 -3.00120342    2.08190035   -0.00167800
- C                 -3.69880442    0.87369435   -0.00068200
- H                 -3.55118142   -1.28659865    0.00045000
- H                 -1.05675442   -1.28679465    0.00131500
- H                  0.19095558    0.87354935    0.00063400
- H                 -1.05617842    3.03412135   -0.00125800
- H                 -3.55132542    3.03418135   -0.00263100
- H                 -4.79840842    0.87387735   -0.00086200
- ```
- 
-Finally, we need an actual script to load and run our trajectory (``test_presto.py``):
- 
-```
-import logging, presto
-logging.basicConfig(level=logging.INFO, filename=f"test.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M')
-
-traj = presto.config.build("test.yaml", "test.chk", geometry="benzene.xyz")
-traj.run(checkpoint_interval=25)
-```
-
-Here, we initialize the ``logging`` module so we can monitor the progress of our trajectory.
-We then initialize a ``presto.trajectory.Trajectory`` object from ``test.yaml`` and ``benzene.xyz``, creating ``test.chk`` in the process.
-Finally, we run our trajectory, saving to ``test.chk`` every 25 frames.
-
-This script should only take 1-2 minutes to run. After it finishes, you can see two new files:
-
-```
-(presto) [presto-testing]$ ls
-gaussian  xtb  benzene.xyz  presto.config  test_presto.py  test.yaml
-(presto) [presto-testing]$ python test_presto.py
-(presto) [presto-testing]$ ls
-gaussian  xtb  benzene.xyz  presto.config  test.chk  test.log  test_presto.py  test.yaml
-(presto) [presto-testing]$ cat test.log
-11-28 14:24 presto.trajectory  Initializing new equilibration trajectory...
-11-28 14:24 presto.trajectory  Saving trajectory to new checkpoint file test.chk (1 frames)
-11-28 14:24 presto.trajectory  Loaded trajectory from checkpoint file test.chk -- 1 frames read.
-11-28 14:24 presto.trajectory  Propagating trajectory.
-11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 26 in total)
-11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 51 in total)
-11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 76 in total)
-11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 101 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 126 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 151 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 176 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 201 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 226 in total)
-11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (24 frames added; 250 in total)
-(presto) [presto-testing]$
-```
-
-If you see a logfile like this, *presto* has successfully completed the trajectory! 
-You can analyze the checkpoint file using the scripts in ``scripts/``, or look at more advanced use cases in ``tutorial/``.
+To run a simple MD job on benzene, see ``tutorials/tutorial00``. This job should take only a few minutes to run!
 
 ## Acknowledgements
 
