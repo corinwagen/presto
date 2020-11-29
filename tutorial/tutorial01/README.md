@@ -1,4 +1,4 @@
-# Tutorial
+# Tutorial 01: Nucleophilic Acyl Substitution
 
 For this tutorial, we will examine the reaction of acetyl chloride and sodium azide in acetonitrile.
 Experimental data, in conjunction with [previous gas-phase results](https://cctk.readthedocs.io/en/latest/tutorial_05.html),
