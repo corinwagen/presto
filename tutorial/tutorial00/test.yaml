@@ -12,6 +12,7 @@ calculator:
     type: xtb
     gfn : 2
     parallel: 8
+    xcontrol: default.xcontrol
 
 bath_scheduler:
     type: constant
