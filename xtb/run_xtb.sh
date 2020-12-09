@@ -11,6 +11,7 @@
 # parallel_threads:    how many processors to use
 # xtb_path:            the xtb home directory where the GFN parameters are
 # topology:            topology file for GFNFF
+# xcontrol:            xcontrol file for xtb
 #
 # {unique_id}.xyz will be run in a folder called unique_id
 # presto will delete this folder when finished
@@ -28,6 +29,7 @@ gfn=${4}
 parallel=${5}
 xtb_path=${6}
 top_path=${7}
+xcontrol=${8}
 
 # set XTBPATH
 if [ ! -d ${xtb_path} ]; then
@@ -82,19 +84,39 @@ ls
 echo Starting job...
 if [ ${parallel} -gt 1 ]; then
     if [ ${gfn} == ff ]; then
-        echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-        xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+        if [ -z "$xcontrol" ]; then
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+        else
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --input ${xcontrol} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfnff --parallel ${parallel} --input ${xcontrol} --grad ${unique_id}.xyz &> ${unique_id}.out
+        fi
     else
-        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+        if [ -z "$xcontrol" ]; then
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --grad ${unique_id}.xyz &> ${unique_id}.out
+        else
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --input ${xcontrol} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --parallel ${parallel} --input ${xcontrol} --grad ${unique_id}.xyz &> ${unique_id}.out
+        fi
     fi
 else
     if [ ${gfn} == ff ]; then
-        echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz '&>' ${unique_id}.out
-        xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz &> ${unique_id}.out
+        if [ -z "$xcontrol" ]; then
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfnff --grad ${unique_id}.xyz &> ${unique_id}.out
+        else
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfnff --input ${xcontrol} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfnff --input ${xcontrol} --grad ${unique_id}.xyz &> ${unique_id}.out
+        fi
     else
-        echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
-        xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+        if [ -z "$xcontrol" ]; then
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --grad ${unique_id}.xyz &> ${unique_id}.out
+        else
+            echo xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --input ${xcontrol} --grad ${unique_id}.xyz '&>' ${unique_id}.out
+            xtb --chrg ${charge} --uhf ${unpaired} --gfn ${gfn} --input ${xcontrol} --grad ${unique_id}.xyz &> ${unique_id}.out
+        fi
     fi
 fi
 echo Job finished.
