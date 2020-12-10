@@ -1,5 +1,5 @@
 import numpy as np
-import cctk, math   
+import cctk, math
 import matplotlib.pyplot as plt
 
 import presto
@@ -18,13 +18,13 @@ def radial_distribution(frames, indices, cutoff=10, center_cutoff=5, resolution=
         indices (list): list of indices to analyze from each frame
         cutoff (float): max distance to examine
         center_cutoff (float): max distance from center for starting atoms)
-        resolution (float): bin size    
+        resolution (float): bin size
 
     Returns:
         list of counts at each point divided by volume
         list of shell radii
     """
-    
+
     assert (100 * cutoff) % (100 * resolution) == 0, "cutoff must be a multiple of resolution!"
     #### floating point accuracy issues
 
@@ -53,11 +53,11 @@ def radial_distribution(frames, indices, cutoff=10, center_cutoff=5, resolution=
                 index = int(distance/resolution)
                 if index < len(total_hist):
                     print(f"assigning index {index} and radius {radii[index]}")
-                    total_hist[index] += 1                
+                    total_hist[index] += 1
 
     volumes_per_shell = 4/3 * math.pi * (np.power(radii + resolution, 3) - np.power(radii, 3))
 
     vol_correction = frame.volume() / volumes_per_shell
 
     g = total_hist * vol_correction / (frame_count * 0.5 * len(indices) * (len(indices) - 1))
-    return g, radii 
+    return g, radii

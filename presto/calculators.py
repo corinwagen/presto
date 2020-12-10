@@ -3,8 +3,6 @@ import os, random, string, re, cctk, ctypes, copy, shutil, time
 import subprocess as sp
 import multiprocessing as mp
 
-import xtb
-
 from presto import constants, config, constraint
 
 ############################
@@ -73,9 +71,10 @@ class XTBCalculator(Calculator):
         multiplicity (int):
         gfn (int or str):
         parallel (int):
+        xcontrol_path (str):
     """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list()):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), xcontrol_path=None):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, (int, str))
@@ -89,6 +88,10 @@ class XTBCalculator(Calculator):
         for c in constraints:
             assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
+
+        if xcontrol_path is not None:
+            assert isinstance(xcontrol_path, str)
+        self.xcontrol_path = xcontrol_path
 
         # select a unique 8-letter string that will
         # be used to identify this calculator
@@ -152,6 +155,7 @@ class XTBCalculator(Calculator):
             f"{self.parallel}",
             XTB_PATH,
             f"{self.UNIQUE_ID}.topo",
+            f"{self.xcontrol_path}",
         ]
 
         start = time.time()

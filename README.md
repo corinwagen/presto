@@ -4,7 +4,6 @@
 
 [![PyPI version](https://badge.fury.io/py/presto-md.svg)](https://badge.fury.io/py/presto-md)
 
-
 ## Introduction
 
 *presto* is a Python 3-based package that runs QM/QM' molecular dynamics simulations of small organic molecules in spheres of explicit solvent (50-250 solvent molecules). *presto* is loosely based on Singleton’s *PROGDYN*, as described in recent publications on the [nitration of toluene](https://pubs.acs.org/doi/10.1021/jacs.6b07328) and [hydrochlorination of dienes](https://pubs.acs.org/doi/10.1021/jacs.0c06295), but is written in a modern and object-oriented style which permits easier extension and modification.
@@ -13,6 +12,14 @@
 *presto* is currently in "alpha": testing is ongoing and no guarantees as to correctness or API consistency can be made at this time. 
 As of Fall 2020 the package approximately works, but bugs are certainly present in a project of this size.
 If you are interesting in using *presto* or contributing as a developer, please let me know!
+
+## Contents
+- [Description](#description)
+- [Dependencies](#dependencies)
+- [Getting Started](#getting-started)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
 
 ## Description
 
@@ -45,27 +52,60 @@ There are numerous challenges with running molecular dynamics that are not prese
 
 ### Internal:
 - [`numpy`](https://numpy.org/)
-- `pyyaml`
-- `tabulate`, `tqdm`, `asciichartpy`
+- `pyyaml`, `h5py`
+- `matplotlib`, `tabulate`, `tqdm`, `asciichartpy`
 - `nglview` (if `Jupyter` visualization is desired)
 
 ## Getting Started
 
-1. Install *presto* and associated dependencies using ``pip``:
+#### 1. Install *presto* and associated dependencies:
 ```
 $ pip install presto-md
 ```
 
-2. *presto* requires scratch directories with which to communicate with external programs. These locations must be 
+You may wish to create a ``conda`` environment for *presto* and associated packages, such as *xtb*:
+```
+$ conda create --name presto python=3.8 
+$ pip install presto-md
+$ conda install -c conda-forge xtb
+$ source activate presto
+```
 
-3. Create a customized submission script:
+#### 2. System-specific configuration:
 
-4. Test:
+*presto* requires scratch directories with which to communicate with external programs. 
+These directories are specified by a config file, which *presto* finds via the environment variable ``$PRESTO_CONFIG``.
+You may wish to set this variable in ``~/.bashrc`` by adding the following line (set the path to point to your config file):
 
+```
+export PRESTO_CONFIG="/Users/your_username/presto.config"
+```
+
+Both Gaussian and *xtb* require individual scratch directories with the scripts ``gaussian/run_gaussian.sh`` and ``xtb/run_xtb.sh`` inside them.
+These scripts (which can be obtained by cloning the repository) should work out-of-the box for most environments, but may require modification for your system.
+*presto* also needs to know the path to the ``xtb`` executable (``XTB_PATH``), which in most cases can be detected from ``conda`` automatically by specifying ``@auto``.
+
+Here is an example ``presto.config`` file:
+
+```
+### presto configuration ###
+[xtb]
+XTB_PATH = @auto
+XTB_SCRIPT_DIRECTORY = ~/presto-testing/xtb/
+
+[gaussian]
+GAUSSIAN_SCRIPT_DIRECTORY = ~/presto-testing/gaussian/
+```
+
+This file should not need to be modified for each job, and can typically be created once and left unchanged.
+
+#### 3. Running your first job
+
+To run a simple MD job on benzene, see ``tutorials/tutorial00``. This job should take only a few minutes to run!
 
 ## Acknowledgements
 
-**Eugene Kwan** for assistance with software design and extensive technical help.
+**Eugene Kwan** for assistance with software design, extensive technical help, and preliminary testing.
 
 **J. Daniel Gezelter** for helpful discussions and advice about best practices in molecular dynamics, 
 and an incredible willingness to help a complete stranger debug his Langevin integration code.

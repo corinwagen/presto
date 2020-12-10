@@ -29,7 +29,7 @@ def check_directory(field_name, directory):
     """ Checks if a directory exists."""
     directory_exists = os.path.isdir(directory)
     if not directory_exists:
-        logging.error(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
+        logger.error(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
 
 # check configuration parameters
 GAUSSIAN_SCRIPT_DIRECTORY = resolve_directory(config['gaussian']['GAUSSIAN_SCRIPT_DIRECTORY'])
@@ -46,7 +46,7 @@ else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
 check_directory("XTB_PATH",XTB_PATH)
 
-logging.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
+logger.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
 
@@ -270,7 +270,12 @@ def build_calculator(settings, constraints=list()):
             assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
             parallel = settings["parallel"]
 
-        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints)
+        xcontrol = None
+        if "xcontrol" in settings:
+            assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
+            xcontrol = settings["xcontrol"]
+
+        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol=xcontrol)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
