@@ -2,13 +2,12 @@ import argparse, math, sys, os, subprocess
 import numpy as np
 import cctk
 
-sys.path.append('../presto')
-
 try:
     import importlib.resources as pkg_resources
 except ImportError:
     import importlib_resources as pkg_resources
 
+import presto
 import presto.solvents as solvents
 
 #### Usage:
