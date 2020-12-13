@@ -109,7 +109,7 @@ class XTBCalculator(Calculator):
         for i in range(7):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -118,11 +118,11 @@ class XTBCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
-            print_timing (Bool):
 
         Returns:
             energy (float): in Hartree
             forces (cctk.OneIndexedArray): in amu Å per fs**2
+            time (float): in seconds
         """
         # set working directory
         old_working_directory = os.getcwd()
@@ -158,11 +158,11 @@ class XTBCalculator(Calculator):
             f"{self.xcontrol_path}",
         ]
 
+        # run
         start = time.time()
         process = sp.run(command, capture_output=True)  # redirect stdout and stderr to pipe
         end = time.time()
-        if print_timing:
-            print(f"\nxtb call {this_unique_id} took {end-start:.3f} s.")
+        elapsed = start - end
 
         # get results
         job_directory = f"{XTB_SCRIPT_DIRECTORY}/presto-{this_unique_id}"
@@ -203,9 +203,7 @@ class XTBCalculator(Calculator):
         # parse energy
         with open("energy", "r") as f:
             energy_lines = f.read().splitlines()
-        energy = energy_lines[1]
-        fields = energy.split()
-        energy = float(fields[1])
+        energy = float(energy_lines[1].split()[1])
 
         # parse forces
         with open("gradient", "r") as f:
@@ -224,10 +222,8 @@ class XTBCalculator(Calculator):
         os.chdir(XTB_SCRIPT_DIRECTORY)
         try:
             shutil.rmtree(job_directory)
-            pass
         except Exception as e:
-            print(e)
-            print(f"warning: could not remove ${job_directory} but continuing")
+            print(f"{e}\nwarning: could not remove ${job_directory} but continuing")
 
         # restore working directory
         os.chdir(old_working_directory)
@@ -283,7 +279,7 @@ class GaussianCalculator(Calculator):
         for i in range(7):
             self.UNIQUE_ID += random.choice(LETTERS_AND_DIGITS)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, print_timing=False, qc=False):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -292,7 +288,6 @@ class GaussianCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
-            print_timing (bool):
             qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails
 
         Returns:
@@ -333,11 +328,11 @@ class GaussianCalculator(Calculator):
         output, error = process.communicate()
         p_status = process.wait()
         end = time.time()
+        elapsed = end - start
+
         output = output.decode("utf-8")
         if p_status != 0:
             raise ValueError(f"gaussian job {this_unique_id} died with exit code {p_status}!")
-        if print_timing:
-            print(f"\nGaussian call {this_unique_id} took {end-start:.3f} s.")
 
         energy, forces = None, None
         try:
