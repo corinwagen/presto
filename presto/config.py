@@ -257,7 +257,7 @@ def build_calculator(settings, constraints=list()):
         if "multiplicity" in settings:
             assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
             assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            charge = settings["multiplicity"]
+            multiplicity = settings["multiplicity"]
 
         gfn = 2
         if "gfn" in settings:
