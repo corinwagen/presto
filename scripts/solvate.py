@@ -14,27 +14,27 @@ import presto.solvents as solvents
 
 #### Solvent ``name`` should be added as ``presto/solvents/name.xyz`` and must contain "density=___" and "mw=____" on the title line.
 
-#### python build_input.py -s ether -n 250 -o solvated_structure.xyz -f molecule.xyz
-#### python build_input.py -s benzene toluene -n 100 100 -o solvated_structure.xyz -f molecule.xyz
+#### python solvate.py -s ether -n 250 -o solvated_structure.xyz -f molecule.xyz
+#### python solvate.py -s benzene toluene -n 100 100 -o solvated_structure.xyz -f molecule.xyz
 
 #### This program expects that ``packmol`` can be executed in bash. You may wish to add a ``~/.bashrc`` alias to that effect.
 
-#### - Corin Wagen, 2020
+#### Corin Wagen, 2020
 
-parser = argparse.ArgumentParser(prog="build_input.py")
-parser.add_argument("--file", "-f", type=str)
-parser.add_argument("--solvent", "-s", type=str, nargs="+")
-parser.add_argument("--num_atoms", "-n", type=int, nargs="+")
-parser.add_argument("--output", "-o", type=str)
+parser = argparse.ArgumentParser(prog="solvate.py", description="A script to solvate arbitrary xyz files, generating spheres of realistic solvent density.")
+parser.add_argument("--file", "-f", type=str, help="xyz file containing the desired input structure to solvate.")
+parser.add_argument("--solvent", "-s", type=str, nargs="+", help="solvents to use (specified by name, multiple arguments allowed).")
+parser.add_argument("--num", "-n", type=int, nargs="+", help="number of each solvent to add. same order as list of solvents.")
+parser.add_argument("--output", "-o", type=str, help="desired output xyz file.")
 
 args = vars(parser.parse_args(sys.argv[1:]))
 
 assert "file" in args.keys(), "need input file"
 assert "solvent" in args.keys(), "need type of solvent"
-assert "num_atoms" in args.keys(), "need number of solvent atoms"
+assert "num" in args.keys(), "need number of solvent atoms"
 assert "output" in args.keys(), "need output file"
 
-assert len(args["solvent"]) == len(args["num_atoms"]), "missing solvents/num_atoms, lists must be same size!"
+assert len(args["solvent"]) == len(args["num"]), "missing solvents/num, lists must be same size!"
 
 print("Building packmol input file...")
 
@@ -48,7 +48,7 @@ volume = cctk.XYZFile.read_file(args["file"]).molecule.volume()
 
 print(f"Loading solvent {args['solvent']} information...")
 #### load solvent file
-for s, n in zip(args["solvent"], args["num_atoms"]):
+for s, n in zip(args["solvent"], args["num"]):
     with pkg_resources.path(solvents, f"{s}.xyz") as file:
         f = cctk.XYZFile.read_file(file)
         title_dict = {x.split("=")[0]: x.split("=")[1] for x in f.title.split(" ")}
@@ -61,7 +61,7 @@ for s, n in zip(args["solvent"], args["num_atoms"]):
 #### choose appropriately-sized enclosing sphere
 radius = np.cbrt(0.75 * volume / math.pi)
 
-for s, n in zip(args["solvent"], args["num_atoms"]):
+for s, n in zip(args["solvent"], args["num"]):
     with pkg_resources.path(solvents, f"{s}.xyz") as file:
         text += f"structure {file}\n  number {n}\n  inside sphere 0. 0. 0. {radius:.2f}\nend structure\n\n"
 
