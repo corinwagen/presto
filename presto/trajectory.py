@@ -20,8 +20,10 @@ class Trajectory():
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
         masses (cctk.OneIndexedArray): list of masses
 
-        calculator (presto.Calculator):
-        integrator (presto.Integrator):
+        calculator (presto.calculators.Calculator):
+        integrator (presto.integrators.Integrator):
+        reporters (list of presto.reporters.Reporter):
+        checks (list of presto.checks.Check):
 
         finished (bool):
         forwards (bool):
@@ -29,7 +31,20 @@ class Trajectory():
         checkpoint_filename (str):
     """
 
-    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, stop_time=None, **kwargs):
+    def __init__(
+        self,
+        calculator=None,
+        integrator=None,
+        reporters=list(),
+        checks=list(),
+        timestep=None,
+        atomic_numbers=None,
+        high_atoms=None,
+        forwards=True,
+        checkpoint_filename=None,
+        stop_time=None,
+        **kwargs
+    ):
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
@@ -41,11 +56,17 @@ class Trajectory():
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
+        self.calculator = calculator
+
         if integrator is not None:
             assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
-
-        self.calculator = calculator
         self.integrator = integrator
+
+        assert all([isinstance(c, presto.checks.Check) for c in checks])
+        self.checks = checks
+
+        assert all([isinstance(r, presto.reporters.Reporter) for r in reporters])
+        self.reporters = reporters
 
         if atomic_numbers is not None:
             assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
