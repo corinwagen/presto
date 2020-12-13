@@ -1,0 +1,1 @@
+python ../../packmol/build_input.py -f tBuCl.xyz -o solvated.xyz -s ethanol -n 100

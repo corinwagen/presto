@@ -7,6 +7,7 @@ try:
 except ImportError:
     import importlib_resources as pkg_resources
 
+import presto
 import presto.solvents as solvents
 
 #### Usage:
@@ -76,7 +77,7 @@ subprocess.call(['/bin/bash', '-i', '-c', "packmol < temp.inp"])
 
 #### either delete temporary file or leave it if packmol failed
 if os.path.exists(args["output"]):
-#    os.remove("temp.inp")
+    os.remove("temp.inp")
     print(f"temp.inp removed")
     print(f"confining radius = {radius} Å")
 else:

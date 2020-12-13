@@ -129,7 +129,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         a_full = forces / frame.masses()
 
         v_full = frame.velocities + 0.5 * timestep * (a_full + frame.accelerations) - timestep * xi * frame.velocities + sigma * math.sqrt(timestep) * rand1 - xi * C
-
+        v_full[frame.inactive_mask()] = 0 # no random forces either
         return energy, x_full, v_full, a_full
 
 
