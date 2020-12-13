@@ -1,0 +1,3 @@
+python ../../packmol/build_input.py -f tBuCl.xyz -o solvated.xyz -s ethanol -n 100
+
+change starting temp to 500 K - 1000 K is far too hot.
