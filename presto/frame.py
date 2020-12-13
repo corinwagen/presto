@@ -16,11 +16,12 @@ class Frame():
         velocities (cctk.OneIndexedArray):
         accelerations (cctk.OneIndexedArray):
 
+        time (float): time of current frame within trajectory, in fs
         energy (float):
         bath_temperature (float):
     """
 
-    def __init__(self, trajectory, x, v, a, bath_temperature=298, energy=0.0):
+    def __init__(self, trajectory, x, v, a, time=None, bath_temperature=298, energy=0.0):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -37,12 +38,16 @@ class Frame():
         assert isinstance(bath_temperature, (float, int, np.integer)), "bath temperature needs to be numeric!"
         assert bath_temperature >= 0, "bath temperature must be positive or 0"
 
+        if time is not None:
+            assert isinstance(time, (float, int, np.integer)), "time must be numeric"
+
         self.trajectory = trajectory
         self.positions = x
         self.velocities = v
         self.accelerations = a
         self.bath_temperature = bath_temperature
         self.energy = energy
+        self.time = time
 
     def __str__(self):
         temp = f"E={self.energy}, temp={self.bath_temperature}\n"
@@ -65,7 +70,7 @@ class Frame():
         integrator = self.trajectory.integrator
         energy, new_x, new_v, new_a = integrator.next(self, forwards=forwards)
         self.energy = energy
-        return Frame(self.trajectory, new_x, new_v, new_a, temp)
+        return Frame(self.trajectory, new_x, new_v, new_a, temp, time=self.time+self.trajectory.timestep)
 
     def prev(self, temp=None):
         """

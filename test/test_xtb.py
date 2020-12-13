@@ -16,7 +16,7 @@ class TestXTB(unittest.TestCase):
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1)
-        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=False)
+        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, )
         self.assertLessEqual(abs(energy+0.90379671599), 0.00000001)
         expected_forces = [[ 0.21688017, 0, 0],[-0.21688017, 0, 0]]
         actual_forces = [ list(i) for i in forces ]
@@ -30,7 +30,7 @@ class TestXTB(unittest.TestCase):
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=0)
-        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=False)
+        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, )
         self.assertLessEqual(abs(energy+1.0083914049), 0.00000001)
 
     def test_big(self):
@@ -38,6 +38,6 @@ class TestXTB(unittest.TestCase):
         atomic_numbers = molecule.atomic_numbers
         positions = molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn="ff", parallel=4)
-        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, print_timing=False)
+        energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, )
         self.assertLessEqual(abs(energy+122.8153475072), 0.00000001)
 

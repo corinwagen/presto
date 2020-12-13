@@ -198,7 +198,7 @@ class XTBCalculator(Calculator):
             print(process.stderr.decode("utf-8"))
             print()
             print("========= xtb error ========")
-            raise ValueError(f"command line xtb job {this_unique_id} died with exit code {exit_code} (found_energy_file={found_energy_file}, found_gradient_file={found_gradient_file})!")
+            raise ValueError(f"command line xtb job {this_unique_id} died (found_energy_file={found_energy_file}, found_gradient_file={found_gradient_file})!")
 
         # parse energy
         with open("energy", "r") as f:

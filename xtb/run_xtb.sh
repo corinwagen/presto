@@ -48,6 +48,8 @@ if [ ${parallel} -gt 1 ]; then
     export MKL_NUM_THREADS=${parallel}
 fi
 
+ulimit -s unlimited
+
 # if folder exists, quit with error
 if [ -d ${unique_id} ]; then
 	echo Error: directory ${unique_id} already exists.
