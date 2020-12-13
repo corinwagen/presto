@@ -3,7 +3,7 @@
 type: equilibration
 
 timestep: 1
-high_atoms: 1-9
+high_atoms: 1-14
 stop_time: 20000
 
 anchor: 1
@@ -24,7 +24,7 @@ calculator:
         parallel: 8
     high_calculator:
         type: gaussian
-        route_card: "#p force b3lyp/6-31g(d) empiricaldispersion=gd3bj pop=none"
+        route_card: "#p force b3lyp/6-31+g(d) empiricaldispersion=gd3bj pop=none"
         link0:
             nprocshared: 16
             mem: "32GB"
