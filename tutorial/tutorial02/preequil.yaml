@@ -19,7 +19,7 @@ calculator:
     type: xtb
     gfn : 0
     parallel: 8
-    xcontrol: default.xcontrol
+#    xcontrol: default.xcontrol
 
 bath_scheduler: 
     type: linear
