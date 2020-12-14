@@ -131,3 +131,30 @@ class Anchor(Constraint):
 
         return forces, energy
 
+def build_constraints(settings):
+    """
+    Build constraint list from settings dict.
+    """
+    constraints = list()
+    for row in list(settings.values()):
+        assert "atom1" in row, "need ``atom1`` defined for constraint!"
+        assert isinstance(row["atom1"], (int, list)), "``atom1`` must be integer or list of integers!"
+        assert "atom2" in row, "need ``atom2`` defined for constraint!"
+        assert isinstance(row["atom2"], (int, list)), "``atom2`` must be integer or list of integers!"
+        assert "equilibrium" in row, "need equilibrium distance ``equilibrium`` defined for constraint!"
+        assert isinstance(row["equilibrium"], (int, float)), "``equilibrium`` must be numeric!"
+
+        args = {"atom1": row["atom1"], "atom2": row["atom2"], "equilibrium": row["equilibrium"]}
+
+        if "power" in row:
+            assert isinstance(row["power"], int), "``power`` must be integer!"
+            args["power" ] = row["power"]
+
+        if "force_constant" in row:
+            assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
+            args["force_constant"] = row["force_constant"]
+
+        constraints.append(PairwisePolynomialConstraint(**args))
+    return constraints
+
+

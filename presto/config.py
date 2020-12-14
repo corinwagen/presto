@@ -98,18 +98,18 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     p = None
     if "potential" in settings:
-        p = build_potential(settings["potential"])
+        p = presto.integrators.build_potential(settings["potential"])
 
     constraints = list()
     if "constraints" in settings:
-        constraints = build_constraints(settings["constraints"])
+        constraints = presto.constraints.build_constraints(settings["constraints"])
 
     if "anchor" in settings:
         assert isinstance(settings["anchor"], int), "``anchor`` must be an atomic number!"
-        constraints.insert(0, presto.constraint.Anchor(settings["anchor"]))
+        constraints.insert(0, presto.constraints.Anchor(settings["anchor"]))
 
-    i = build_integrator(settings["integrator"], potential=p)
-    c = build_calculator(settings["calculator"], constraints=constraints)
+    i = presto.integrators.build_integrator(settings["integrator"], potential=p)
+    c = presto.calculators.build_calculator(settings["calculator"], constraints=constraints)
 
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"
@@ -181,124 +181,6 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
         assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
         return t
-
-def build_integrator(settings, potential=None):
-    assert isinstance(settings, dict), "Need to pass a dictionary!!"
-    assert "type" in settings, "Need `type` for integrator"
-    assert isinstance(settings["type"], str), "Integrator `type` must be a string"
-
-    if settings["type"].lower() == "verlet":
-        return presto.integrators.VelocityVerletIntegrator()
-    elif settings["type"].lower() == "langevin":
-        assert "viscosity" in settings, "Need `viscosity` for Langevin integrator!"
-        assert isinstance(settings["viscosity"], (int, float)), "Integrator `radius` must be numeric."
-
-        radius = 0
-        if "radius" in settings:
-            assert isinstance(settings["radius"], (int, float)), "Integrator `radius` must be numeric."
-            radius = settings["radius"]
-
-        return presto.integrators.LangevinIntegrator(settings["viscosity"], radius=radius, potential=potential)
-    else:
-        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
-
-def build_calculator(settings, constraints=list()):
-    assert isinstance(settings, dict), "Need to pass a dictionary!!"
-    assert "type" in settings, "Need `type` for calculator"
-    assert isinstance(settings["type"], str), "Calculator `type` must be a string"
-
-    if settings["type"].lower() == "oniom":
-        assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
-        assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
-        return presto.calculators.ONIOMCalculator(
-            high_calculator=build_calculator(settings["high_calculator"]),
-            low_calculator=build_calculator(settings["low_calculator"]),
-            constraints=constraints,
-        )
-    elif settings["type"].lower() == "gaussian":
-        charge = 0
-        if "charge" in settings:
-            assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
-            charge = settings["charge"]
-
-        multiplicity = 1
-        if "multiplicity" in settings:
-            assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
-            assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            multiplicity = settings["multiplicity"]
-
-        link0 = None
-        if "link0" in settings:
-            assert isinstance(settings["link0"], dict), "Calculator `link0` must be a dictionary."
-            link0 = settings["link0"]
-
-        assert "route_card" in settings, "Need a route card for `GaussianCalculator`!"
-        assert isinstance(settings["route_card"], str), "Calculator `route_card` must be a string."
-        assert re.search("#p", settings["route_card"]), "Need `#p` in route card!"
-        assert re.search("force", settings["route_card"]), "Need `force` in route card!"
-
-        footer = None
-        if "footer" in settings:
-            assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
-            footer = settings["footer"]
-
-        if link0 is not None:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints)
-        else:
-            return presto.calculators.GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints)
-
-    elif settings["type"].lower() == "xtb":
-        charge = 0
-        if "charge" in settings:
-            assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
-            charge = settings["charge"]
-
-        multiplicity = 1
-        if "multiplicity" in settings:
-            assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
-            assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            multiplicity = settings["multiplicity"]
-
-        gfn = 2
-        if "gfn" in settings:
-            assert settings["gfn"] in [0, 1, 2, "ff"], "Calculator `gfn` must be 0, 1, 2, or ``ff``."
-            gfn = settings["gfn"]
-
-        parallel = 1
-        if "parallel" in settings:
-            assert isinstance(settings["parallel"], int), "Calculator `parallel` must be an integer."
-            assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
-            parallel = settings["parallel"]
-
-        xcontrol = None
-        if "xcontrol" in settings:
-            assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
-            xcontrol = settings["xcontrol"]
-
-        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol=xcontrol)
-
-    else:
-        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
-
-def build_potential(settings):
-    assert isinstance(settings, dict), "Need to pass a dictionary!!"
-    assert "type" in settings, "Need `type` for potential"
-    assert isinstance(settings["type"], str), "Potential `type` must be a string"
-
-    if settings["type"].lower() == "spherical_harmonic":
-        assert "radius" in settings, "Need `radius` for spherical harmonic potential."
-        assert isinstance(settings["radius"], (int, float)), "`radius` must be numeric!"
-        assert settings["radius"] > 0, "`radius` must be positive!"
-
-        if "force_constant" in settings:
-            assert isinstance(settings["force_constant"], (int, float)), "`force_constant` must be numeric!"
-            assert settings["force_constant"] > 0, "`force_constant` must be positive!"
-            return presto.integrators.spherical_harmonic_potential(radius=settings["radius"], force_constant=settings["force_constant"])
-        else:
-            return presto.integrators.spherical_harmonic_potential(radius=settings["radius"])
-
-    else:
-        raise ValueError(f"Unknown potential type {settings['type']}! Allowed options are `spherical_harmonic` (free will is an illusion).")
 
 def build_bath_scheduler(settings):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
@@ -382,28 +264,4 @@ def build_termination_function(settings):
         return False
 
     return term
-
-def build_constraints(settings):
-    constraints = list()
-    for row in list(settings.values()):
-        assert "atom1" in row, "need ``atom1`` defined for constraint!"
-        assert isinstance(row["atom1"], (int, list)), "``atom1`` must be integer or list of integers!"
-        assert "atom2" in row, "need ``atom2`` defined for constraint!"
-        assert isinstance(row["atom2"], (int, list)), "``atom2`` must be integer or list of integers!"
-        assert "equilibrium" in row, "need equilibrium distance ``equilibrium`` defined for constraint!"
-        assert isinstance(row["equilibrium"], (int, float)), "``equilibrium`` must be numeric!"
-
-        args = {"atom1": row["atom1"], "atom2": row["atom2"], "equilibrium": row["equilibrium"]}
-
-        if "power" in row:
-            assert isinstance(row["power"], int), "``power`` must be integer!"
-            args["power" ] = row["power"]
-
-        if "force_constant" in row:
-            assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
-            args["force_constant"] = row["force_constant"]
-
-        constraints.append(presto.constraint.PairwisePolynomialConstraint(**args))
-    return constraints
-
 
