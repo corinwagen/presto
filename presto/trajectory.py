@@ -324,6 +324,7 @@ class Trajectory():
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
 
+                all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
                 new_n_frames = len(self.frames) - 1
                 now_n_frames = new_n_frames + old_n_frames
@@ -333,7 +334,6 @@ class Trajectory():
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
-                all_energies = h5.get("all_energies")
                 new_energies = np.asarray([frame.energy for frame in self.frames[-new_n_frames-1:]])
                 all_energies.resize((now_n_frames,))
                 all_energies[-new_n_frames-1:] = new_energies
@@ -582,7 +582,7 @@ class ReactionTrajectory(Trajectory):
             assert isinstance(accelerations, cctk.OneIndexedArray)
             assert isinstance(bath_temp, (float, int, np.integer))
 
-        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=math_temp, time=0)
+        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=bath_temp, time=0)
 
         if new_velocities is None:
             random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)

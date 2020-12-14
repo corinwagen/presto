@@ -275,7 +275,7 @@ def build_calculator(settings, constraints=list()):
             assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
             xcontrol = settings["xcontrol"]
 
-        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol=xcontrol)
+        return presto.calculators.XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")

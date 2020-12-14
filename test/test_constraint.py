@@ -26,6 +26,10 @@ class TestConstraint(unittest.TestCase):
             bath_scheduler=298,
         )
 
+        if os.path.exists("test/static/constraint-test.chk.lock"):
+            print("goodbye")
+            os.remove("test/static/constraint-test.chk.lock")
+
         self.assertTrue(isinstance(traj, presto.trajectory.Trajectory))
 
         z = cctk.OneIndexedArray([[0,0,0], [0,0,0]])

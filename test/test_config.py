@@ -19,3 +19,4 @@ class TestYAML(unittest.TestCase):
         os.remove("test/static/ex.chk")
         os.remove("test/static/ex2.chk")
 
+#        os.remove("test/static/ex.chk.lock")

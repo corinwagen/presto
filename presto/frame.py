@@ -70,7 +70,7 @@ class Frame():
         integrator = self.trajectory.integrator
         energy, new_x, new_v, new_a = integrator.next(self, forwards=forwards)
         self.energy = energy
-        return Frame(self.trajectory, new_x, new_v, new_a, temp, time=self.time+self.trajectory.timestep)
+        return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep)
 
     def prev(self, temp=None):
         """
