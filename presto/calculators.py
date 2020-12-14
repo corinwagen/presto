@@ -44,7 +44,7 @@ class NullCalculator(Calculator):
     """
     def __init__(self, constraints=list()):
         for c in constraints:
-            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
@@ -86,7 +86,7 @@ class XTBCalculator(Calculator):
         self.parallel = parallel
 
         for c in constraints:
-            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
         if xcontrol_path is not None:
@@ -213,7 +213,7 @@ class GaussianCalculator(Calculator):
         self.footer = footer
 
         for c in constraints:
-            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
