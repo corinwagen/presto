@@ -160,3 +160,51 @@ def spherical_harmonic_potential(radius, force_constant=0.004184):
         return forces.view(cctk.OneIndexedArray)
 
     return force
+
+def build_integrator(settings, potential=None):
+    """
+    Build integrator from settings dict.
+    """
+    assert isinstance(settings, dict), "Need to pass a dictionary!!"
+    assert "type" in settings, "Need `type` for integrator"
+    assert isinstance(settings["type"], str), "Integrator `type` must be a string"
+
+    if settings["type"].lower() == "verlet":
+        return VelocityVerletIntegrator()
+    elif settings["type"].lower() == "langevin":
+        assert "viscosity" in settings, "Need `viscosity` for Langevin integrator!"
+        assert isinstance(settings["viscosity"], (int, float)), "Integrator `radius` must be numeric."
+
+        radius = 0
+        if "radius" in settings:
+            assert isinstance(settings["radius"], (int, float)), "Integrator `radius` must be numeric."
+            radius = settings["radius"]
+
+        return LangevinIntegrator(settings["viscosity"], radius=radius, potential=potential)
+    else:
+        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
+
+def build_potential(settings):
+    """
+    Build potential from settings dict.
+    """
+    assert isinstance(settings, dict), "Need to pass a dictionary!!"
+    assert "type" in settings, "Need `type` for potential"
+    assert isinstance(settings["type"], str), "Potential `type` must be a string"
+
+    if settings["type"].lower() == "spherical_harmonic":
+        assert "radius" in settings, "Need `radius` for spherical harmonic potential."
+        assert isinstance(settings["radius"], (int, float)), "`radius` must be numeric!"
+        assert settings["radius"] > 0, "`radius` must be positive!"
+
+        if "force_constant" in settings:
+            assert isinstance(settings["force_constant"], (int, float)), "`force_constant` must be numeric!"
+            assert settings["force_constant"] > 0, "`force_constant` must be positive!"
+            return spherical_harmonic_potential(radius=settings["radius"], force_constant=settings["force_constant"])
+        else:
+            return spherical_harmonic_potential(radius=settings["radius"])
+
+    else:
+        raise ValueError(f"Unknown potential type {settings['type']}! Allowed options are `spherical_harmonic` (free will is an illusion).")
+
+

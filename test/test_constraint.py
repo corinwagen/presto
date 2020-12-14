@@ -12,7 +12,7 @@ class TestConstraint(unittest.TestCase):
     def gen_test_frame(self, distance):
         zs = cctk.OneIndexedArray([1, 1])
 
-        c = presto.constraint.PairwisePolynomialConstraint(1, 2, distance, power=2)
+        c = presto.constraints.PairwisePolynomialConstraint(1, 2, distance, power=2)
 
         traj = presto.trajectory.EquilibrationTrajectory(
             timestep=0.5,
@@ -68,7 +68,7 @@ class TestConstraint(unittest.TestCase):
         os.remove(t.checkpoint_filename)
 
     def test_anchor(self):
-        anchor = presto.constraint.Anchor(1)
+        anchor = presto.constraints.Anchor(1)
         position = cctk.OneIndexedArray([[1,0,0], [0,0,0]])
         position[1] = np.asarray([1, 1, 1])
 

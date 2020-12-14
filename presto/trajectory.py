@@ -45,6 +45,12 @@ class Trajectory():
         stop_time=None,
         **kwargs
     ):
+
+        # do this first!
+        if timestep is not None:
+            assert timestep > 0, "can't have timestep ≤ 0!"
+            self.timestep = float(timestep)
+
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
@@ -93,10 +99,6 @@ class Trajectory():
         else:
             # assume all atoms are active
             self.set_inactive_atoms(np.ndarray([]))
-
-        if timestep is not None:
-            assert timestep > 0, "can't have timestep ≤ 0!"
-            self.timestep = float(timestep)
 
         if not hasattr(self, "masses"):
             self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
@@ -266,7 +268,7 @@ class Trajectory():
             all_accels = h5.get("all_accelerations")[frames]
             temperatures = h5.get("bath_temperatures")[frames]
 
-            all_times = np.arange(0, self.timestep, self.timestep*len(self.frames))
+            all_times = np.arange(0, self.timestep, self.timestep*len(all_energies))
             try:
                 all_times = h5.get("all_times")[frames]
             except Exception as e:

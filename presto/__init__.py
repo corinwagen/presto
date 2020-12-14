@@ -1,8 +1,9 @@
 import presto.config
+import presto.constants
 import presto.calculators
 import presto.integrators
 import presto.frame
 import presto.trajectory
 import presto.analysis
-import presto.constraint
+import presto.constraints
 import presto.replica_exchange

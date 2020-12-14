@@ -2,8 +2,7 @@ import numpy as np
 import os, random, string, re, cctk, ctypes, copy, shutil, time, tempfile, logging
 import subprocess as sp
 import multiprocessing as mp
-
-from presto import constants, config, constraint
+import presto
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +14,13 @@ logger = logging.getLogger(__name__)
 LETTERS_AND_DIGITS = string.ascii_letters + string.digits
 
 # this is the absolute path to the directory where the run_gaussian.sh script is
-GAUSSIAN_SCRIPT_DIRECTORY = config.GAUSSIAN_SCRIPT_DIRECTORY
+GAUSSIAN_SCRIPT_DIRECTORY = presto.config.GAUSSIAN_SCRIPT_DIRECTORY
 
 # this is the absolute path to the directory where the run_xtb.sh script is
-XTB_SCRIPT_DIRECTORY = config.XTB_SCRIPT_DIRECTORY
+XTB_SCRIPT_DIRECTORY = presto.config.XTB_SCRIPT_DIRECTORY
 
 # where the xtb GFNn config files are stored
-XTB_PATH = config.XTB_PATH
+XTB_PATH = presto.config.XTB_PATH
 
 ###########################
 
@@ -45,7 +44,7 @@ class NullCalculator(Calculator):
     """
     def __init__(self, constraints=list()):
         for c in constraints:
-            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
@@ -87,7 +86,7 @@ class XTBCalculator(Calculator):
         self.parallel = parallel
 
         for c in constraints:
-            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
         if xcontrol_path is not None:
@@ -172,7 +171,7 @@ class XTBCalculator(Calculator):
                     x,y,z = float(fields[0]), float(fields[1]), float(fields[2])
                     forces.append([-x,-y,-z])
             forces = cctk.OneIndexedArray(forces)
-            forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+            forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
             assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
             # restore working directory
@@ -214,7 +213,7 @@ class GaussianCalculator(Calculator):
         self.footer = footer
 
         for c in constraints:
-            assert isinstance(c, constraint.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraint.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
@@ -272,7 +271,7 @@ class GaussianCalculator(Calculator):
             properties_dict = ensemble.get_properties_dict(molecule)
             energy = properties_dict["energy"]
             forces = properties_dict["forces"]
-            forces = forces * constants.AMU_A2_FS2_PER_HARTREE_BOHR
+            forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
 
         # restore working directory
         os.chdir(old_working_directory)
@@ -302,7 +301,7 @@ class ONIOMCalculator(Calculator):
         self.low_calculator = low_calculator
 
         for c in constraints:
-            assert isinstance(c, constraint.Constraint), f"{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
         self.high_calculator.constraints = constraints
         self.constraints = constraints
 
@@ -357,4 +356,86 @@ class ONIOMCalculator(Calculator):
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
         return energy, forces
+
+def build_calculator(settings, constraints=list()):
+    """
+    Build calculator from settings dict.
+    """
+    assert isinstance(settings, dict), "Need to pass a dictionary!!"
+    assert "type" in settings, "Need `type` for calculator"
+    assert isinstance(settings["type"], str), "Calculator `type` must be a string"
+
+    if settings["type"].lower() == "oniom":
+        assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
+        assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
+        return ONIOMCalculator(
+            high_calculator=build_calculator(settings["high_calculator"]),
+            low_calculator=build_calculator(settings["low_calculator"]),
+            constraints=constraints,
+        )
+    elif settings["type"].lower() == "gaussian":
+        charge = 0
+        if "charge" in settings:
+            assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
+            charge = settings["charge"]
+
+        multiplicity = 1
+        if "multiplicity" in settings:
+            assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
+            assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
+            multiplicity = settings["multiplicity"]
+
+        link0 = None
+        if "link0" in settings:
+            assert isinstance(settings["link0"], dict), "Calculator `link0` must be a dictionary."
+            link0 = settings["link0"]
+
+        assert "route_card" in settings, "Need a route card for `GaussianCalculator`!"
+        assert isinstance(settings["route_card"], str), "Calculator `route_card` must be a string."
+        assert re.search("#p", settings["route_card"]), "Need `#p` in route card!"
+        assert re.search("force", settings["route_card"]), "Need `force` in route card!"
+
+        footer = None
+        if "footer" in settings:
+            assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
+            footer = settings["footer"]
+
+        if link0 is not None:
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints)
+        else:
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints)
+
+    elif settings["type"].lower() == "xtb":
+        charge = 0
+        if "charge" in settings:
+            assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
+            charge = settings["charge"]
+
+        multiplicity = 1
+        if "multiplicity" in settings:
+            assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
+            assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
+            multiplicity = settings["multiplicity"]
+
+        gfn = 2
+        if "gfn" in settings:
+            assert settings["gfn"] in [0, 1, 2, "ff"], "Calculator `gfn` must be 0, 1, 2, or ``ff``."
+            gfn = settings["gfn"]
+
+        parallel = 1
+        if "parallel" in settings:
+            assert isinstance(settings["parallel"], int), "Calculator `parallel` must be an integer."
+            assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
+            parallel = settings["parallel"]
+
+        xcontrol = None
+        if "xcontrol" in settings:
+            assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
+            xcontrol = settings["xcontrol"]
+
+        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol)
+
+    else:
+        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
+
 
