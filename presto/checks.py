@@ -1,4 +1,4 @@
-import presto, logger
+import presto, logging
 import numpy as np
 
 logger = logging.getLogger(__name__)

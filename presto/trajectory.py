@@ -142,18 +142,13 @@ class Trajectory():
         Args:
             checkpoint_interval (int): interval at which to save (in frames, not fs)
             keep_all (bool): whether or not to keep all frames in memory
-            num (float): total time to run for -- default is None, implying trajectory should be run until finished
+            time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
-        assert isinstance(self.calculator, presto.calculators.Calculator), "need a valid calculator!"
-        assert isinstance(self.integrator, presto.integrators.Integrator), "need a valid integrator!"
         if self.checkpoint_filename is None:
             if "checkpoint_filename" in kwargs:
                 self.checkpoint_filename = kwargs["checkpoint_filename"]
             else:
                 raise ValueError("no checkpoint filename given!")
-
-        if self.has_checkpoint():
-            self.load_from_checkpoint()
 
         if len(self.frames) == 0:
             self.initialize(**kwargs)
@@ -162,30 +157,16 @@ class Trajectory():
 
         if self.finished:
             logger.info("Trajectory already finished!")
-            return self
-        else:
-            logger.info("Propagating trajectory.")
-            self.propagate(checkpoint_interval, keep_all=keep_all, time=time)
-            logger.info("Trajectory finished!")
-            self.save(keep_all=keep_all)
-            return self
+
+        # initialize runtime controller
+        controller = presto.controller.Controller(self)
+        controller.run(checkpoint_interval=checkpoint_interval, keep_all=keep_all, runtime=time)
+
+        return self
 
     def initialize(self):
         """
         Adds first frame with randomly-initialized velocities. Should call ``self.save()``.
-        """
-        pass
-
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        """
-        Runs trajectories, checking for completion and saving as necessary.
-
-        Will call ``self.save()`` every ``checkpoint_interval`` frames.
-
-        Args:
-            checkpoint_interval (int): interval at which to save (in frames, not fs)
-            keep_all (bool): whether or not to keep all frames in memory
-            time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
         pass
 
@@ -348,7 +329,7 @@ class Trajectory():
                 except Exception as e:
                     # time is a new column, so old checkpoints may not have it.
                     new_times = np.arange(0, self.timestep, self.timestep*len(self.frames))
-                    h5.create_dataset("all_times", data=times, maxshape=(None,), compression="gzip", compression_opts=9)
+                    h5.create_dataset("all_times", data=new_times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 new_positions = np.stack([frame.positions for frame in self.frames[-new_n_frames:]])
                 all_positions = h5.get("all_positions")
@@ -369,7 +350,8 @@ class Trajectory():
                 all_temps = h5.get("bath_temperatures")
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
-                logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
+
+            logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
         else:
             logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
@@ -596,33 +578,6 @@ class ReactionTrajectory(Trajectory):
         self.frames = [new_frame]
         self.save()
 
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-
-        elapsed_time = 0
-
-        for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
-            self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
-            if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save(keep_all=keep_all)
-
-            elapsed_time += self.timestep
-            if time is not None:
-                if elapsed_time >= time:
-                    return
-
-            exit_code = self.termination_function(self.frames[-1])
-            logger.debug(f"termination status:\t{t} fs\t{exit_code} code")
-
-            if exit_code or self.elapsed_since_finished > 0:
-                self.elapsed_since_finished += self.timestep
-                logger.info(f"Reaction trajectory finished! {self.elapsed_since_finished:.1f} fs since termination condition met, {self.time_after_finished:.1f} fs desired.")
-
-            if self.elapsed_since_finished >= self.time_after_finished:
-                self.save(keep_all=keep_all)
-                self.finished = exit_code
-                return
-
 class EquilibrationTrajectory(Trajectory):
     """
     Attributes:
@@ -696,24 +651,6 @@ class EquilibrationTrajectory(Trajectory):
         accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0)]
         self.save()
-
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-
-        elapsed_time = 0
-        for t in np.arange(self.timestep * self.num_frames(), self.stop_time, self.timestep):
-
-            self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
-            if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save(keep_all=keep_all)
-
-            elapsed_time += self.timestep
-            if time is not None:
-                if elapsed_time >= time:
-                    return
-        self.save(keep_all=keep_all)
-        self.finished = True
-
 
 def join(traj1, traj2):
     """
