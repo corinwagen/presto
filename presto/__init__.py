@@ -10,3 +10,4 @@ import presto.replica_exchange
 import presto.controller
 import presto.checks
 import presto.reporters
+import presto.potentials

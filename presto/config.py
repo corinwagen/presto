@@ -98,7 +98,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     p = None
     if "potential" in settings:
-        p = presto.integrators.build_potential(settings["potential"])
+        p = presto.potentials.build_potential(settings["potential"])
 
     constraints = list()
     if "constraints" in settings:

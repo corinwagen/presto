@@ -29,6 +29,7 @@ class Controller():
 
         assert end_time > current_time, f"error: end_time {end_time} must be greater than current_time {current_time}"
 
+        count = 0
         finished_early = False
         while current_time < end_time:
             current_time += self.trajectory.timestep
@@ -60,6 +61,10 @@ class Controller():
 
             if int(current_time % checkpoint_interval) == 0:
                 self.trajectory.save(keep_all=keep_all)
+
+            count += 1
+            if count < 10:
+                logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
         self.trajectory.save(keep_all=keep_all)
         if current_time == self.trajectory.stop_time:
