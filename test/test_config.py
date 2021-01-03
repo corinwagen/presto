@@ -8,7 +8,7 @@ import presto
 if __name__ == '__main__':
     unittest.main()
 
-class TestYAML(unittest.TestCase):
+class TestConfig(unittest.TestCase):
     def test_load_config(self):
         path = "test/static/ex.yaml"
         presto.config.build(path, "test/static/ex.chk", "test/static/nazarov-elim-solvated.xyz")

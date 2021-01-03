@@ -41,7 +41,7 @@ class TestLangevinIntegrator(unittest.TestCase):
 
 class TestSphericalIntegration(unittest.TestCase):
     def test_spherical_harmonic_potential(self):
-        potential = presto.integrators.spherical_harmonic_potential(radius=10, force_constant=1)
+        potential = presto.potentials.SphericalHarmonicPotential(radius=10, force_constant=1)
 
         x = np.array([[1], [9], [11], [-12]])
         f = potential(x)
