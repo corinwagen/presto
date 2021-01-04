@@ -54,11 +54,11 @@ if args["type"] == "run":
     count = 0
     for file in files:
         for i, row in enumerate(coordinates):
-            x = row["x"]
-            y = row["y"]
+            x = row["X"]
+            y = row["Y"]
 
             name = file.rsplit('/',1)[-1]
-            name = re.sub(".chk", f"_{int(i[0]):04d}", name)
+            name = re.sub(".chk", f"_{i:04d}", name)
 
             if os.path.exists("{name}.chk"):
                 continue
@@ -74,7 +74,7 @@ if args["type"] == "run":
             else:
                 settings["constraints"] = {"wham_x": constraint_dict}
 
-            settings["constaints"]["wham_y"] = {
+            settings["constraints"]["wham_y"] = {
                 "atom1": args['y_atom1'],
                 "atom2": args['y_atom2'],
                 "equilibrium": float(y),
@@ -93,10 +93,12 @@ if args["type"] == "run":
             traj.frames[-1].positions = m.geometry
             traj.save()
 
-            if traj.frames[-1].molecule().get_distance(args["x_atom1"], args["x_atom2"]) - x > 0.01:
-                print(f"WARNING: {name.chk} could not be precisely set to initial distance (x). there may be large initial forces!")
-            if traj.frames[-1].molecule().get_distance(args["y_atom1"], args["y_atom2"]) - y > 0.01:
-                print(f"WARNING: {name.chk} could not be precisely set to initial distance (y). there may be large initial forces!")
+            x_actual = traj.frames[-1].molecule().get_distance(args["x_atom1"], args["x_atom2"])
+            y_actual = traj.frames[-1].molecule().get_distance(args["y_atom1"], args["y_atom2"])
+            if x_actual - x > 0.01:
+                print(f"WARNING: {name}.chk could not be precisely set to x initial distance (desired: {x:.2f}, actual: {x_actual:.2f}). there may be large initial forces!")
+            if y_actual - y > 0.01:
+                print(f"WARNING: {name}.chk could not be precisely set to y initial distance (desired: {y:.2f}, actual: {y_actual:.2f}). there may be large initial forces!")
 
             count += 1
 
