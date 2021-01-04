@@ -1,1 +1,10 @@
 python ../../packmol/build_input.py -f tBuCl.xyz -o solvated.xyz -s ethanol -n 100
+
+wham:
+
+mkdir wham/
+mkdir wham/logfiles
+
+cd wham/
+python wham.py run 1 2 1.75 5.5 100 "../equil.chk"
+bash submit_all.sh
