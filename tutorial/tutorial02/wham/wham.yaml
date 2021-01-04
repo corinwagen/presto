@@ -4,7 +4,7 @@ type: equilibration
 
 timestep: 1
 high_atoms: 1-14
-stop_time: 100000
+stop_time: 50000
 
 anchor: 1
 
