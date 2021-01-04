@@ -1188,3 +1188,573 @@ Traceback (most recent call last):
   File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
     energy += e
 TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5476:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5479:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5482:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5485:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5488:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5491:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5494:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5497:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5500:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5503:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5506:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5509:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5512:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5515:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5518:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5521:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5524:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5527:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5530:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5533:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5536:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5539:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5542:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5545:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5548:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5551:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5554:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5557:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5560:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5563:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5566:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5569:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5572:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5575:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5578:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5581:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5584:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5587:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5590:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5593:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5596:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5599:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5602:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5605:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5608:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5611:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5614:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5617:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5620:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5623:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5626:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5629:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5632:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5635:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5638:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5641:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
+warning: initial DIIS convergence failed, trying quadradic convergence
+Process Process-5644:
+Traceback (most recent call last):
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 297, in _bootstrap
+    self.run()
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/multiprocessing/process.py", line 99, in run
+    self._target(*self._args, **self._kwargs)
+  File "/n/home03/cwagen/.conda/envs/openmm/lib/python3.7/site-packages/presto/calculators.py", line 378, in evaluate
+    energy += e
+TypeError: unsupported operand type(s) for +: 'NoneType' and 'float'
