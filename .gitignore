@@ -148,4 +148,7 @@ slurm*
 todo
 
 # xtb topology
-*.topo
+*.top
+
+# lockfiles
+*.lock

@@ -56,14 +56,15 @@ class Trajectory():
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
+
+        self.lock = None
+        self.initialize_lock()
+
         if self.has_checkpoint():
             if "load_frames" in kwargs:
                 self.load_from_checkpoint(kwargs["load_frames"])
             else:
                 self.load_from_checkpoint()
-
-        # initialize lock
-        self.lock = fasteners.InterProcessLock(f"{self.checkpoint_filename}.lock")
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
@@ -175,7 +176,7 @@ class Trajectory():
         """
         pass
 
-    def has_checkpoint(self, max_wait=100):
+    def has_checkpoint(self):
         if self.checkpoint_filename is None:
             return False
         if os.path.exists(self.checkpoint_filename):
@@ -183,7 +184,7 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self, frames=slice(None), max_wait=100):
+    def load_from_checkpoint(self, frames=slice(None)):
         """
         Loads frames from ``self.checkpoint_filename``.
 
@@ -194,11 +195,13 @@ class Trajectory():
             nothing
         """
         assert self.has_checkpoint(), "can't load without checkpoint file"
+        self.initialize_lock()
         self.lock.acquire()
 
         with h5py.File(self.checkpoint_filename, "r") as h5:
             atomic_numbers = h5.attrs["atomic_numbers"]
             self.atomic_numbers = cctk.OneIndexedArray(atomic_numbers)
+            print(atomic_numbers)
 
             masses = h5.attrs["masses"]
             self.masses = cctk.OneIndexedArray(masses)
@@ -206,35 +209,39 @@ class Trajectory():
             self.finished = h5.attrs['finished']
             self.forwards = h5.attrs['forwards']
 
-            all_energies = h5.get("all_energies")[frames]
-            all_positions = h5.get("all_positions")[frames]
-            all_velocities= h5.get("all_velocities")[frames]
-            all_accels = h5.get("all_accelerations")[frames]
-            temperatures = h5.get("bath_temperatures")[frames]
-
-            all_times = np.arange(0, self.timestep, self.timestep*len(all_energies))
-            try:
-                all_times = h5.get("all_times")[frames]
-            except Exception as e:
-                # this was added recently, so may be some backwards compatibility issues.
-                pass
-
-            assert len(all_positions) == len(all_energies)
-            assert len(all_velocities) == len(all_energies)
-            assert len(all_accels) == len(all_energies)
-            assert len(all_times) == len(all_energies)
-
             self.frames = []
-            for i, e in enumerate(all_energies):
-                self.frames.append(presto.frame.Frame(
-                    self,
-                    all_positions[i].view(cctk.OneIndexedArray),
-                    all_velocities[i].view(cctk.OneIndexedArray),
-                    all_accels[i].view(cctk.OneIndexedArray),
-                    energy=e,
-                    bath_temperature=temperatures[i],
-                    time=all_times[i],
-                ))
+            if len(h5.get("all_energies")):
+                print(h5.get("all_energies"))
+                print(h5.get("all_positions"))
+                all_energies = h5.get("all_energies")[frames]
+                all_positions = h5.get("all_positions")[frames]
+                all_velocities= h5.get("all_velocities")[frames]
+                all_accels = h5.get("all_accelerations")[frames]
+                temperatures = h5.get("bath_temperatures")[frames]
+
+                all_times = np.arange(0, self.timestep, self.timestep*len(all_energies))
+                try:
+                    all_times = h5.get("all_times")[frames]
+                except Exception as e:
+                    # this was added recently, so may be some backwards compatibility issues.
+                    pass
+
+                assert len(all_positions) == len(all_energies)
+                assert len(all_velocities) == len(all_energies)
+                assert len(all_accels) == len(all_energies)
+                assert len(all_times) == len(all_energies)
+
+                for i, e in enumerate(all_energies):
+                    self.frames.append(presto.frame.Frame(
+                        self,
+                        all_positions[i].view(cctk.OneIndexedArray),
+                        all_velocities[i].view(cctk.OneIndexedArray),
+                        all_accels[i].view(cctk.OneIndexedArray),
+                        energy=e,
+                        bath_temperature=temperatures[i],
+                        time=all_times[i],
+                    ))
+
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
 
         self.lock.release()
@@ -249,9 +256,10 @@ class Trajectory():
         else:
             return len(self.frames)
 
-    def save(self, keep_all=False, max_wait=100):
+    def save(self, keep_all=False):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
+        self.initialize_lock()
         self.lock.acquire()
 
         if self.has_checkpoint():
@@ -449,6 +457,21 @@ class Trajectory():
         assert len(new_traj.frames) == 1, "got too many frames!"
         return new_traj
 
+    def initialize_lock(self):
+        """
+        Create hidden lockfile to accompany ``.chk`` file.
+        """
+        if self.checkpoint_filename is None:
+            return
+
+        if self.lock is None:
+            lockfile = None
+            if "/" in self.checkpoint_filename:
+                lockfile = f"{self.checkpoint_filename}.lock"[::-1].replace("/", "./", 1)[::-1]
+            else:
+                lockfile = f".{self.checkpoint_filename}.lock"
+            self.lock = fasteners.InterProcessLock(lockfile)
+
 class ReactionTrajectory(Trajectory):
     """
     Attributes:
@@ -589,7 +612,6 @@ class EquilibrationTrajectory(Trajectory):
         sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
         velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
         velocities[inactive_mask] = 0
-#        velocities = random_gaussian / np.linalg.norm(random_gaussian, axis=1).reshape(-1,1) * sigma
 
         # subtract out center-of-mass translational motion
         com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
