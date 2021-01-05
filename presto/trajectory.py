@@ -1,5 +1,6 @@
 import numpy as np
 import math, copy, cctk, os, re, logging, time
+import fasteners
 
 import h5py
 import presto
@@ -29,6 +30,7 @@ class Trajectory():
         forwards (bool):
 
         checkpoint_filename (str):
+        lock (fasteners.InterProcessLock): lock object
     """
 
     def __init__(
@@ -59,6 +61,9 @@ class Trajectory():
                 self.load_from_checkpoint(kwargs["load_frames"])
             else:
                 self.load_from_checkpoint()
+
+        # initialize lock
+        self.lock = fasteners.InterProcessLock(f"{self.checkpoint_filename}.lock")
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
@@ -178,37 +183,6 @@ class Trajectory():
         else:
             return False
 
-        #### TODO - prevent lockfile collisions here and in num_frames
-
-#            lockfile = f"{self.checkpoint_filename}.lock"
-#
-#            while os.path.exists(lockfile):
-#                max_wait += -1
-#                time.sleep(1)
-#
-#                if max_wait < 0:
-#                    raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-#
-#            # create new lockfile
-#            with open(lockfile, "w") as lf:
-#                pass
-#
-#            status = False
-#            with h5py.File(self.checkpoint_filename, "r+") as h5:
-#                all_energies = h5.get("all_energies")
-#                if all_energies is None:
-#                    status = False
-#                elif len(all_energies) > 0:
-#                    status = True
-#                else:
-#                    status = False
-#
-#            os.remove(lockfile)
-#            return status
-#
-#        else:
-#            return False
-
     def load_from_checkpoint(self, frames=slice(None), max_wait=100):
         """
         Loads frames from ``self.checkpoint_filename``.
@@ -220,18 +194,7 @@ class Trajectory():
             nothing
         """
         assert self.has_checkpoint(), "can't load without checkpoint file"
-
-        lockfile = f"{self.checkpoint_filename}.lock"
-        while os.path.exists(lockfile):
-            max_wait += -1
-            time.sleep(1)
-
-            if max_wait < 0:
-                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-
-        # create new lockfile
-        with open(lockfile, "w") as lf:
-            pass
+        self.lock.acquire()
 
         with h5py.File(self.checkpoint_filename, "r") as h5:
             atomic_numbers = h5.attrs["atomic_numbers"]
@@ -274,7 +237,7 @@ class Trajectory():
                 ))
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
 
-        os.remove(lockfile)
+        self.lock.release()
         return
 
     def num_frames(self):
@@ -289,18 +252,7 @@ class Trajectory():
     def save(self, keep_all=False, max_wait=100):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
-
-        lockfile = f"{self.checkpoint_filename}.lock"
-        while os.path.exists(lockfile):
-            max_wait += -1
-            time.sleep(1)
-
-            if max_wait < 0:
-                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-
-        # create new lockfile
-        with open(lockfile, "w") as lf:
-            pass
+        self.lock.acquire()
 
         if self.has_checkpoint():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
@@ -313,7 +265,7 @@ class Trajectory():
                 now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
-                    os.remove(lockfile)
+                    self.lock.release()
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
@@ -380,7 +332,7 @@ class Trajectory():
                 temps = np.asarray([frame.bath_temperature for frame in self.frames])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,), compression="gzip", compression_opts=9)
 
-        os.remove(lockfile)
+        self.lock.release()
 
         # lower memory usage
         if keep_all:
