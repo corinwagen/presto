@@ -72,6 +72,7 @@ class XTBCalculator(Calculator):
         gfn (int or str):
         parallel (int):
         xcontrol_path (str):
+        topology (str): holds gfn-ff topology file, if gfn is ``ff``. memory-intensive but better than keeping track of the filename, etc.
     """
 
     def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), xcontrol_path=None):
@@ -93,7 +94,11 @@ class XTBCalculator(Calculator):
             assert isinstance(xcontrol_path, str)
         self.xcontrol_path = xcontrol_path
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, topology_path="gfnff.top"):
+        self.topology = None
+
+        assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -102,7 +107,6 @@ class XTBCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
-            topology_path (str): for GFN-FF, where the topology will be found/go
 
         Returns:
             energy (float): in Hartree
@@ -112,7 +116,7 @@ class XTBCalculator(Calculator):
         old_working_directory = os.getcwd()
 
         # build xtb command
-        command = "xtb"
+        command = presto.config.XTB_EXEC
         if self.gfn == "ff":
             command += " --gfnff"
         else:
@@ -135,8 +139,9 @@ class XTBCalculator(Calculator):
         energy, forces = None, None
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
-            if os.path.exists(f"{old_working_directory}/{topology_path}"):
-                shutil.copyfile(f"{old_working_directory}/{topology_path}", f"{tmpdir}/gfnff_topo")
+            if self.topology:
+                with open(f"{tmpdir}/gfnff_topo", "wb") as f:
+                    f.write(self.topology)
 
             molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
             cctk.XYZFile.write_molecule_to_file(f"{tmpdir}/xtb-in.xyz", molecule)
@@ -174,9 +179,11 @@ class XTBCalculator(Calculator):
             forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
             assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
+            if self.topology is None and self.gfn == "ff":
+                with open(f"{tmpdir}/gfnff_topo", "rb") as f:
+                    self.topology = f.read()
+
             # restore working directory
-            if os.path.exists(f"{tmpdir}/gfnff_topo"):
-                shutil.copyfile(f"{tmpdir}/gfnff_topo", f"{old_working_directory}/{topology_path}")
             os.chdir(old_working_directory)
 
         # apply constraints
@@ -216,6 +223,8 @@ class GaussianCalculator(Calculator):
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
+        assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
+
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
@@ -243,7 +252,7 @@ class GaussianCalculator(Calculator):
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
             cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, self.link0, self.footer)
-            command = "g16 g16-in.gjf g16-out.out"
+            command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
             # run g16
             try:

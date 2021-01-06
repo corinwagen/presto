@@ -348,11 +348,34 @@ class Trajectory():
         else:
             self.frames = [self.frames[-1]]
 
-    def write_movie(self, filename, idxs="high"):
-        if idxs == "high":
-            idxs = self.high_atoms
-        elif idxs == "all":
-            idxs = None
+    def write_movie(self, filename, solvents="all", idxs=None):
+        """
+        Write a movie to a trajectory file. Detects trajectory type automatically from file extension.
+
+        Supported file formats: ``.pdb``, ``.mol2``, ``.xyz``/``.molden``
+
+        Args:
+            filename (str): path where movie will be written
+            solvents (int): number of solvent molecules to include (closest included first). can also be ``none`` or ``all``.
+            idxs (list of int): indices of atoms to include. will override ``solvents`` if present.
+        """
+
+        # what do we make a movie of?
+        if idxs is not None:
+            assert isinstance(idxs, list), "idxs must be list of indices or ``None``!"
+        else:
+            if isinstance(solvents, str):
+                if solvents == "high":
+                    idxs = self.high_atoms
+                elif solvents == "all":
+                    idxs = None
+                else:
+                    raise ValueError(f"unknown solvents keyword {solvents} -- must be 'high' or 'all'")
+            elif isinstance(solvents, int):
+                molecule = self.frames[0].molecule()
+                idxs = molecule.limit_solvent_shell(num_solvents=solvents,return_idxs=False)
+            else:
+                raise ValueError("``solvents`` must be int, 'high', or 'all'!")
 
         ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")
@@ -363,6 +386,8 @@ class Trajectory():
             for molecule in ensemble.molecules:
                 molecule.assign_connectivity()
             cctk.MOL2File.write_ensemble_to_file(filename, ensemble)
+        elif re.search("molden$", filename) or re.search("xyz$", filename):
+            cctk.XYZFile.write_ensemble_to_file(filename, ensemble)
         else:
             raise ValueError(f"error writing {filename}: this filetype isn't currently supported!")
 

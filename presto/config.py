@@ -25,18 +25,6 @@ def resolve_directory(directory):
     directory = re.sub("~", USER_HOME_DIRECTORY, directory)
     return directory
 
-def check_directory(field_name, directory):
-    """ Checks if a directory exists."""
-    directory_exists = os.path.isdir(directory)
-    if not directory_exists:
-        logger.error(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
-
-# check configuration parameters
-GAUSSIAN_SCRIPT_DIRECTORY = resolve_directory(config['gaussian']['GAUSSIAN_SCRIPT_DIRECTORY'])
-check_directory("GAUSSIAN_SCRIPT_DIRECTORY", GAUSSIAN_SCRIPT_DIRECTORY)
-XTB_SCRIPT_DIRECTORY = resolve_directory(config['xtb']['XTB_SCRIPT_DIRECTORY'])
-check_directory("XTB_SCRIPT_DIRECTORY", XTB_SCRIPT_DIRECTORY)
-
 XTB_PATH = config['xtb']['XTB_PATH']
 if XTB_PATH.lower() == "@auto":
     CONDA_PATH = os.getenv('CONDA_PREFIX')
@@ -46,6 +34,9 @@ else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
 check_directory("XTB_PATH",XTB_PATH)
 
+# load execs - will be run during Calculator.__init__()
+XTB_EXEC = config['xtb']['XTB_EXEC']
+G16_EXEC = config['gaussian']['GAUSSIAN_EXEC']
 logger.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 #### JOB-SPECIFIC CONFIGURATION
