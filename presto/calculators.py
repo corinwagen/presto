@@ -13,12 +13,6 @@ logger = logging.getLogger(__name__)
 # A-Za-z0-9
 LETTERS_AND_DIGITS = string.ascii_letters + string.digits
 
-# this is the absolute path to the directory where the run_gaussian.sh script is
-GAUSSIAN_SCRIPT_DIRECTORY = presto.config.GAUSSIAN_SCRIPT_DIRECTORY
-
-# this is the absolute path to the directory where the run_xtb.sh script is
-XTB_SCRIPT_DIRECTORY = presto.config.XTB_SCRIPT_DIRECTORY
-
 # where the xtb GFNn config files are stored
 XTB_PATH = presto.config.XTB_PATH
 

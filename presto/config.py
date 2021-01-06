@@ -17,6 +17,9 @@ if not os.path.isfile(CONFIGURATION_FILE):
 config = configparser.ConfigParser()
 config.read(CONFIGURATION_FILE)
 
+print(config.sections())
+print(config['xtb'])
+
 # auto-populate some directory names
 PRESTO_STARTUP_DIRECTORY = os.getcwd()
 USER_HOME_DIRECTORY = str(pathlib.Path.home())
@@ -24,6 +27,12 @@ def resolve_directory(directory):
     directory = re.sub("@presto", PRESTO_STARTUP_DIRECTORY, directory)
     directory = re.sub("~", USER_HOME_DIRECTORY, directory)
     return directory
+
+def check_directory(field_name, directory):
+    """ Checks if a directory exists."""
+    directory_exists = os.path.isdir(directory)
+    if not directory_exists:
+        logger.error(f"Error in configuration entry for {field_name}: directory {directory} does not exist.")
 
 XTB_PATH = config['xtb']['XTB_PATH']
 if XTB_PATH.lower() == "@auto":
