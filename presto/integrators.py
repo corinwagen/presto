@@ -127,6 +127,8 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+        if self.potential is not None:
+            forces += self.potential(x_full)
         forces[frame.inactive_mask()] = 0
         a_full = forces / frame.masses()
 

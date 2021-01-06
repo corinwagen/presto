@@ -149,3 +149,5 @@ todo
 
 # xtb topology
 *.topo
+
+*.lock
