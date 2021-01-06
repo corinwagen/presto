@@ -90,8 +90,6 @@ class XTBCalculator(Calculator):
 
         self.topology = None
 
-        assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
-
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
@@ -107,6 +105,8 @@ class XTBCalculator(Calculator):
             forces (cctk.OneIndexedArray): in amu Å per fs**2
             time (float): in seconds
         """
+        assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
+
         old_working_directory = os.getcwd()
 
         # build xtb command
@@ -217,8 +217,6 @@ class GaussianCalculator(Calculator):
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-        assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
-
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
@@ -234,6 +232,8 @@ class GaussianCalculator(Calculator):
             energy (float): in Hartree
             forces (cctk.OneIndexedArray): in amu Å per fs**2
         """
+        assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
+
         old_working_directory = os.getcwd()
 
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)

@@ -17,9 +17,6 @@ if not os.path.isfile(CONFIGURATION_FILE):
 config = configparser.ConfigParser()
 config.read(CONFIGURATION_FILE)
 
-print(config.sections())
-print(config['xtb'])
-
 # auto-populate some directory names
 PRESTO_STARTUP_DIRECTORY = os.getcwd()
 USER_HOME_DIRECTORY = str(pathlib.Path.home())
