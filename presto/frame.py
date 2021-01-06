@@ -89,15 +89,24 @@ class Frame():
         """
         return self.next(temp, forwards=False)
 
+    def kinetic_energy(self):
+        """ Returns the kinetic energy. """
+        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
+        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+        return K / 2
+
+    def total_energy(self):
+        """ Returns the total energy. """
+        return K + self.energy
+
     def temperature(self):
         """
         Computes the instantaneous temperature based on the equipartition theorem, counting only the active atoms.
 
         T = sum{ m_i * v_i ** 2} / (kB * Nf)
         """
-        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
-        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
-        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+        K = self.kinetic_energy() * 2
         F = 3 * len(self.trajectory.active_atoms) - 3
 
         if F == 0: # single particle
