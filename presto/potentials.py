@@ -10,9 +10,16 @@ class Potential():
         max_radius (float): maximum allowed distance for particles. for a sphere, this is just the radius. for a cube, it might be half the space diagonal.
             for an ellipsoid, it might be the major radius. used for internal automatic checks.
     """
-    def force(self, positions):
+    def evaluate(self, positions):
         """
-        Returns forces from a given set of atomic coordinates.
+        Returns energy, forces from a given set of atomic coordinates.
+
+        Args:
+            positions (cctk.OneIndexedArray):
+
+        Returns:
+            energy (float):
+            forces (cctk.OneIndexedArray):
         """
         pass
 
@@ -40,13 +47,23 @@ class SphericalHarmonicPotential(Potential):
 
         self.max_radius = radius
 
-    def force(self, positions):
+    def evaluate(self, positions):
         radii = np.linalg.norm(positions, axis=1)
-        forces = -0.5 * self.force_constant * (positions - positions/radii.reshape(-1,1) * self.radius)
-        forces = forces * np.linalg.norm(positions - positions/radii.reshape(-1,1) * self.radius, axis=1).reshape(-1,1)
+        # distance from equilibrium
+        excess_radius = positions - positions/radii.reshape(-1,1) * self.radius
+
+        # F = -k * x
+        forces = -1 * self.force_constant * excess_radius
+
+        # E = 0.5 * k * x**2
+        energies = 0.5 * self.force_constant * np.linalg.norm(excess_radius, axis=1) ** 2
+
+        # it's a one-sided spring.
         inside = radii < self.radius
         forces.view(np.ndarray)[inside,:] = 0
-        return forces.view(cctk.OneIndexedArray)
+        energies.view(np.ndarray)[inside] = 0
+
+        return np.sum(energies), forces.view(cctk.OneIndexedArray)
 
 def build_potential(settings):
     """

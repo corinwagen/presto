@@ -166,8 +166,12 @@ class Trajectory():
 
         # initialize runtime controller
         controller = presto.controller.Controller(self)
-        controller.run(checkpoint_interval=checkpoint_interval, keep_all=keep_all, runtime=time)
+        controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
 
+        if keep_all:
+            self.load_from_checkpoint()
+            assert self.frames[0].time == 0, "missing first frame despite keep_all being True!"
+        
         return self
 
     def initialize(self):
@@ -201,7 +205,6 @@ class Trajectory():
         with h5py.File(self.checkpoint_filename, "r") as h5:
             atomic_numbers = h5.attrs["atomic_numbers"]
             self.atomic_numbers = cctk.OneIndexedArray(atomic_numbers)
-            print(atomic_numbers)
 
             masses = h5.attrs["masses"]
             self.masses = cctk.OneIndexedArray(masses)
@@ -211,8 +214,6 @@ class Trajectory():
 
             self.frames = []
             if len(h5.get("all_energies")):
-                print(h5.get("all_energies"))
-                print(h5.get("all_positions"))
                 all_energies = h5.get("all_energies")[frames]
                 all_positions = h5.get("all_positions")[frames]
                 all_velocities= h5.get("all_velocities")[frames]
@@ -262,6 +263,7 @@ class Trajectory():
         self.initialize_lock()
         self.lock.acquire()
 
+        last_run_time = self.frames[-1].time
         if self.has_checkpoint():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
@@ -269,7 +271,14 @@ class Trajectory():
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
-                new_n_frames = len(self.frames) - 1
+                if "all_times" not in h5:
+                    # time is a new column, so old checkpoints may not have it.
+                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
+                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
+
+                all_times = h5.get("all_times")
+                last_saved_time = all_times[-1]
+                new_n_frames = int((last_run_time - last_saved_time) / self.timestep)
                 now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
@@ -277,19 +286,14 @@ class Trajectory():
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
+                new_times = np.asarray([frame.time for frame in self.frames[-new_n_frames-1:]])
+                all_times.resize((now_n_frames,))
+                all_times[-new_n_frames-1:] = new_times
+
+                all_energies = h5.get("all_energies")
                 new_energies = np.asarray([frame.energy for frame in self.frames[-new_n_frames-1:]])
                 all_energies.resize((now_n_frames,))
                 all_energies[-new_n_frames-1:] = new_energies
-
-                try:
-                    all_times = h5.get("all_times")
-                    new_times = np.asarray([frame.time for frame in self.frames[-new_n_frames-1:]])
-                    all_times.resize((now_n_frames,))
-                    all_times[-new_n_frames-1:] = new_times
-                except Exception as e:
-                    # time is a new column, so old checkpoints may not have it.
-                    new_times = np.arange(0, self.timestep, self.timestep*len(self.frames))
-                    h5.create_dataset("all_times", data=new_times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 new_positions = np.stack([frame.positions for frame in self.frames[-new_n_frames:]])
                 all_positions = h5.get("all_positions")
@@ -311,9 +315,9 @@ class Trajectory():
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
 
-            logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
+            logger.info(f"Saving to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         else:
-            logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
+            logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 h5.attrs['atomic_numbers'] = self.atomic_numbers.view(np.ndarray)
                 h5.attrs['masses'] = self.masses.view(np.ndarray)
@@ -566,7 +570,7 @@ class ReactionTrajectory(Trajectory):
             assert isinstance(accelerations, cctk.OneIndexedArray)
             assert isinstance(bath_temp, (float, int, np.integer))
 
-        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=bath_temp, time=0)
+        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=bath_temp, time=0.0)
 
         if new_velocities is None:
             random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
@@ -648,7 +652,7 @@ class EquilibrationTrajectory(Trajectory):
 
         velocities = velocities.view(cctk.OneIndexedArray)
         accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0)]
+        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0.0)]
         self.save()
 
 def join(traj1, traj2):

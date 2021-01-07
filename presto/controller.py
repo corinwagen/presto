@@ -15,24 +15,29 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, checkpoint_interval=25, end_time=None, runtime=None, keep_all=False):
+    def run(self, checkpoint_interval=25, end_time=None, runtime=None):
         current_time = self.trajectory.frames[-1].time
+        dt = self.trajectory.timestep
 
         if end_time is None:
             if runtime is not None:
                 assert isinstance(runtime, (int, float)), "runtime must be numeric"
-                end_time = current_time + runtime
+                end_time = min(current_time + runtime, self.trajectory.stop_time)
             else:
                 end_time = self.trajectory.stop_time
         else:
             assert isinstance(end_time, (int, float)), "end_time must be numeric"
 
-        assert end_time > current_time, f"error: end_time {end_time} must be greater than current_time {current_time}"
+        assert end_time >= current_time, f"error: end_time {end_time} must be greater than or equal to current_time {current_time}"
+
+        if end_time == current_time:
+            return
 
         count = 0
         finished_early = False
+        logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)") 
         while current_time < end_time:
-            current_time += self.trajectory.timestep
+            current_time += dt
             current_frame = self.trajectory.frames[-1]
 
             bath_temperature = current_frame.bath_temperature
@@ -59,14 +64,14 @@ class Controller():
                         finished_early = True
                         logger.info(f"Reaction trajectory finished! {self.trajectory.time_after_finished} additional fs will be run.")
 
-            if int(current_time % checkpoint_interval) == 0:
-                self.trajectory.save(keep_all=keep_all)
+            if int(current_time/dt) % int(checkpoint_interval/dt) == 0:
+                self.trajectory.save()
 
             count += 1
             if count < 10:
                 logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
-        self.trajectory.save(keep_all=keep_all)
+        self.trajectory.save()
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:

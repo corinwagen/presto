@@ -44,6 +44,7 @@ class Frame():
 
         if time is not None:
             assert isinstance(time, (float, int, np.integer)), "time must be numeric"
+            time = float(time)
 
         self.trajectory = trajectory
         self.positions = x
@@ -89,16 +90,23 @@ class Frame():
         """
         return self.next(temp, forwards=False)
 
-    def kinetic_energy(self):
-        """ Returns the kinetic energy. """
+    def potential_energy(self):
+        """ Returns the potential energy in kcal/mol. """
+        return self.energy * presto.constants.KCAL_PER_HARTREE
+
+    def kinetic_energy(self, convert_to_kcal=True):
+        """ Returns the kinetic energy in kcal/mol. """
         v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
         K = np.multiply(m.view(np.ndarray), np.power(v, 2))
-        return K / 2
+        if convert_to_kcal:
+            return np.sum(K) / (2 * presto.constants.AMU_A2_FS2_PER_KCAL_MOL)
+        else:
+            return np.sum(K) / 2
 
     def total_energy(self):
         """ Returns the total energy. """
-        return K + self.energy
+        return self.kinetic_energy() + self.potential_energy()
 
     def temperature(self):
         """
@@ -106,13 +114,13 @@ class Frame():
 
         T = sum{ m_i * v_i ** 2} / (kB * Nf)
         """
-        K = self.kinetic_energy() * 2
+        K = self.kinetic_energy(convert_to_kcal=False) * 2
         F = 3 * len(self.trajectory.active_atoms) - 3
 
         if F == 0: # single particle
             F = 3
 
-        return float(np.sum(K) / (F * presto.constants.BOLTZMANN_CONSTANT))
+        return float(K / (F * presto.constants.BOLTZMANN_CONSTANT))
 
     def pressure(self):
         """

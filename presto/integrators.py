@@ -31,7 +31,9 @@ class VelocityVerletIntegrator(Integrator):
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
         if self.potential is not None:
-            forces += self.potential.force(x_full)
+            pe, pf = self.potential.evaluate(x_full)
+            forces += pf
+            energy += pe
         forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
@@ -92,7 +94,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
         if self.potential is not None:
-            forces += self.potential.force(x_full)
+            pe, pf = self.potential.evaluate(x_full)
+            forces += pf
+            energy += pe
 
         forces[frame.inactive_mask()] = 0
         a_full = forces / frame.masses()
