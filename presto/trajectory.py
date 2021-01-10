@@ -59,12 +59,13 @@ class Trajectory():
 
         self.lock = None
         self.initialize_lock()
+        self.frames = list()
 
         if self.has_checkpoint():
             if "load_frames" in kwargs:
                 self.load_from_checkpoint(kwargs["load_frames"])
             else:
-                self.load_from_checkpoint()
+                self.load_from_checkpoint(slice(-1,None,None))
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
@@ -156,10 +157,8 @@ class Trajectory():
             else:
                 raise ValueError("no checkpoint filename given!")
 
-        if len(self.frames) == 0:
-            self.initialize(**kwargs)
-        else:
-            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
+        self.load_from_checkpoint(slice(-1, None, None))
+        assert len(self.frames) == 1, "Wrong number of frames - do you need to call trajectory.initialize()?"
 
         if self.finished:
             logger.info("Trajectory already finished!")
@@ -198,7 +197,9 @@ class Trajectory():
         Returns:
             nothing
         """
-        assert self.has_checkpoint(), "can't load without checkpoint file"
+        if not self.has_checkpoint():
+            return # nothing to load!
+
         self.initialize_lock()
         self.lock.acquire()
 
@@ -220,25 +221,27 @@ class Trajectory():
                 all_accels = h5.get("all_accelerations")[frames]
                 temperatures = h5.get("bath_temperatures")[frames]
 
-                all_times = np.arange(0, self.timestep, self.timestep*len(all_energies))
+                all_times = None
                 try:
                     all_times = h5.get("all_times")[frames]
                 except Exception as e:
+                    all_times = np.arange(0, self.timestep*len(all_energies), self.timestep)
                     # this was added recently, so may be some backwards compatibility issues.
                     pass
 
-                assert len(all_positions) == len(all_energies)
-                assert len(all_velocities) == len(all_energies)
-                assert len(all_accels) == len(all_energies)
-                assert len(all_times) == len(all_energies)
+                if isinstance(all_energies, np.ndarray): 
+                    assert len(all_positions) == len(all_energies)
+                    assert len(all_velocities) == len(all_energies)
+                    assert len(all_accels) == len(all_energies)
+                    assert len(all_times) == len(all_energies)
 
-                for i, e in enumerate(all_energies):
+                for i, t in enumerate(all_times):
                     self.frames.append(presto.frame.Frame(
                         self,
                         all_positions[i].view(cctk.OneIndexedArray),
                         all_velocities[i].view(cctk.OneIndexedArray),
                         all_accels[i].view(cctk.OneIndexedArray),
-                        energy=e,
+                        energy=all_energies[i],
                         bath_temperature=temperatures[i],
                         time=all_times[i],
                     ))
@@ -548,7 +551,7 @@ class ReactionTrajectory(Trajectory):
         """
         logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
-            self.load_from_checkpoint()[-1]
+            self.load_from_checkpoint(slice(-1,None,None))
             return
 
         if frame is not None:
@@ -610,48 +613,61 @@ class EquilibrationTrajectory(Trajectory):
     def __repr__(self):
         return f"EquilibrationTrajectory({len(self.frames)} frames)"
 
-    def initialize(self, positions, **kwargs):
+    def initialize(self, positions, velocities=None, accelerations=None, **kwargs):
         """
         Generates initial frame object for initialization trajectory.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
 
         Args:
-            positions (cctk.OneIndexedArray):
+            positions (cctk.OneIndexedArray): starting positions
+            velocities (cctk.OneIndexedArray): starting velocities, optional.
+            accelerations (cctk.OneIndexedArray): starting accelerations, optional.
 
         Returns:
             frame
         """
         logger.info("Initializing new equilibration trajectory...")
         if self.has_checkpoint():
-            self.load_from_checkpoint()
+            self.load_from_checkpoint(slice(-1,None,None))
             return
 
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
 
         # move centroid to origin
-        centroid = np.mean(positions, axis=0)
-        positions = positions - centroid
+        # i think this is messing up energies w.r.t. spherical harmonic potential and boosting the temp!
+#        centroid = np.mean(positions, axis=0)
+#        positions = positions - centroid
 
         # determine active atoms
         inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)
         inactive_mask[self.active_atoms] = 0
-        inactive_mask  = inactive_mask.astype(bool)
+        inactive_mask = inactive_mask.astype(bool)
 
-        # add random velocity to everything
-        sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
-        velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
-        velocities[inactive_mask] = 0
+        if velocities is None:
+            # add random velocity to everything
+            sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+            velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
+            velocities[inactive_mask] = 0
 
-        # subtract out center-of-mass translational motion
-        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-        correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
-        correction_tran[inactive_mask] = 0
-        velocities = velocities - correction_tran
-        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-        assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+            # subtract out center-of-mass translational motion
+            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+            correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
+            correction_tran[inactive_mask] = 0
+            velocities = velocities - correction_tran
+            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+            assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
 
-        velocities = velocities.view(cctk.OneIndexedArray)
-        accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
+            velocities = velocities.view(cctk.OneIndexedArray)
+        else:
+            assert isinstance(velocities, cctk.OneIndexedArray)
+            velocities[inactive_mask] = 0
+
+        if accelerations is None:
+            accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
+        else:
+            assert isinstance(accelerations, cctk.OneIndexedArray)
+            accelerations[inactive_mask] = 0
+
         self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0.0)]
         self.save()
 

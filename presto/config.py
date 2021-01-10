@@ -111,21 +111,22 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"
     if settings["type"].lower() == "equilibration":
-        mol = None
+        mol, x, v, a = None, None, None, None
         if not os.path.exists(checkpoint):
             if geometry is not None:
                 assert isinstance(geometry, str), "``geometry``must be a string!"
                 assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
                 mol = cctk.XYZFile.read_file(geometry).molecule
                 args["atomic_numbers"] = mol.atomic_numbers
+                x = mol.geometry
 
             elif oldchk is not None:
                 assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
                 with h5py.File(oldchk, "r") as h5:
-                    atomic_numbers = h5.attrs["atomic_numbers"]
-                    positions = h5.get("all_positions")[oldchk_idx]
-                    mol = cctk.Molecule(atomic_numbers, positions)
-                    args["atomic_numbers"] = mol.atomic_numbers
+                    args["atomic_numbers"] = h5.attrs["atomic_numbers"].view(cctk.OneIndexedArray)
+                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
+                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
+                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
             else:
                 raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
 
@@ -140,8 +141,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         )
 
         if len(t.frames) == 0:
-            assert mol is not None, "need geometry, since there are no frames"
-            t.initialize(mol.geometry)
+            t.initialize(x, velocities=v, accelerations=a)
 
         return t
 
