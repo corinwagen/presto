@@ -106,7 +106,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         constraints.insert(0, presto.constraints.Anchor(settings["anchor"]))
 
     i = presto.integrators.build_integrator(settings["integrator"], potential=p)
-    c = presto.calculators.build_calculator(settings["calculator"], args["checkpoint_filename"], constraints=constraints)
+    c = presto.calculators.build_calculator(settings["calculator"], checkpoint, constraints=constraints)
 
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"

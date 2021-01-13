@@ -135,7 +135,7 @@ class XTBCalculator(Calculator):
         energy, forces = None, None
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
-            if self.topology:
+            if self.topology and os.path.exists(self.topology):
                 shutil.copyfile(self.topology, f"{tmpdir}/gfnff_topo")
 
             molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
@@ -174,7 +174,8 @@ class XTBCalculator(Calculator):
             forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
             assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
-            if self.gfn == "ff" and self.topology is not None:
+            if self.gfn == "ff" and not os.path.exists(self.topology):
+                assert os.path.exists(f"{tmpdir}/gfnff_topo"), "xtb didn't generate topology file!"
                 shutil.copyfile(f"{tmpdir}/gfnff_topo", self.topology)
 
             # restore working directory
@@ -440,7 +441,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
         if "topology" in settings:
             assert isinstance(settings["topology"], str), "Calculator `topology` must be a string (path where topology will be stored)."
             topology = settings["topology"]
-        elif gfn = "ff":
+        elif gfn == "ff":
             topology = f"{checkpoint_filename}.top"
 
         return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology)
