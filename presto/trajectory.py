@@ -629,14 +629,10 @@ class EquilibrationTrajectory(Trajectory):
         logger.info("Initializing new equilibration trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint(slice(-1,None,None))
+            assert len(self.frames) == 1, "didn't load frames properly!"
             return
 
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
-
-        # move centroid to origin
-        # i think this is messing up energies w.r.t. spherical harmonic potential and boosting the temp!
-#        centroid = np.mean(positions, axis=0)
-#        positions = positions - centroid
 
         # determine active atoms
         inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)

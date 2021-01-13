@@ -66,10 +66,10 @@ class XTBCalculator(Calculator):
         gfn (int or str):
         parallel (int):
         xcontrol_path (str):
-        topology (str): holds gfn-ff topology file, if gfn is ``ff``. memory-intensive but better than keeping track of the filename, etc.
+        topology (str): path to gfn-ff topology file, if gfn is ``ff``.
     """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), xcontrol_path=None):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), xcontrol_path=None, topology=None):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, (int, str))
@@ -88,7 +88,9 @@ class XTBCalculator(Calculator):
             assert isinstance(xcontrol_path, str)
         self.xcontrol_path = xcontrol_path
 
-        self.topology = None
+        if gfn == "ff":
+            assert isinstance(topology, str), "need path for topology file!"
+        self.topology = topology 
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
@@ -134,8 +136,7 @@ class XTBCalculator(Calculator):
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
             if self.topology:
-                with open(f"{tmpdir}/gfnff_topo", "wb") as f:
-                    f.write(self.topology)
+                shutil.copyfile(self.topology, f"{tmpdir}/gfnff_topo")
 
             molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
             cctk.XYZFile.write_molecule_to_file(f"{tmpdir}/xtb-in.xyz", molecule)
@@ -173,9 +174,8 @@ class XTBCalculator(Calculator):
             forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
             assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
-            if self.topology is None and self.gfn == "ff":
-                with open(f"{tmpdir}/gfnff_topo", "rb") as f:
-                    self.topology = f.read()
+            if self.gfn == "ff" and self.topology is not None:
+                shutil.copyfile(f"{tmpdir}/gfnff_topo", self.topology)
 
             # restore working directory
             os.chdir(old_working_directory)
@@ -360,7 +360,7 @@ class ONIOMCalculator(Calculator):
 
         return energy, forces
 
-def build_calculator(settings, constraints=list()):
+def build_calculator(settings, checkpoint_filename, constraints=list(), ):
     """
     Build calculator from settings dict.
     """
@@ -436,7 +436,14 @@ def build_calculator(settings, constraints=list()):
             assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
             xcontrol = settings["xcontrol"]
 
-        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol)
+        topology = None
+        if "topology" in settings:
+            assert isinstance(settings["topology"], str), "Calculator `topology` must be a string (path where topology will be stored)."
+            topology = settings["topology"]
+        elif gfn = "ff":
+            topology = f"{checkpoint_filename}.top"
+
+        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")

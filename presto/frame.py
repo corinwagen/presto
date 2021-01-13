@@ -78,7 +78,7 @@ class Frame():
         end = time.time()
         elapsed = end - start
 
-        # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one.
+        # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
         self.energy = energy
         return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
 
