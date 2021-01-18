@@ -10,7 +10,8 @@ if __name__ == '__main__':
 
 class TestConstraint(unittest.TestCase):
     def gen_test_frame(self, distance):
-        os.remove("test/static/constraint-test.chk")
+        if os.path.exists("test/static/constraint-test.chk"):
+            os.remove("test/static/constraint-test.chk")
 
         zs = cctk.OneIndexedArray([1, 1])
         c = presto.constraints.PairwisePolynomialConstraint(1, 2, distance, power=2)

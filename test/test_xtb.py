@@ -37,6 +37,6 @@ class TestXTB(unittest.TestCase):
         molecule = cctk.XYZFile.read_file("test/static/nazarov-elim-solvated.xyz").molecule
         atomic_numbers = molecule.atomic_numbers
         positions = molecule.geometry
-        xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn="ff", parallel=4)
+        xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn="ff", parallel=4, topology="test/static/nazarov-elim.top")
         energy, forces = xtb_calculator.evaluate(atomic_numbers, positions, )
         self.assertLessEqual(abs(energy+122.8153475072), 0.00000001)
