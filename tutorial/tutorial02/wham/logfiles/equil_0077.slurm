@@ -1,1 +1,0 @@
-slurmstepd: error: *** JOB 11896779 ON holydsouza03 CANCELLED AT 2021-01-03T16:25:27 DUE TO PREEMPTION ***
