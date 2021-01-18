@@ -47,6 +47,12 @@ class SphericalHarmonicPotential(Potential):
 
         self.max_radius = radius
 
+    def __str__(self):
+        return f"SphericalHarmonicPotential(radius={self.radius:.2f},force_constant={self.force_constant:.5f})"
+
+    def __repr__(self):
+        return f"SphericalHarmonicPotential(radius={self.radius:.2f},force_constant={self.force_constant:.5f})"
+
     def evaluate(self, positions):
         radii = np.linalg.norm(positions, axis=1)
         # distance from equilibrium

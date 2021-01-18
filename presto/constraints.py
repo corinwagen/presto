@@ -52,10 +52,10 @@ class PairwisePolynomialConstraint(Constraint):
         self.equilibrium = equilibrium
 
     def __str__(self):
-        return f"Polynomial constraint between {self.atom1} and {self.atom2}: k={self.force_constant}, power={self.power}, x={self.equilibrium} Å"
+        return f"PairwisePolynomialConstraint(atom1={self.atom1}, atom2={self.atom2}, equilibrium={self.equilibrium:.3f}, power={self.power}, force_constant={self.force_constant:.5f})"
 
     def __repr__(self):
-        return f"Polynomial constraint between {self.atom1} and {self.atom2}: k={self.force_constant}, power={self.power}, x={self.equilibrium} Å"
+        return f"PairwisePolynomialConstraint(atom1={self.atom1}, atom2={self.atom2}, equilibrium={self.equilibrium:.3f}, power={self.power}, force_constant={self.force_constant:.5f})"
 
     def evaluate(self, positions):
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be one-indexed array"
