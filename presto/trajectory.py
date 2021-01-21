@@ -390,8 +390,7 @@ class Trajectory():
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
             #### connectivity matters
-            for molecule in ensemble.molecules:
-                molecule.assign_connectivity()
+            ensemble.assign_connectivity()
             cctk.MOL2File.write_ensemble_to_file(filename, ensemble)
         elif re.search("molden$", filename) or re.search("xyz$", filename):
             cctk.XYZFile.write_ensemble_to_file(filename, ensemble)
