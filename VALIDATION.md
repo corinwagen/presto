@@ -14,7 +14,11 @@ However, the Langevin thermostat successfully holds the average temperature at 3
 The second 100 ps run was initiated from the last frame of the first run, and is run without a thermostat.
 The initial burst in temperature indicates that the previous system was not fully relaxed:
 ater the first 10 ps, however, the temperature rises only gradually (on the order of 1 kcal/molecule over 50 ps). 
-The exact origin of this slow creep in total energy is unclear but may arise from numerical precision issues in the forcefield or ``hdf5`` storage format. 
-Since long trajectories are almost invariably run with a thermostat, this issue should not be a problem for most users. (We are investigating further.)
 
 <img src='img/100dcm_nve.png' width=1000>
+
+For this 500-atom simulation, a linear fit to the temperature drift gives a slope of 2.44 kcal/(mol•ps).
+This is orders of magnitude worse than dedicated molecular dynamics programs like [OpenMM](https://www.biorxiv.org/node/23099.article-info),
+but should not be a problem for the short NVE trajectories in *presto*.
+The exact origin of this energy creep is unclear but may arise from numerical precision issues in the forcefield or ``hdf5`` storage format. 
+(We are investigating further.)
