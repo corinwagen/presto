@@ -90,7 +90,7 @@ class XTBCalculator(Calculator):
 
         if gfn == "ff":
             assert isinstance(topology, str), "need path for topology file!"
-        self.topology = topology 
+        self.topology = topology
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
         """
@@ -311,6 +311,9 @@ class ONIOMCalculator(Calculator):
 
         #### prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)
+        if isinstance(self.full_calculator, XTBCalculator):
+            if self.full_calculator.gfn == "ff":
+                self.full_calculator.topology = self.full_calculator.topology.replace(".low", ".full")
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
         """
@@ -373,8 +376,8 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
         assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
         assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
         return ONIOMCalculator(
-            high_calculator=build_calculator(settings["high_calculator"]),
-            low_calculator=build_calculator(settings["low_calculator"]),
+            high_calculator=build_calculator(settings["high_calculator"], checkpoint_filename + ".high"),
+            low_calculator=build_calculator(settings["low_calculator"], checkpoint_filename + ".low"),
             constraints=constraints,
         )
     elif settings["type"].lower() == "gaussian":

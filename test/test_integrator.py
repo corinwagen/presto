@@ -44,7 +44,7 @@ class TestSphericalIntegration(unittest.TestCase):
         potential = presto.potentials.SphericalHarmonicPotential(radius=10, force_constant=1, convert_from_kcal=False)
 
         x = np.array([[1], [9], [11], [-12]])
-        f, e = potential.evaluate(x)
+        e, f = potential.evaluate(x)
 
         self.assertEqual(f[1], 0)
         self.assertEqual(f[2], 0)
@@ -53,16 +53,16 @@ class TestSphericalIntegration(unittest.TestCase):
         self.assertEqual(e,2.5)
 
         x = np.array([[0,0,10]])
-        f, e = potential.evaluate(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
         self.assertEqual(e,0)
 
         x = np.array([[0,0,-8]])
-        f, e = potential.evaluate(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
         self.assertEqual(e,0)
 
         x = np.array([[0,0,1]])
-        f, e = potential.evaluate(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
         self.assertEqual(e,0)
