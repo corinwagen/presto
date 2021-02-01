@@ -147,17 +147,34 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     if settings["type"].lower() == "reaction":
         if not os.path.exists(checkpoint):
-            assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"
-
             x, v, a, temp = None, None, None, None
-            with h5py.File(oldchk, "r") as h5:
-                atomic_numbers = h5.attrs["atomic_numbers"]
-                x = h5.get("all_positions")[oldchk_idx]
-                v = h5.get("all_velocities")[oldchk_idx]
-                a = h5.get("all_accelerations")[oldchk_idx]
-                temp = h5.get("bath_temperatures")[oldchk_idx]
+            if "quasiclassical" in settings:
+                assert "output_file" in settings["quasiclassical"], f"Need Gaussian output file for quasiclassical initialization!"
+                assert os.path.exists(settings["quasiclassical"]["output_file"]), f"Need Gaussian output file for quasiclassical initialization!"
 
-                args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+                assert "temperature" in settings["quasiclassical"], "Need temperature for quasiclassical initialization"
+                temp = settings["quasiclassical"]["temperature"]
+                assert isinstance(temp, (int, float)), "Temperature must be numeric!"
+
+                # thermal excitations using quantum harmonic oscillator. see cctk/quasiclassical.py for details
+                mol = cctk.GaussianFile.read_file(settings["quasiclassical"]["output_file"]).get_molecule()
+                excited, PE, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(mol, return_velocities=True)
+
+                args["atomic_numbers"] = mol.atomic_numbers
+                x = excited.geometry
+                v = velocities
+                a = np.zeros_like(v.view(np.ndarray)).view(cctk.OneIndexedArray)
+
+            else:
+                assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"
+                with h5py.File(oldchk, "r") as h5:
+                    atomic_numbers = h5.attrs["atomic_numbers"]
+                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
+                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
+                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
+                    temp = h5.get("bath_temperatures")[oldchk_idx]
+
+                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
 
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
@@ -174,7 +191,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         )
 
         if not os.path.exists(checkpoint):
-            t.initialize(positions=x.view(cctk.OneIndexedArray), velocities=v.view(cctk.OneIndexedArray), accelerations=a.view(cctk.OneIndexedArray), bath_temp=temp)
+            t.initialize(positions=x, velocities=v, accelerations=a, bath_temp=temp)
 
         assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
         return t

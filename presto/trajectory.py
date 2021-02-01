@@ -170,7 +170,7 @@ class Trajectory():
         if keep_all:
             self.load_from_checkpoint()
             assert self.frames[0].time == 0, "missing first frame despite keep_all being True!"
-        
+
         return self
 
     def initialize(self):
@@ -229,7 +229,7 @@ class Trajectory():
                     # this was added recently, so may be some backwards compatibility issues.
                     pass
 
-                if isinstance(all_energies, np.ndarray): 
+                if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
                     assert len(all_velocities) == len(all_energies)
                     assert len(all_accels) == len(all_energies)
@@ -715,5 +715,4 @@ def join(traj1, traj2):
         new_traj.frames = new_traj.frames[::-1]
 
     return new_traj
-
 

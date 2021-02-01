@@ -16,7 +16,10 @@ class TestConfig(unittest.TestCase):
         path = "test/static/ex2.yaml"
         presto.config.build(path, "test/static/ex2.chk", oldchk="test/static/ex.chk")
 
+        path = "test/static/ex3.yaml"
+        presto.config.build(path, "test/static/ex3.chk")
+
         os.remove("test/static/ex.chk")
         os.remove("test/static/ex2.chk")
+        os.remove("test/static/ex3.chk")
 
-#        os.remove("test/static/ex.chk.lock")
