@@ -29,6 +29,11 @@ Here are a list of all the possible top-level config file options.
 
 **``stop_time``**: The maximum run time, in femtoseconds.
 
+**``integrator``**:
+
+**``calculator``**:
+
+
 ### Optional
 
 Lists of atoms (for **``high_atoms``**, **``active_atoms``**, and **``inactive_atoms``**) can be specified as individual atom numbers or as ranges. 
@@ -40,3 +45,16 @@ For instance, ``high_atoms: 1-4, 7, 9`` will be parsed into the list ``[1, 2, 3,
 **``active_atoms``**: Which atoms are active (all by default).
 
 **``inactive_atoms``**: Which atoms are inactive. Will be overridden by **``active_atoms``** if both are present.
+
+**``potential``**:
+
+**``bath_scheduler``** (``EquilibrationTrajectory`` only): 
+
+**``constraints``**:
+
+**``quasiclassical``** (``ReactionTrajectory`` only):
+
+**``termination_function``** (``ReactionTrajectory`` only):
+
+
+
