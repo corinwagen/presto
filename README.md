@@ -113,7 +113,7 @@ To run a simple MD job on benzene, see ``tutorials/tutorial00``. This job should
 
 ### How to Cite:
 
-Wagen, C. *presto* **2020**, ``github.com/corinwagen/presto``
+Wagen, C.C. *presto* **2021**, ``github.com/corinwagen/presto``
 
 ## Acknowledgements
 
