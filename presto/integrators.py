@@ -69,6 +69,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
     def next(self, frame, forwards=True):
         """
         Using the approach from http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
+        (Vanden-Eijden–Ciccotti second-order Langevin integrator)
         """
         calculator = frame.trajectory.calculator
         timestep = frame.trajectory.timestep
@@ -91,6 +92,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         C = 0.5 * (timestep ** 2) * (frame.accelerations - (xi * frame.velocities)) + sigma * (timestep ** 1.5) * ((0.5 * rand1) + (rand2 / (2 * math.sqrt(3))))
 
         x_full = frame.positions + timestep * frame.velocities + C
+        x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
         if self.potential is not None:
@@ -102,7 +104,8 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         a_full = forces / frame.masses()
 
         v_full = frame.velocities + 0.5 * timestep * (a_full + frame.accelerations) - timestep * xi * frame.velocities + sigma * math.sqrt(timestep) * rand1 - xi * C
-        v_full[frame.inactive_mask()] = 0 # no random forces either
+        v_full[frame.inactive_mask()] = 0
+
         return energy, x_full, v_full, a_full
 
 def build_integrator(settings, potential=None):

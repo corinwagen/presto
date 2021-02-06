@@ -24,7 +24,7 @@ calculator:
         parallel: 8
     high_calculator:
         type: gaussian
-        route_card: "#p force b3lyp/6-31+g(d) empiricaldispersion=gd3bj pop=none"
+        route_card: "#p force b3lyp/6-31+g(d) empiricaldispersion=gd3bj pop=none nosymm"
         link0:
             nprocshared: 16
             mem: "32GB"

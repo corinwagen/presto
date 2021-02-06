@@ -7,7 +7,7 @@ setuptools.setup(
     name="presto-md",
     packages=["presto", "presto.solvents"],
     package_data={"presto.solvents": ["*"],},
-    version="0.1.1",
+    version="0.2.0",
     author="Corin Wagen",
     author_email="corin.wagen@gmail.com",
     license="Apache 2.0",

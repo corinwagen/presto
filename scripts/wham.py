@@ -8,23 +8,28 @@ import presto
 
 # usage: python wham.py run 1 17 1.43 2.95 300 "../equil-00*/*_preequil.chk"
 
-parser = argparse.ArgumentParser(prog="wham.py")
-parser.add_argument("-c", "--config", type=str, default="wham.yaml")
-parser.add_argument("-C", "--cutoff", type=int, default=1000)
-parser.add_argument("type", type=str)
-parser.add_argument("atom1", type=int)
-parser.add_argument("atom2", type=int)
-parser.add_argument("min_x", type=float)
-parser.add_argument("max_x", type=float)
-parser.add_argument("num", type=int)
-parser.add_argument("chks")
+parser = argparse.ArgumentParser(
+    prog="wham.py",
+#    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Create and parse files for integration with ``wham`` (1-dimensional weighted histogram analysis method).
+Choosing type ``run`` means this script will take in one or more equilibrated starting trajectories and generate ``num`` constrained input files from each one. These trajectories can then be run in parallel.
+Choosing type ``analyze`` means this script will take in finished trajectories (generated from ``run``) and generate files for use with ``wham`` software as distributed by the Grossfield lab (http://membrane.urmc.rochester.edu/?page_id=126).""")
+parser.add_argument("-c", "--config", type=str, default="wham.yaml", help="path to default .yaml config file")
+parser.add_argument("-C", "--cutoff", type=int, default=1000, help="cutoff for reading each individual file. frames before this cutoff will be discarded.")
+parser.add_argument("type", type=str, help="either ``run`` (to generate input files) or ``analyze`` (to parse output files).")
+parser.add_argument("atom1", type=int, help="number of first atom of interest")
+parser.add_argument("atom2", type=int, help="number of second atom of interest")
+parser.add_argument("min_x", type=float, help="minimum distance to study")
+parser.add_argument("max_x", type=float, help="maximum distance to study")
+parser.add_argument("num", type=int, help="number of points between min_x and max_x")
+parser.add_argument("chks", help="path to .chk files. for ``run``, this must be equilibrated starting configurations. for ``analyze``, this must be finished points.")
 args = vars(parser.parse_args(sys.argv[1:]))
 
 print("wham - weighted histogram analysis method")
 
 if args["type"] == "run":
     delta = (args["max_x"] - args["min_x"]) / args["num"]
-    k = 3 / delta
+    k = 10 / delta # generate sane force constants based on bin widths - the bigger the spacing, the looser the constraint
     print(f"∆x: {delta:.3f}\tk = {k:.2f} kcal/(mol • Å)")
 
     settings = None
@@ -103,6 +108,7 @@ elif args["type"] == "analyze":
         file_hist, bin_edges = np.histogram(dists, bins=args['num'], range=(args['min_x'], args['max_x']))
         return file_hist, len(dists), f"{name}.csv\t{d:.4f}\t{k:.4f}\n"
 
+    # reading is slow, do it in parallel
     pool = mp.Pool(processes=16)
     for (file_hist, file_count, file_metadata_text) in tqdm.tqdm(pool.imap(read_chk, files), total=len(files)):
         histogram += file_hist

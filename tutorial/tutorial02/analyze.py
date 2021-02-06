@@ -2,7 +2,6 @@ import argparse, math, sys, os, subprocess, glob, re, shutil
 import numpy as np
 from asciichartpy import plot
 
-sys.path.append('../presto')
 import presto
 
 parser = argparse.ArgumentParser(prog="analyze.py")

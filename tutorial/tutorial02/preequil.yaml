@@ -19,10 +19,7 @@ calculator:
     type: xtb
     gfn : 0
     parallel: 8
-<<<<<<< HEAD
     xcontrol: default.xcontrol
-=======
->>>>>>> 57ad16d27935404dce7228f95e447670b89c53a9
 
 bath_scheduler: 
     type: linear

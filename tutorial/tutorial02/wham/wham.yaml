@@ -1,0 +1,34 @@
+# presto config file
+
+type: equilibration
+
+timestep: 1
+high_atoms: 1-14
+stop_time: 50000
+
+anchor: 1
+
+integrator: 
+    type: langevin
+    viscosity: 0.0001
+
+potential:
+    type: spherical_harmonic
+    radius: 13.3
+
+calculator: 
+    type: oniom
+    low_calculator:
+        type: xtb
+        gfn : 0
+        parallel: 8
+    high_calculator:
+        type: gaussian
+        route_card: "#p force b3lyp/6-31+g(d) empiricaldispersion=gd3bj pop=none nosymm"
+        link0:
+            nprocshared: 16
+            mem: "32GB"
+
+bath_scheduler: 
+    type: constant
+    target_temp: 298

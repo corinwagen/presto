@@ -139,6 +139,7 @@ dmypy.json
 # slurm submission
 submit.sh
 slurm*
+*.slurm
 
 # giant presto files
 *.chk
