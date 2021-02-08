@@ -26,16 +26,6 @@ calculator:
         type: gaussian
         route_card: "#p force wb97xd/6-31g(d) pop=none"
 
-bath_scheduler: 
-    type: linear
-    start_temp: 1000
-    target_temp: 298
-    target_time: 500
-
-termination_function:
-    constraint1: bond 2 48
-    constraint2: bond 48 51
-
 termination_function:
     constraint1: bond 2 48
     constraint2: bond 48 51

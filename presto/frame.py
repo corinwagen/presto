@@ -1,5 +1,5 @@
 import numpy as np
-import math, copy, cctk
+import math, copy, cctk, time
 
 import cctk
 from cctk.helper_functions import get_symbol, get_vdw_radius
@@ -16,11 +16,14 @@ class Frame():
         velocities (cctk.OneIndexedArray):
         accelerations (cctk.OneIndexedArray):
 
+        time (float): time of current frame within trajectory, in fs
         energy (float):
         bath_temperature (float):
+
+        elapsed (float): wallclock time to run frame
     """
 
-    def __init__(self, trajectory, x, v, a, bath_temperature=298, energy=0.0):
+    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -37,12 +40,20 @@ class Frame():
         assert isinstance(bath_temperature, (float, int, np.integer)), "bath temperature needs to be numeric!"
         assert bath_temperature >= 0, "bath temperature must be positive or 0"
 
+        assert isinstance(elapsed, (float, int, np.integer)), "elapsed needs to be numeric!"
+
+        if time is not None:
+            assert isinstance(time, (float, int, np.integer)), "time must be numeric"
+            time = float(time)
+
         self.trajectory = trajectory
         self.positions = x
         self.velocities = v
         self.accelerations = a
         self.bath_temperature = bath_temperature
         self.energy = energy
+        self.time = time
+        self.elapsed = elapsed
 
     def __str__(self):
         temp = f"E={self.energy}, temp={self.bath_temperature}\n"
@@ -62,10 +73,14 @@ class Frame():
             temp = self.bath_temperature
         assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
 
-        integrator = self.trajectory.integrator
-        energy, new_x, new_v, new_a = integrator.next(self, forwards=forwards)
+        start = time.time()
+        energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards)
+        end = time.time()
+        elapsed = end - start
+
+        # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
         self.energy = energy
-        return Frame(self.trajectory, new_x, new_v, new_a, temp)
+        return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
 
     def prev(self, temp=None):
         """
@@ -75,21 +90,37 @@ class Frame():
         """
         return self.next(temp, forwards=False)
 
+    def potential_energy(self):
+        """ Returns the potential energy in kcal/mol. """
+        return self.energy * presto.constants.KCAL_PER_HARTREE
+
+    def kinetic_energy(self, convert_to_kcal=True):
+        """ Returns the kinetic energy in kcal/mol. """
+        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
+        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
+        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+        if convert_to_kcal:
+            return np.sum(K) / (2 * presto.constants.AMU_A2_FS2_PER_KCAL_MOL)
+        else:
+            return np.sum(K) / 2
+
+    def total_energy(self):
+        """ Returns the total energy. """
+        return self.kinetic_energy() + self.potential_energy()
+
     def temperature(self):
         """
         Computes the instantaneous temperature based on the equipartition theorem, counting only the active atoms.
 
         T = sum{ m_i * v_i ** 2} / (kB * Nf)
         """
-        v = np.linalg.norm(self.velocities[self.trajectory.active_atoms], axis=1)
-        m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms]
-        K = np.multiply(m.view(np.ndarray), np.power(v, 2))
+        K = self.kinetic_energy(convert_to_kcal=False) * 2
         F = 3 * len(self.trajectory.active_atoms) - 3
 
         if F == 0: # single particle
             F = 3
 
-        return float(np.sum(K) / (F * presto.constants.BOLTZMANN_CONSTANT))
+        return float(K / (F * presto.constants.BOLTZMANN_CONSTANT))
 
     def pressure(self):
         """
@@ -115,7 +146,7 @@ class Frame():
         return pressure / presto.constants.AMU_A_FS2_PER_ATM
 
     def volume(self):
-        return self.molecule().volume()
+        return self.molecule().volume(qhull=True)
 
     def inactive_mask(self):
         """
@@ -147,37 +178,12 @@ class Frame():
         self.positions = self.positions - centroid
         assert np.linalg.norm(np.sum(self.positions, axis=0)) < 0.0001, "didn't center well enough!"
 
-        #### subtract out center-of-mass translational motion (linear momentum)
+        # subtract out center-of-mass translational motion (linear momentum)
         com_translation = np.sum(self.masses() * self.velocities, axis=0)
         correction_tran = np.tile(com_translation / np.sum(self.masses()), (len(self.velocities),1))
         self.velocities = self.velocities - correction_tran
         assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
 
-        return self
-
-        #### subtract out center-of-mass rotational motion - not working
-        com_rotation = np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)
-        print(com_rotation)
-
-        repeat_com_rotation = np.tile(com_rotation, (self.positions.shape[0], 1))
-        parallel_position_vectors = np.dot(self.positions, com_rotation).reshape(-1,1) / np.dot(com_rotation, com_rotation) * repeat_com_rotation
-        perp_position_vectors = self.positions - parallel_position_vectors
-
-        correction = np.cross(
-            perp_position_vectors,
-            com_rotation,
-        ).view(cctk.OneIndexedArray)
-
-        scale = np.power(np.linalg.norm(perp_position_vectors, axis=1), 2).reshape(-1,1) * self.masses()
-        scale = self.masses()
-        correction = correction / scale
-
-        correction_applied = np.sum(np.cross(correction, self.masses() * self.positions), axis=0)
-        correction = correction * np.linalg.norm(com_rotation) / (np.linalg.norm(correction_applied))
-        self.velocities = self.velocities - correction.view(cctk.OneIndexedArray)
-
-        assert np.linalg.norm(np.sum(self.masses() * self.velocities, axis=0)) < 0.0001, "COM rotation correction introduced translation!"
-        assert np.linalg.norm(np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)) < 0.0001, "didn't remove COM rotation well enough!"
         return self
 
     def masses(self):

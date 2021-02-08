@@ -10,9 +10,11 @@ if __name__ == '__main__':
 
 class TestConstraint(unittest.TestCase):
     def gen_test_frame(self, distance):
-        zs = cctk.OneIndexedArray([1, 1])
+        if os.path.exists("test/static/constraint-test.chk"):
+            os.remove("test/static/constraint-test.chk")
 
-        c = presto.constraint.PairwisePolynomialConstraint(1, 2, distance, power=2)
+        zs = cctk.OneIndexedArray([1, 1])
+        c = presto.constraints.PairwisePolynomialConstraint(1, 2, distance, power=2)
 
         traj = presto.trajectory.EquilibrationTrajectory(
             timestep=0.5,
@@ -37,6 +39,7 @@ class TestConstraint(unittest.TestCase):
         self.assertTrue(isinstance(frame, presto.frame.Frame))
 
         traj.frames = [frame]
+        traj.save()
         return frame
 
     def test_constraint(self):
@@ -61,13 +64,10 @@ class TestConstraint(unittest.TestCase):
             m = f.molecule()
             distances.append(m.get_distance(1,2))
 
-#        from asciichartpy import plot
-#        print(plot(distances[::4], {"height": 12}))
-
-        os.remove(t.checkpoint_filename)
+#        os.remove(t.checkpoint_filename)
 
     def test_anchor(self):
-        anchor = presto.constraint.Anchor(1)
+        anchor = presto.constraints.Anchor(1)
         position = cctk.OneIndexedArray([[1,0,0], [0,0,0]])
         position[1] = np.asarray([1, 1, 1])
 

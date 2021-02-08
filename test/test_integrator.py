@@ -41,24 +41,28 @@ class TestLangevinIntegrator(unittest.TestCase):
 
 class TestSphericalIntegration(unittest.TestCase):
     def test_spherical_harmonic_potential(self):
-        potential = presto.integrators.spherical_harmonic_potential(radius=10, force_constant=1)
+        potential = presto.potentials.SphericalHarmonicPotential(radius=10, force_constant=1, convert_from_kcal=False)
 
         x = np.array([[1], [9], [11], [-12]])
-        f = potential(x)
+        e, f = potential.evaluate(x)
 
         self.assertEqual(f[1], 0)
         self.assertEqual(f[2], 0)
-        self.assertEqual(f[3], -0.5)
+        self.assertEqual(f[3], -1)
         self.assertEqual(f[4], 2)
+        self.assertEqual(e,2.5)
 
         x = np.array([[0,0,10]])
-        f = potential(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
+        self.assertEqual(e,0)
 
         x = np.array([[0,0,-8]])
-        f = potential(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
+        self.assertEqual(e,0)
 
         x = np.array([[0,0,1]])
-        f = potential(x)
+        e, f = potential.evaluate(x)
         self.assertEqual(np.linalg.norm(f[1]), 0)
+        self.assertEqual(e,0)

@@ -139,6 +139,7 @@ dmypy.json
 # slurm submission
 submit.sh
 slurm*
+*.slurm
 
 # giant presto files
 *.chk
@@ -148,7 +149,8 @@ slurm*
 todo
 
 # xtb topology
-*.topo
+*.top
 
+# lockfiles
 *.lock
 *.slurm

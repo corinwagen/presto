@@ -1,7 +1,7 @@
 import unittest, cctk
 import numpy as np
 
-import sys
+import sys, shutil
 sys.path.append('../presto')
 
 import presto
@@ -12,6 +12,9 @@ if __name__ == '__main__':
 
 class TestGaussian(unittest.TestCase):
     def test_gaussian(self):
+        if not shutil.which("g16"):
+            return True
+
         hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry

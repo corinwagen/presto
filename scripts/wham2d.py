@@ -6,7 +6,7 @@ from asciichartpy import plot
 sys.path.append("/n/jacobsen_lab/cwagen/presto/")
 import presto
 
-# usage: python wham.py run 1 17 1.43 2.95 300 "../equil-00*/*_preequil.chk"
+# usage: python wham2d.py run 94 36 50 208 36 50 coords.csv solv.chk
 
 parser = argparse.ArgumentParser(
     prog="wham2d.py",

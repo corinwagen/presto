@@ -1,6 +1,6 @@
-# presto
+# 🎩 presto
 
-*Python-based Reactions in Explicit Solvent with Trajectories via ONIOM*
+*python-based reactions in explicit solvent with trajectories via ONIOM*
 
 [![PyPI version](https://badge.fury.io/py/presto-md.svg)](https://badge.fury.io/py/presto-md)
 
@@ -17,12 +17,13 @@ If you are interesting in using *presto* or contributing as a developer, please 
 - [Description](#description)
 - [Dependencies](#dependencies)
 - [Getting Started](#getting-started)
+- [Further Reading](#futher-reading)
+- [Citation](#citation)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
 
 ## Description
-
 
 Conventional quantum chemical calculations (such as *ab initio* wavefunction methods and density functional theory) can describe chemical reactivity with high accuracy, but scale poorly with increasing system size. As a consequence, most computational analyses of organic reactions are performed in the gas phase with implicit solvation, which is unable to describe the behavior of many common species (e.g. ion pairs). In contrast, molecular dynamics permits the study of large, explicitly solvated systems, but the underlying molecular mechanics-based Hamiltonian renders such simulations unable to describe changes in bonding. *presto* seeks to combine elements of both approaches to permit the study of reactivity in explicit solvent. 
 
@@ -53,6 +54,7 @@ There are numerous challenges with running molecular dynamics that are not prese
 ### Internal:
 - [`numpy`](https://numpy.org/)
 - `pyyaml`, `h5py`
+- `fasteners`
 - `matplotlib`, `tabulate`, `tqdm`, `asciichartpy`
 - `nglview` (if `Jupyter` visualization is desired)
 
@@ -73,35 +75,45 @@ $ source activate presto
 
 #### 2. System-specific configuration:
 
-*presto* requires scratch directories with which to communicate with external programs. 
-These directories are specified by a config file, which *presto* finds via the environment variable ``$PRESTO_CONFIG``.
+*presto* needs to know your system's Gaussian and *xtb* executables and the ``XTB_PATH`` variable for your system..
+These paths are specified by a config file, which *presto* finds via the environment variable ``PRESTO_CONFIG``.
 You may wish to set this variable in ``~/.bashrc`` by adding the following line (set the path to point to your config file):
 
 ```
 export PRESTO_CONFIG="/Users/your_username/presto.config"
 ```
 
-Both Gaussian and *xtb* require individual scratch directories with the scripts ``gaussian/run_gaussian.sh`` and ``xtb/run_xtb.sh`` inside them.
-These scripts (which can be obtained by cloning the repository) should work out-of-the box for most environments, but may require modification for your system.
-*presto* also needs to know the path to the ``xtb`` executable (``XTB_PATH``), which in most cases can be detected from ``conda`` automatically by specifying ``@auto``.
-
-Here is an example ``presto.config`` file:
+Here is an example ``presto.config`` file (*presto* can usually detect ``XTB_PATH`` automatically from ``conda``):
 
 ```
-### presto configuration ###
+# presto config
 [xtb]
 XTB_PATH = @auto
-XTB_SCRIPT_DIRECTORY = ~/presto-testing/xtb/
+XTB_EXEC = xtb
 
 [gaussian]
-GAUSSIAN_SCRIPT_DIRECTORY = ~/presto-testing/gaussian/
+GAUSSIAN_EXEC = g16
 ```
 
-This file should not need to be modified for each job, and can typically be created once and left unchanged.
+This file should not need to be modified unless you reinstall Gaussian or *xtb*.
 
 #### 3. Running your first job
 
 To run a simple MD job on benzene, see ``tutorials/tutorial00``. This job should take only a few minutes to run!
+
+## Further Reading
+
+[**Details**](DETAILS.md) — further documentation for specific *presto* features, such as automatic solvation
+
+[**Physical Validation**](VALIDATION.md) — tests of *presto*'s performance in the *NVT* or *NVE* ensembles
+
+[**Config Files**](CONFIG.md) — anatomy of ``.yaml`` config files
+
+## Citation
+
+### How to Cite:
+
+Wagen, C.C. *presto* **2021**, ``github.com/corinwagen/presto``
 
 ## Acknowledgements
 
@@ -112,9 +124,8 @@ and an incredible willingness to help a complete stranger debug his Langevin int
 
 **Stefan Grimme** and **Sebastian Ehlert** for help with *xtb*.
 
-
 ## License
 
 This project is licensed under the Apache License, Version 2.0. Please see `LICENSE` for full terms and conditions.
 
-*Copyright 2020 by Corin Wagen*
+*Copyright 2021 by Corin Wagen*

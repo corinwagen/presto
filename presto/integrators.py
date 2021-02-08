@@ -9,6 +9,18 @@ class Integrator():
         pass
 
 class VelocityVerletIntegrator(Integrator):
+    """
+    Defines a Velocity Verlet integrator (NVE ensemble).
+
+    Attributes:
+        potential (presto.potentials.Potential): confining potential
+    """
+
+    def __init__(self, potential=None):
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
+        self.potential = potential
+
     def next(self, frame, forwards=True):
         calculator = frame.trajectory.calculator
         timestep = frame.trajectory.timestep
@@ -18,6 +30,10 @@ class VelocityVerletIntegrator(Integrator):
         x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+        if self.potential is not None:
+            pe, pf = self.potential.evaluate(x_full)
+            forces += pf
+            energy += pe
         forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
@@ -34,10 +50,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
     Attributes:
         viscosity (float): solvent viscosity (in amu/(fs*Å))
         radius (float): distance from center where this kicks in!
-        maxiter (int): maximum number of numerical drag iterations
-        tolerance (float): convergence cutoff for numerical drag calculation - smaller is tighter
-        potential (float): additional function that maps positions to forces
-            needs to return ``cctk.OneIndexedArray``
+        potential (presto.potentials.Potential): confining potential
     """
 
     def __init__(self, viscosity=0.001, convert_from_pascal_seconds=True, radius=0, potential=None):
@@ -49,54 +62,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         assert isinstance(radius, (int, float)), "radius must be numeric"
         self.radius = radius
 
-        # if you use this, it's your own problem to check that you did it right!
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
         self.potential = potential
-
-    def old_next(self, frame, forwards=True):
-        calculator = frame.trajectory.calculator
-        timestep = frame.trajectory.timestep
-        if forwards == False:
-            timestep = timestep * -1
-
-        v_half = frame.velocities + 0.5 * frame.accelerations * timestep
-
-        x_full = frame.positions + v_half * timestep
-
-        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
-
-        #### compute random forces
-        xi = 6 * math.pi * self.viscosity * frame.radii()
-        variance =  2 * xi * presto.constants.BOLTZMANN_CONSTANT * frame.bath_temperature / frame.trajectory.timestep
-        no_apply_to = np.linalg.norm(x_full, axis=1) < self.radius
-
-        random_forces = np.random.normal(loc=0, scale=np.sqrt(variance.reshape(-1,1)), size=x_full.shape)
-        random_forces[no_apply_to,:] = 0
-        forces += random_forces.view(cctk.OneIndexedArray)
-
-        if self.potential is not None:
-            forces += self.potential(x_full)
-
-        #### compute drag
-        drag = np.zeros_like(random_forces).view(cctk.OneIndexedArray)
-        v_full = v_half + 0.5 * (forces / frame.masses()) * timestep
-
-        #### have to do numerical convergence since drag is proportional to instantaneous velocity
-        for n in range(self.maxiter):
-            prev_v = v_full
-            drag = -1 * xi.reshape(-1,1) * v_full
-            v_full = v_half + 0.5 * ((forces + drag) / frame.masses()) * timestep
-
-            #### if we've converged, return - otherwise iterate again
-            if np.mean(np.linalg.norm(prev_v - v_full, axis=0)/np.linalg.norm(prev_v, axis=0)) < self.tolerance:
-                break
-
-        drag.view(np.ndarray)[no_apply_to,:] = 0
-        forces += drag
-
-        forces[frame.inactive_mask()] = 0
-        a_full = forces / frame.masses()
-
-        return energy, x_full, v_full, a_full
 
     def next(self, frame, forwards=True):
         """
@@ -128,7 +96,10 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
         if self.potential is not None:
-            forces += self.potential(x_full)
+            pe, pf = self.potential.evaluate(x_full)
+            forces += pf
+            energy += pe
+
         forces[frame.inactive_mask()] = 0
         a_full = forces / frame.masses()
 
@@ -137,31 +108,26 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         return energy, x_full, v_full, a_full
 
-
-def spherical_harmonic_potential(radius, force_constant=0.004184):
+def build_integrator(settings, potential=None):
     """
-    Default force constant is 10 kcal/mol per Å**2, akin to that employed by Singleton (JACS, 2016, 138, 15167).
-
-    In *presto* units, this is 0.004184 amu Å**2 fs**-2.
-
-    Args:
-        radius (float): area outside which this takes effect
-        force_constant (float):
-
-    Returns:
-        function mapping positions to forces with the desired force constant and radius
+    Build integrator from settings dict.
     """
-    assert isinstance(radius, (int, float))
-    assert isinstance(force_constant, (int, float))
-    assert radius > 0
-    assert force_constant > 0
+    assert isinstance(settings, dict), "Need to pass a dictionary!!"
+    assert "type" in settings, "Need `type` for integrator"
+    assert isinstance(settings["type"], str), "Integrator `type` must be a string"
 
-    def force(positions):
-        radii = np.linalg.norm(positions, axis=1)
-        forces = -0.5 * force_constant * (positions - positions/radii.reshape(-1,1) * radius)
-        forces = forces * np.linalg.norm(positions - positions/radii.reshape(-1,1) * radius, axis=1).reshape(-1,1)
-        inside = radii < radius
-        forces.view(np.ndarray)[inside,:] = 0
-        return forces.view(cctk.OneIndexedArray)
+    if settings["type"].lower() == "verlet":
+        return VelocityVerletIntegrator(potential=potential)
+    elif settings["type"].lower() == "langevin":
+        assert "viscosity" in settings, "Need `viscosity` for Langevin integrator!"
+        assert isinstance(settings["viscosity"], (int, float)), "Integrator `viscosity` must be numeric."
 
-    return force
+        radius = 0
+        if "radius" in settings:
+            assert isinstance(settings["radius"], (int, float)), "Integrator `radius` must be numeric."
+            radius = settings["radius"]
+
+        return LangevinIntegrator(settings["viscosity"], radius=radius, potential=potential)
+    else:
+        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
+

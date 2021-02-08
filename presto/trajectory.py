@@ -1,5 +1,6 @@
 import numpy as np
 import math, copy, cctk, os, re, logging, time
+import fasteners
 
 import h5py
 import presto
@@ -20,32 +21,65 @@ class Trajectory():
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
         masses (cctk.OneIndexedArray): list of masses
 
-        calculator (presto.Calculator):
-        integrator (presto.Integrator):
+        calculator (presto.calculators.Calculator):
+        integrator (presto.integrators.Integrator):
+        reporters (list of presto.reporters.Reporter):
+        checks (list of presto.checks.Check):
 
         finished (bool):
         forwards (bool):
 
         checkpoint_filename (str):
+        lock (fasteners.InterProcessLock): lock object
     """
 
-    def __init__(self, calculator=None, integrator=None, timestep=None, atomic_numbers=None, high_atoms=None, forwards=True, checkpoint_filename=None, stop_time=None, **kwargs):
+    def __init__(
+        self,
+        calculator=None,
+        integrator=None,
+        reporters=list(),
+        checks=list(),
+        timestep=None,
+        atomic_numbers=None,
+        high_atoms=None,
+        forwards=True,
+        checkpoint_filename=None,
+        stop_time=None,
+        **kwargs
+    ):
+
+        # do this first!
+        if timestep is not None:
+            assert timestep > 0, "can't have timestep ≤ 0!"
+            self.timestep = float(timestep)
+
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
+
+        self.lock = None
+        self.initialize_lock()
+        self.frames = list()
+
         if self.has_checkpoint():
             if "load_frames" in kwargs:
                 self.load_from_checkpoint(kwargs["load_frames"])
             else:
-                self.load_from_checkpoint()
+                self.load_from_checkpoint(slice(-1,None,None))
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
+        self.calculator = calculator
+
         if integrator is not None:
             assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
-
-        self.calculator = calculator
         self.integrator = integrator
+
+        assert all([isinstance(c, presto.checks.Check) for c in checks])
+        self.checks = checks
+
+        assert all([isinstance(r, presto.reporters.Reporter) for r in reporters])
+        self.reporters = reporters
 
         if atomic_numbers is not None:
             assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
@@ -72,10 +106,6 @@ class Trajectory():
         else:
             # assume all atoms are active
             self.set_inactive_atoms(np.ndarray([]))
-
-        if timestep is not None:
-            assert timestep > 0, "can't have timestep ≤ 0!"
-            self.timestep = float(timestep)
 
         if not hasattr(self, "masses"):
             self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
@@ -119,33 +149,29 @@ class Trajectory():
         Args:
             checkpoint_interval (int): interval at which to save (in frames, not fs)
             keep_all (bool): whether or not to keep all frames in memory
-            num (float): total time to run for -- default is None, implying trajectory should be run until finished
+            time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
-        assert isinstance(self.calculator, presto.calculators.Calculator), "need a valid calculator!"
-        assert isinstance(self.integrator, presto.integrators.Integrator), "need a valid integrator!"
         if self.checkpoint_filename is None:
             if "checkpoint_filename" in kwargs:
                 self.checkpoint_filename = kwargs["checkpoint_filename"]
             else:
                 raise ValueError("no checkpoint filename given!")
 
-        if self.has_checkpoint():
-            self.load_from_checkpoint()
-
-        if len(self.frames) == 0:
-            self.initialize(**kwargs)
-        else:
-            self.frames = [self.frames[-1]] # we don't load all frames while running to keep things fast
+        self.load_from_checkpoint(slice(-1, None, None))
+        assert len(self.frames) == 1, "Wrong number of frames - do you need to call trajectory.initialize()?"
 
         if self.finished:
             logger.info("Trajectory already finished!")
-            return self
-        else:
-            logger.info("Propagating trajectory.")
-            self.propagate(checkpoint_interval, keep_all=keep_all, time=time)
-            logger.info("Trajectory finished!")
-            self.save(keep_all=keep_all)
-            return self
+
+        # initialize runtime controller
+        controller = presto.controller.Controller(self)
+        controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+
+        if keep_all:
+            self.load_from_checkpoint()
+            assert self.frames[0].time == 0, "missing first frame despite keep_all being True!"
+
+        return self
 
     def initialize(self):
         """
@@ -153,20 +179,7 @@ class Trajectory():
         """
         pass
 
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        """
-        Runs trajectories, checking for completion and saving as necessary.
-
-        Will call ``self.save()`` every ``checkpoint_interval`` frames.
-
-        Args:
-            checkpoint_interval (int): interval at which to save (in frames, not fs)
-            keep_all (bool): whether or not to keep all frames in memory
-            time (float): total time to run for -- default is None, implying trajectory should be run until finished
-        """
-        pass
-
-    def has_checkpoint(self, max_wait=100):
+    def has_checkpoint(self):
         if self.checkpoint_filename is None:
             return False
         if os.path.exists(self.checkpoint_filename):
@@ -174,38 +187,7 @@ class Trajectory():
         else:
             return False
 
-        #### TODO - prevent lockfile collisions here and in num_frames
-
-#            lockfile = f"{self.checkpoint_filename}.lock"
-#
-#            while os.path.exists(lockfile):
-#                max_wait += -1
-#                time.sleep(1)
-#
-#                if max_wait < 0:
-#                    raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-#
-#            # create new lockfile
-#            with open(lockfile, "w") as lf:
-#                pass
-#
-#            status = False
-#            with h5py.File(self.checkpoint_filename, "r+") as h5:
-#                all_energies = h5.get("all_energies")
-#                if all_energies is None:
-#                    status = False
-#                elif len(all_energies) > 0:
-#                    status = True
-#                else:
-#                    status = False
-#
-#            os.remove(lockfile)
-#            return status
-#
-#        else:
-#            return False
-
-    def load_from_checkpoint(self, frames=slice(None), max_wait=100):
+    def load_from_checkpoint(self, frames=slice(None)):
         """
         Loads frames from ``self.checkpoint_filename``.
 
@@ -215,19 +197,11 @@ class Trajectory():
         Returns:
             nothing
         """
-        assert self.has_checkpoint(), "can't load without checkpoint file"
+        if not self.has_checkpoint():
+            return # nothing to load!
 
-        lockfile = f"{self.checkpoint_filename}.lock"
-        while os.path.exists(lockfile):
-            max_wait += -1
-            time.sleep(1)
-
-            if max_wait < 0:
-                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-
-        # create new lockfile
-        with open(lockfile, "w") as lf:
-            pass
+        self.initialize_lock()
+        self.lock.acquire()
 
         with h5py.File(self.checkpoint_filename, "r") as h5:
             atomic_numbers = h5.attrs["atomic_numbers"]
@@ -239,29 +213,42 @@ class Trajectory():
             self.finished = h5.attrs['finished']
             self.forwards = h5.attrs['forwards']
 
-            all_energies = h5.get("all_energies")[frames]
-            all_positions = h5.get("all_positions")[frames]
-            all_velocities= h5.get("all_velocities")[frames]
-            all_accels = h5.get("all_accelerations")[frames]
-            temperatures = h5.get("bath_temperatures")[frames]
-
-            assert len(all_positions) == len(all_energies)
-            assert len(all_velocities) == len(all_energies)
-            assert len(all_accels) == len(all_energies)
-
             self.frames = []
-            for i, e in enumerate(all_energies):
-                self.frames.append(presto.frame.Frame(
-                    self,
-                    all_positions[i].view(cctk.OneIndexedArray),
-                    all_velocities[i].view(cctk.OneIndexedArray),
-                    all_accels[i].view(cctk.OneIndexedArray),
-                    energy=e,
-                    bath_temperature=temperatures[i]
-                ))
+            if len(h5.get("all_energies")):
+                all_energies = h5.get("all_energies")[frames]
+                all_positions = h5.get("all_positions")[frames]
+                all_velocities= h5.get("all_velocities")[frames]
+                all_accels = h5.get("all_accelerations")[frames]
+                temperatures = h5.get("bath_temperatures")[frames]
+
+                all_times = None
+                try:
+                    all_times = h5.get("all_times")[frames]
+                except Exception as e:
+                    all_times = np.arange(0, self.timestep*len(all_energies), self.timestep)
+                    # this was added recently, so may be some backwards compatibility issues.
+                    pass
+
+                if isinstance(all_energies, np.ndarray):
+                    assert len(all_positions) == len(all_energies)
+                    assert len(all_velocities) == len(all_energies)
+                    assert len(all_accels) == len(all_energies)
+                    assert len(all_times) == len(all_energies)
+
+                for i, t in enumerate(all_times):
+                    self.frames.append(presto.frame.Frame(
+                        self,
+                        all_positions[i].view(cctk.OneIndexedArray),
+                        all_velocities[i].view(cctk.OneIndexedArray),
+                        all_accels[i].view(cctk.OneIndexedArray),
+                        energy=all_energies[i],
+                        bath_temperature=temperatures[i],
+                        time=all_times[i],
+                    ))
+
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
 
-        os.remove(lockfile)
+        self.lock.release()
         return
 
     def num_frames(self):
@@ -273,37 +260,40 @@ class Trajectory():
         else:
             return len(self.frames)
 
-    def save(self, keep_all=False, max_wait=100):
+    def save(self, keep_all=False):
         if self.checkpoint_filename is None:
             raise ValueError("can't save without checkpoint filename")
+        self.initialize_lock()
+        self.lock.acquire()
 
-        lockfile = f"{self.checkpoint_filename}.lock"
-        while os.path.exists(lockfile):
-            max_wait += -1
-            time.sleep(1)
-
-            if max_wait < 0:
-                raise ValueError(f"can't get to file {self.checkpoint_filename}; max_wait exceeded!")
-
-        # create new lockfile
-        with open(lockfile, "w") as lf:
-            pass
-
+        last_run_time = self.frames[-1].time
         if self.has_checkpoint():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
-                all_energies = h5.get("all_energies")
 
+                all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
-                new_n_frames = len(self.frames) - 1
+                if "all_times" not in h5:
+                    # time is a new column, so old checkpoints may not have it.
+                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
+                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
+
+                all_times = h5.get("all_times")
+                last_saved_time = all_times[-1]
+                new_n_frames = int((last_run_time - last_saved_time) / self.timestep)
                 now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
-                    os.remove(lockfile)
+                    self.lock.release()
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
+                new_times = np.asarray([frame.time for frame in self.frames[-new_n_frames-1:]])
+                all_times.resize((now_n_frames,))
+                all_times[-new_n_frames-1:] = new_times
+
+                all_energies = h5.get("all_energies")
                 new_energies = np.asarray([frame.energy for frame in self.frames[-new_n_frames-1:]])
                 all_energies.resize((now_n_frames,))
                 all_energies[-new_n_frames-1:] = new_energies
@@ -327,9 +317,10 @@ class Trajectory():
                 all_temps = h5.get("bath_temperatures")
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
-                logger.info(f"Saving trajectory to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {now_n_frames} in total)")
+
+            logger.info(f"Saving to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         else:
-            logger.info(f"Saving trajectory to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames)")
+            logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 h5.attrs['atomic_numbers'] = self.atomic_numbers.view(np.ndarray)
                 h5.attrs['masses'] = self.masses.view(np.ndarray)
@@ -339,26 +330,24 @@ class Trajectory():
                 n_atoms = len(self.atomic_numbers)
 
                 energies = np.asarray([frame.energy for frame in self.frames])
-                h5.create_dataset("all_energies", data=energies, maxshape=(None,),
-                            compression="gzip", compression_opts=9)
+                h5.create_dataset("all_energies", data=energies, maxshape=(None,), compression="gzip", compression_opts=9)
+
+                times = np.asarray([frame.time for frame in self.frames])
+                h5.create_dataset("all_times", data=times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 all_positions = np.stack([frame.positions for frame in self.frames])
-                h5.create_dataset("all_positions", data=all_positions, maxshape=(None,n_atoms,3),
-                                compression="gzip", compression_opts=9)
+                h5.create_dataset("all_positions", data=all_positions, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
                 all_velocities = np.stack([frame.velocities for frame in self.frames])
-                h5.create_dataset("all_velocities", data=all_velocities, maxshape=(None,n_atoms,3),
-                                compression="gzip", compression_opts=9)
+                h5.create_dataset("all_velocities", data=all_velocities, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
                 all_accels= np.stack([frame.accelerations for frame in self.frames])
-                h5.create_dataset("all_accelerations", data=all_accels, maxshape=(None,n_atoms,3),
-                                compression="gzip", compression_opts=9)
+                h5.create_dataset("all_accelerations", data=all_accels, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
                 temps = np.asarray([frame.bath_temperature for frame in self.frames])
-                h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,),
-                            compression="gzip", compression_opts=9)
+                h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,), compression="gzip", compression_opts=9)
 
-        os.remove(lockfile)
+        self.lock.release()
 
         # lower memory usage
         if keep_all:
@@ -366,11 +355,34 @@ class Trajectory():
         else:
             self.frames = [self.frames[-1]]
 
-    def write_movie(self, filename, idxs="high"):
-        if idxs == "high":
-            idxs = self.high_atoms
-        elif idxs == "all":
-            idxs = None
+    def write_movie(self, filename, solvents="all", idxs=None):
+        """
+        Write a movie to a trajectory file. Detects trajectory type automatically from file extension.
+
+        Supported file formats: ``.pdb``, ``.mol2``, ``.xyz``/``.molden``
+
+        Args:
+            filename (str): path where movie will be written
+            solvents (int): number of solvent molecules to include (closest included first). can also be ``none`` or ``all``.
+            idxs (list of int): indices of atoms to include. will override ``solvents`` if present.
+        """
+
+        # what do we make a movie of?
+        if idxs is not None:
+            assert isinstance(idxs, list), "idxs must be list of indices or ``None``!"
+        else:
+            if isinstance(solvents, str):
+                if solvents == "high":
+                    idxs = self.high_atoms
+                elif solvents == "all":
+                    idxs = None
+                else:
+                    raise ValueError(f"unknown solvents keyword {solvents} -- must be 'high' or 'all'")
+            elif isinstance(solvents, int):
+                molecule = self.frames[0].molecule()
+                idxs = molecule.limit_solvent_shell(num_solvents=solvents,return_idxs=False)
+            else:
+                raise ValueError("``solvents`` must be int, 'high', or 'all'!")
 
         ensemble = self.as_ensemble(idxs)
         logger.info("Writing trajectory to {filename}")
@@ -378,9 +390,10 @@ class Trajectory():
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
             #### connectivity matters
-            for molecule in ensemble.molecules:
-                molecule.assign_connectivity()
+            ensemble.assign_connectivity()
             cctk.MOL2File.write_ensemble_to_file(filename, ensemble)
+        elif re.search("molden$", filename) or re.search("xyz$", filename):
+            cctk.XYZFile.write_ensemble_to_file(filename, ensemble)
         else:
             raise ValueError(f"error writing {filename}: this filetype isn't currently supported!")
 
@@ -475,6 +488,21 @@ class Trajectory():
         assert len(new_traj.frames) == 1, "got too many frames!"
         return new_traj
 
+    def initialize_lock(self):
+        """
+        Create hidden lockfile to accompany ``.chk`` file.
+        """
+        if self.checkpoint_filename is None:
+            return
+
+        if self.lock is None:
+            lockfile = None
+            if "/" in self.checkpoint_filename:
+                lockfile = f"{self.checkpoint_filename}.lock"[::-1].replace("/", "./", 1)[::-1]
+            else:
+                lockfile = f".{self.checkpoint_filename}.lock"
+            self.lock = fasteners.InterProcessLock(lockfile)
+
 class ReactionTrajectory(Trajectory):
     """
     Attributes:
@@ -522,7 +550,7 @@ class ReactionTrajectory(Trajectory):
         """
         logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
-            self.load_from_checkpoint()[-1]
+            self.load_from_checkpoint(slice(-1,None,None))
             return
 
         if frame is not None:
@@ -544,7 +572,7 @@ class ReactionTrajectory(Trajectory):
             assert isinstance(accelerations, cctk.OneIndexedArray)
             assert isinstance(bath_temp, (float, int, np.integer))
 
-        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temp)
+        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=bath_temp, time=0.0)
 
         if new_velocities is None:
             random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
@@ -555,33 +583,6 @@ class ReactionTrajectory(Trajectory):
 
         self.frames = [new_frame]
         self.save()
-
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-
-        elapsed_time = 0
-
-        for t in np.arange(self.timestep * len(self.frames), self.stop_time, self.timestep):
-            self.frames.append(self.frames[-1].next(temp=self.frames[-1].bath_temperature, forwards=self.forwards))
-            if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save(keep_all=keep_all)
-
-            elapsed_time += self.timestep
-            if time is not None:
-                if elapsed_time >= time:
-                    return
-
-            exit_code = self.termination_function(self.frames[-1])
-            logger.debug(f"termination status:\t{t} fs\t{exit_code} code")
-
-            if exit_code or self.elapsed_since_finished > 0:
-                self.elapsed_since_finished += self.timestep
-                logger.info(f"Reaction trajectory finished! {self.elapsed_since_finished:.1f} fs since termination condition met, {self.time_after_finished:.1f} fs desired.")
-
-            if self.elapsed_since_finished >= self.time_after_finished:
-                self.save(keep_all=keep_all)
-                self.finished = exit_code
-                return
 
 class EquilibrationTrajectory(Trajectory):
     """
@@ -611,69 +612,59 @@ class EquilibrationTrajectory(Trajectory):
     def __repr__(self):
         return f"EquilibrationTrajectory({len(self.frames)} frames)"
 
-    def initialize(self, positions, **kwargs):
+    def initialize(self, positions, velocities=None, accelerations=None, **kwargs):
         """
         Generates initial frame object for initialization trajectory.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
 
         Args:
-            positions (cctk.OneIndexedArray):
+            positions (cctk.OneIndexedArray): starting positions
+            velocities (cctk.OneIndexedArray): starting velocities, optional.
+            accelerations (cctk.OneIndexedArray): starting accelerations, optional.
 
         Returns:
             frame
         """
         logger.info("Initializing new equilibration trajectory...")
         if self.has_checkpoint():
-            self.load_from_checkpoint()
+            self.load_from_checkpoint(slice(-1,None,None))
+            assert len(self.frames) == 1, "didn't load frames properly!"
             return
 
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
 
-        # move centroid to origin
-        centroid = np.mean(positions, axis=0)
-        positions = positions - centroid
-
         # determine active atoms
         inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)
         inactive_mask[self.active_atoms] = 0
-        inactive_mask  = inactive_mask.astype(bool)
+        inactive_mask = inactive_mask.astype(bool)
 
-        # add random velocity to everything
-        sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
-        velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
-        velocities[inactive_mask] = 0
-#        velocities = random_gaussian / np.linalg.norm(random_gaussian, axis=1).reshape(-1,1) * sigma
+        if velocities is None:
+            # add random velocity to everything
+            sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
+            velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
+            velocities[inactive_mask] = 0
 
-        # subtract out center-of-mass translational motion
-        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-        correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
-        correction_tran[inactive_mask] = 0
-        velocities = velocities - correction_tran
-        com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-        assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+            # subtract out center-of-mass translational motion
+            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+            correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
+            correction_tran[inactive_mask] = 0
+            velocities = velocities - correction_tran
+            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
+            assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
 
-        velocities = velocities.view(cctk.OneIndexedArray)
-        accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, self.bath_scheduler(0))]
+            velocities = velocities.view(cctk.OneIndexedArray)
+        else:
+            assert isinstance(velocities, cctk.OneIndexedArray)
+            velocities[inactive_mask] = 0
+
+        if accelerations is None:
+            accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
+        else:
+            assert isinstance(accelerations, cctk.OneIndexedArray)
+            accelerations[inactive_mask] = 0
+
+        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0.0)]
         self.save()
-
-    def propagate(self, checkpoint_interval, keep_all=False, time=None):
-        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "interval must be positive integer"
-
-        elapsed_time = 0
-        for t in np.arange(self.timestep * self.num_frames(), self.stop_time, self.timestep):
-
-            self.frames.append(self.frames[-1].next(temp=self.bath_scheduler(t)))
-            if (len(self.frames) - 1) % checkpoint_interval == 0:
-                self.save(keep_all=keep_all)
-
-            elapsed_time += self.timestep
-            if time is not None:
-                if elapsed_time >= time:
-                    return
-        self.save(keep_all=keep_all)
-        self.finished = True
-
 
 def join(traj1, traj2):
     """
@@ -724,5 +715,4 @@ def join(traj1, traj2):
         new_traj.frames = new_traj.frames[::-1]
 
     return new_traj
-
 

@@ -17,3 +17,7 @@ calculator:
 bath_scheduler:
     type: constant
     target_temp: 298
+
+potential:
+    type: spherical_harmonic
+    radius: 10
