@@ -27,20 +27,24 @@ class VelocityVerletIntegrator(Integrator):
         if forwards == False:
             timestep = timestep * -1
 
-        x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
+        try:
+            x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
-        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
-        if self.potential is not None:
-            pe, pf = self.potential.evaluate(x_full)
-            forces += pf
-            energy += pe
-        forces[frame.inactive_mask()] = 0
+            energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+            if self.potential is not None:
+                pe, pf = self.potential.evaluate(x_full)
+                forces += pf
+                energy += pe
+            forces[frame.inactive_mask()] = 0
 
-        a_full = forces / frame.masses()
+            a_full = forces / frame.masses()
 
-        v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
+            v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
 
-        return energy, x_full, v_full, a_full
+            return energy, x_full, v_full, a_full
+
+        except Exception as e:
+            raise ValueError(f"Error in integrator: {e}")
 
 
 class LangevinIntegrator(VelocityVerletIntegrator):

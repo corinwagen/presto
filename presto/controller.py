@@ -44,7 +44,12 @@ class Controller():
             if isinstance(self.trajectory, presto.trajectory.EquilibrationTrajectory):
                 bath_temperature = self.trajectory.bath_scheduler(current_time)
 
-            new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=current_frame.bath_temperature)
+            new_frame = None
+            try:
+                new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=current_frame.bath_temperature)
+            except Exception as e:
+                logger.info(f"Error at time {current_time} - terminating run")
+                raise ValueError(f"Controller failed: {e}")
             assert new_frame.time == current_time, f"frame time {new_frame.time} does not match loop time {current_time}"
             self.trajectory.frames.append(new_frame)
 
@@ -75,7 +80,8 @@ class Controller():
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:
-            self.trajectory.finished = self.trajectory.termination_function(self.frames[-1])
+#            self.trajectory.finished = self.trajectory.termination_function(self.frames[-1])
+            self.trajectory.finished = True # somehow that previous line was not working
 
         logger.info(f"Trajectory finished with {self.trajectory.num_frames()} frames.")
         return

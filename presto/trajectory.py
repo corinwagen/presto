@@ -165,7 +165,10 @@ class Trajectory():
 
         # initialize runtime controller
         controller = presto.controller.Controller(self)
-        controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+        try:
+            controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+        except Exception as e:
+            raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
 
         if keep_all:
             self.load_from_checkpoint()
@@ -380,7 +383,7 @@ class Trajectory():
                     raise ValueError(f"unknown solvents keyword {solvents} -- must be 'high' or 'all'")
             elif isinstance(solvents, int):
                 molecule = self.frames[0].molecule()
-                idxs = molecule.limit_solvent_shell(num_solvents=solvents,return_idxs=False)
+                idxs = molecule.limit_solvent_shell(num_solvents=solvents, return_idxs=True)
             else:
                 raise ValueError("``solvents`` must be int, 'high', or 'all'!")
 

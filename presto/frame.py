@@ -56,12 +56,10 @@ class Frame():
         self.elapsed = elapsed
 
     def __str__(self):
-        temp = f"E={self.energy}, temp={self.bath_temperature}\n"
-        n_atoms = len(self.positions)
-        for atom in range(1,n_atoms+1):
-            x,v,a = self.positions[atom],self.velocities[atom],self.accelerations[atom]
-            temp += f"{atom:3d} [ {x[1]:8.3f} {x[2]:8.3f} {x[3]:8.3f} ] [ {v[1]:8.3f} {v[2]:8.3f} {v[3]:8.3f} ] [ {a[1]:10.2E} {a[2]:10.2E} {a[3]:10.2E} ]\n"
-        return temp[:-1]
+        return f"Frame({len(self.positions)} atoms, time={self.time:.1f})"
+
+    def __repr__(self):
+        return f"presto.frame.Frame({len(self.positions)} atoms, time={self.time:.1f})"
 
     def next(self, temp=None, forwards=True):
         """
@@ -73,14 +71,17 @@ class Frame():
             temp = self.bath_temperature
         assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
 
-        start = time.time()
-        energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards)
-        end = time.time()
-        elapsed = end - start
+        try:
+            start = time.time()
+            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards)
+            end = time.time()
+            elapsed = end - start
 
-        # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
-        self.energy = energy
-        return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
+            # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
+            self.energy = energy
+            return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
+        except Exception as e:
+            raise ValueError(f"Error in frame.next(): {e}")
 
     def prev(self, temp=None):
         """
