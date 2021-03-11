@@ -56,5 +56,5 @@ For instance, ``high_atoms: 1-4, 7, 9`` will be parsed into the list ``[1, 2, 3,
 
 **``termination_function``** (``ReactionTrajectory`` only):
 
-
+**``monitor``**:
 

@@ -153,3 +153,4 @@ todo
 
 # lockfiles
 *.lock
+*.slurm

@@ -2,7 +2,8 @@
 
 ## Building Solvent Shells
 
-Solvation of starting structures can be done using *presto*'s pre-loaded solvents, shown below. The dipole moment and polarizibility have been benchmarked to experiment for some commonly used solvents. In general, the dipole moment is slightly overestimated by GFN2-xtb and GFN0-xtb.
+Solvation of starting structures can be done using *presto*'s pre-loaded solvents, shown below. The dipole moment and polarizibility have been benchmarked to experiment for some commonly used solvents. In general, the dipole moment is slightly overestimated by GFN2-xtb and GFN0-xtb. 
+(To convert polarizability from a.u. to Å<sup>3</sup>, multiply by 0.529<sup>3</sup> = 0.148.)
 
 | Solvent | Keyword | Dipole (Exp./GFN2/GFN0, D) | Polariz. (Exp./GFN2/GFN0, Å<sup>3</sup>)|  
 | --------- | --------- | --------- | --------- | 
@@ -14,10 +15,10 @@ Solvation of starting structures can be done using *presto*'s pre-loaded solvent
 | Dichloroethane (*anti* conformer) | ``dce_anti`` |
 | Dichloromethane | ``dcm`` | 1.60 / 1.79 / 1.77 | 6.66 / 6.19 / 6.18 | 
 | Dibutyl Ether | ``dibutylether`` | 
-| Diethyl Ether | ``ether`` |
-| Diispropyl Ether | ``diisopropylether`` |
+| Diethyl Ether | ``ether`` | 1.15 / 1.79 / 1.71 | ??? / 8.37 / 8.47 |
+| Diisopropyl Ether | ``diisopropylether`` | [1.13](https://physicalchemistryrosamonte.wordpress.com/material-balances/material-balances-on-a-crystallizer/physical-properties-of-pure-methanol/dipole-moment/) / 1.91 / 1.92 | ??? / 11.82 / 11.97 |
 | Dioxane | ``dioxane`` |
-| Ethanol | ``ethanol`` |
+| Ethanol | ``ethanol`` | 
 | Ethyl Acetate | ``ethyl_acetate`` | 1.78 / 4.03 / 2.56 | 8.62 / 8.67 / 8.59 | 
 | *n*-Hexane | ``hexanes`` |
 | Methanol | ``methanol``| 1.70 / 1.57 / 1.91 | 3.21 / 3.18 / 3.20 |

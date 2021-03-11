@@ -64,7 +64,7 @@ class Controller():
             # do we initiate early stopping?
             if not finished_early:
                 if isinstance(self.trajectory, presto.trajectory.ReactionTrajectory):
-                    if self.trajectory.termination_function(self.frames[-1]):
+                    if self.trajectory.termination_function(self.trajectory.frames[-1]):
                         end_time = current_time + self.trajectory.time_after_finished
                         finished_early = True
                         logger.info(f"Reaction trajectory finished! {self.trajectory.time_after_finished} additional fs will be run.")
@@ -80,7 +80,7 @@ class Controller():
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:
-#            self.trajectory.finished = self.trajectory.termination_function(self.frames[-1])
+#            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
             self.trajectory.finished = True # somehow that previous line was not working
 
         logger.info(f"Trajectory finished with {self.trajectory.num_frames()} frames.")
