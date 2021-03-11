@@ -162,13 +162,13 @@ class Trajectory():
 
         if self.finished:
             logger.info("Trajectory already finished!")
-
-        # initialize runtime controller
-        controller = presto.controller.Controller(self)
-        try:
-            controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
-        except Exception as e:
-            raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
+        else:
+            # initialize runtime controller
+            controller = presto.controller.Controller(self)
+            try:
+                controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+            except Exception as e:
+                raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
 
         if keep_all:
             self.load_from_checkpoint()
@@ -711,7 +711,7 @@ def join(traj1, traj2):
     r_frames = copy.deepcopy(traj2.frames)
     r_frames.reverse()
 
-    new_traj.frames = r_frames + f_frames
+    new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
 
     if traj1.finished == 2:
         #### if the first traj finished with the reverse condition, reverse order
