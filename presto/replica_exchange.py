@@ -6,6 +6,8 @@ import presto
 
 logger = logging.getLogger(__name__)
 
+MIN_CHECKPOINT_INTERVAL = 50
+
 class ReplicaExchange():
     """
     Runs several trajectories and manages interconversions between them.
@@ -21,7 +23,7 @@ class ReplicaExchange():
         finished (bool):
         current_idx (int):
     """
-    def __init__(self, trajectories, checkpoint_filename="remd.chk", swap_interval=100):
+    def __init__(self, trajectories, checkpoint_filename="remd.chk", swap_interval=10):
         temps = np.zeros(shape=len(trajectories))
         for idx, traj in enumerate(trajectories):
             assert isinstance(traj, presto.trajectory.EquilibrationTrajectory), "all trajectories must be EquilibrationTrajectories"
@@ -82,21 +84,28 @@ class ReplicaExchange():
             return self
 
         processes = [None]*len(self.trajectories)
-#        start_time = self.trajectories[0].timestep * self.trajectories[0].num_frames()
         start_idx = self.current_idx
+
+        # we break the runs up into small chunks
         for current_idx in range(start_idx, int(self.stop_time/self.swap_interval)):
+            target_time = current_idx * self.swap_interval
             for idx, traj in enumerate(self.trajectories):
-                processes[idx] = mp.Process(target=traj.run, kwargs={
-                    "time": self.swap_interval,
-                    "checkpoint_interval": min(50, self.swap_interval),
-                })
-                processes[idx].start()
+                # how long does each traj need to run for?
+                time_remaining = max(0, target_time - traj.last_time_run())
+
+                if time_remaining:
+                    processes[idx] = mp.Process(target=traj.run, kwargs={
+                        "time": self.swap_interval,
+                        "checkpoint_interval": min(MIN_CHECKPOINT_INTERVAL, self.swap_interval),
+                    })
+                    processes[idx].start()
 
             for process in processes:
                 process.join()
 
             for traj in self.trajectories:
                 traj.load_from_checkpoint()
+                assert traj.last_time_run() == target_time
 
             self.exchange((current_idx+1)*self.swap_interval)
             self.current_idx = current_idx + 1

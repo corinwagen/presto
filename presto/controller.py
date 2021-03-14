@@ -15,7 +15,7 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, checkpoint_interval=25, end_time=None, runtime=None):
+    def run(self, checkpoint_interval=25, end_time=None, runtime=None, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
 

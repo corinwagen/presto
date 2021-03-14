@@ -164,7 +164,7 @@ class Trajectory():
             logger.info("Trajectory already finished!")
         else:
             # initialize runtime controller
-            controller = presto.controller.Controller(self)
+            controller = presto.controller.Controller(self, **kwargs)
             try:
                 controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
             except Exception as e:
@@ -505,6 +505,10 @@ class Trajectory():
             else:
                 lockfile = f".{self.checkpoint_filename}.lock"
             self.lock = fasteners.InterProcessLock(lockfile)
+
+    def last_time_run(self):
+        """ Get last finished time """
+        return self.frames[-1].time
 
 class ReactionTrajectory(Trajectory):
     """
