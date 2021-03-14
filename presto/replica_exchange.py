@@ -88,7 +88,8 @@ class ReplicaExchange():
 
         # we break the runs up into small chunks
         for current_idx in range(start_idx, int(self.stop_time/self.swap_interval)):
-            target_time = current_idx * self.swap_interval
+            next_idx = current_idx + 1
+            target_time = next_idx * self.swap_interval
             for idx, traj in enumerate(self.trajectories):
                 # how long does each traj need to run for?
                 time_remaining = max(0, target_time - traj.last_time_run())
@@ -101,14 +102,15 @@ class ReplicaExchange():
                     processes[idx].start()
 
             for process in processes:
-                process.join()
+                if process is not None:
+                    process.join()
 
             for traj in self.trajectories:
                 traj.load_from_checkpoint()
                 assert traj.last_time_run() == target_time
 
-            self.exchange((current_idx+1)*self.swap_interval)
-            self.current_idx = current_idx + 1
+            self.exchange(next_idx*self.swap_interval)
+            self.current_idx = next_idx
             self.save()
         self.finished = True
         return self
