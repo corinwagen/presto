@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 #### OVERALL PRESTO CONFIGURATION, RUNS ON STARTUP
 
-MAX_QC_ATTEMPTS = 20
-QC_TOL = 0.01
+MAX_QC_ATTEMPTS = 50
+QC_TOL = 0.05
 
 # this module loads the configuration file
 CONFIGURATION_FILE = "presto.config"
@@ -168,7 +168,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                     # check that we're close to expected additional PE, and that our perturbation hasn't done anything wild.
                     # if so we just try again.
                     actual_PE, _ = c.evaluate(mol.atomic_numbers, excited.geometry, args["high_atoms"])
-                    extra_PE = actual_PE - qcf[-1, "energy"]
+                    extra_PE = (actual_PE - qcf.ensemble[-1, "energy"]) * presto.constants.KCAL_PER_HARTREE
                     diff = abs(expected_PE - extra_PE)
                     if (diff < (QC_TOL * expected_PE)):
                         args["atomic_numbers"] = mol.atomic_numbers
