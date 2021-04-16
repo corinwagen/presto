@@ -1,12 +1,11 @@
 # presto config file
-
+    
 type: equilibration
 
 timestep: 1
 high_atoms: 1-14
-stop_time: 20000
-
-anchor: 1
+inactive_atoms: 1-14
+stop_time: 250000
 
 integrator: 
     type: langevin
@@ -14,21 +13,15 @@ integrator:
 
 potential:
     type: spherical_harmonic
-    radius: 13.3
+    radius: 13.4
 
 calculator: 
-    type: oniom
-    low_calculator:
-        type: xtb
-        gfn : 0
-        parallel: 8
-    high_calculator:
-        type: gaussian
-        route_card: "#p force b3lyp/6-31+g(d) empiricaldispersion=gd3bj pop=none nosymm"
-        link0:
-            nprocshared: 16
-            mem: "32GB"
+    type: xtb
+    gfn : ff
+    parallel: 8
 
 bath_scheduler: 
-    type: constant
+    type: linear
+    start_temp: 1000
     target_temp: 298
+    target_time: 10000

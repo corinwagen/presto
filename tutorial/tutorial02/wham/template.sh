@@ -8,8 +8,4 @@
 #SBATCH -o logfiles/NAME.slurm
 #SBATCH -e logfiles/NAME.slurm
 
-mkdir /scratch/cwagen-gaussian
-cp /n/jacobsen_lab/cwagen/presto/gaussian/run_gaussian.sh /scratch/cwagen-gaussian/
-mkdir /scratch/cwagen-xtb
-cp /n/jacobsen_lab/cwagen/presto/xtb/run_xtb.sh /scratch/cwagen-xtb/
 python3.7 run.py NAME

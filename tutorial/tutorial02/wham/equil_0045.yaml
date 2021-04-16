@@ -18,8 +18,8 @@ constraints:
   wham:
     atom1: 1
     atom2: 2
-    equilibrium: 3.4545454545454546
-    force_constant: 266.6666666666667
+    equilibrium: 4.5
+    force_constant: 250.0
 high_atoms: 1-14
 integrator:
   type: langevin
@@ -27,6 +27,6 @@ integrator:
 potential:
   radius: 13.3
   type: spherical_harmonic
-stop_time: 50000
+stop_time: 25000
 timestep: 1
 type: equilibration
