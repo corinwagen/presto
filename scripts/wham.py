@@ -19,19 +19,22 @@ parser.add_argument("-C", "--cutoff", type=int, default=1000, help="cutoff for r
 parser.add_argument("type", type=str, help="either ``run`` (to generate input files) or ``analyze`` (to parse output files).")
 parser.add_argument("atom1", type=int, help="number of first atom of interest")
 parser.add_argument("atom2", type=int, help="number of second atom of interest")
-parser.add_argument("min_x", type=float, help="minimum distance to study")
-parser.add_argument("max_x", type=float, help="maximum distance to study")
-parser.add_argument("num", type=int, help="number of points between min_x and max_x")
+parser.add_argument("points_csv", type=str, help="path to .csv file containing distances")
 parser.add_argument("chks", help="path to .chk files. for ``run``, this must be equilibrated starting configurations. for ``analyze``, this must be finished points.")
 args = vars(parser.parse_args(sys.argv[1:]))
 
 print("wham - weighted histogram analysis method")
 
-if args["type"] == "run":
-    delta = (args["max_x"] - args["min_x"]) / args["num"]
-    k = 10 / delta # generate sane force constants based on bin widths - the bigger the spacing, the looser the constraint
-    print(f"∆x: {delta:.3f}\tk = {k:.2f} kcal/(mol • Å)")
+print(f"reading {args['points_csv']} as coordinates file")
+crdfile = pandas.read_csv(args["points_csv"])
+assert "X" in crdfile, f"{args['points_csv']} must have column ``X`` defined!"
+assert "k" in crdfile, f"{args['points_csv']} must have column ``k`` defined!"
+coordinates = crdfile.to_dict("records")
 
+min_x = min([c["X"] for c in coordinates])
+max_x = max([c["X"] for c in coordinates])
+
+if args["type"] == "run":
     settings = None
     assert os.path.exists(args["config"]), f"can't find file {args['config']}"
     print(f"reading {args['config']} as input file")
@@ -42,7 +45,7 @@ if args["type"] == "run":
     files = glob.glob(args["chks"], recursive=True)
     count = 0
     for file in files:
-        for i, x in np.ndenumerate(np.linspace(args["min_x"], args["max_x"], args["num"])):
+        for i, c in enumerate(coordinates):
             name = file.rsplit('/',1)[-1]
             name = re.sub(".chk", f"_{int(i[0]):04d}", name)
 
@@ -52,8 +55,8 @@ if args["type"] == "run":
             constraint_dict = {
                 "atom1": args['atom1'],
                 "atom2": args['atom2'],
-                "equilibrium": float(x),
-                "force_constant": float(k),
+                "equilibrium": float(c["X"]),
+                "force_constant": float(c["k"]),
             }
             if "constraints" in settings:
                 settings["constraints"]["wham"] = constraint_dict
@@ -67,7 +70,7 @@ if args["type"] == "run":
             # the structures will still have to relax, of course
             traj = presto.config.build(f"{name}.yaml", f"{name}.chk", oldchk=file)
             m = traj.frames[-1].molecule()
-            m.set_distance(args["atom1"], args["atom2"], x)
+            m.set_distance(args["atom1"], args["atom2"], float(c["X"]))
             traj.frames[-1].positions = m.geometry
             traj.save()
 
@@ -105,7 +108,7 @@ elif args["type"] == "analyze":
         with open(f"{name}.csv", "w") as timeseries:
             timeseries.write(timeseries_text)
 
-        file_hist, bin_edges = np.histogram(dists, bins=args['num'], range=(args['min_x'], args['max_x']))
+        file_hist, bin_edges = np.histogram(dists, bins=args['num'], range=(min_x, max_x))
         return file_hist, len(dists), f"{name}.csv\t{d:.4f}\t{k:.4f}\n"
 
     # reading is slow, do it in parallel
@@ -115,7 +118,7 @@ elif args["type"] == "analyze":
         count += file_count
         metadata_text += file_metadata_text
 
-    print(f"\nhistogram ({args['min_x']:.2f} to {args['max_x']:.2f}, n={count}):")
+    print(f"\nhistogram ({min_x:.2f} to {max_x:.2f}, n={count}):")
     print(plot(histogram, {"height": 10}))
 
     with open("metadata.txt", "w") as metadata:

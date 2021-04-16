@@ -6,6 +6,9 @@ logger = logging.getLogger(__name__)
 
 #### OVERALL PRESTO CONFIGURATION, RUNS ON STARTUP
 
+MAX_QC_ATTEMPTS = 20
+QC_TOL = 0.01
+
 # this module loads the configuration file
 CONFIGURATION_FILE = "presto.config"
 if not os.path.isfile(CONFIGURATION_FILE):
@@ -157,13 +160,28 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                 assert isinstance(temp, (int, float)), "Temperature must be numeric!"
 
                 # thermal excitations using quantum harmonic oscillator. see cctk/quasiclassical.py for details
-                mol = cctk.GaussianFile.read_file(settings["quasiclassical"]["output_file"]).get_molecule()
-                excited, PE, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(mol, return_velocities=True)
+                for idx in range(MAX_QC_ATTEMPTS):
+                    qcf = cctk.GaussianFile.read_file(settings["quasiclassical"]["output_file"])
+                    mol = qcf.get_molecule()
+                    excited, expected_PE, _, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(mol, return_velocities=True)
 
-                args["atomic_numbers"] = mol.atomic_numbers
-                x = excited.geometry
-                v = velocities
-                a = np.zeros_like(v.view(np.ndarray)).view(cctk.OneIndexedArray)
+                    # check that we're close to expected additional PE, and that our perturbation hasn't done anything wild.
+                    # if so we just try again.
+                    actual_PE, _ = c.evaluate(mol.atomic_numbers, excited.geometry, args["high_atoms"])
+                    extra_PE = actual_PE - qcf[-1, "energy"]
+                    diff = abs(expected_PE - extra_PE)
+                    if (diff < (QC_TOL * expected_PE)):
+                        args["atomic_numbers"] = mol.atomic_numbers
+                        x = excited.geometry
+                        v = velocities
+                        a = np.zeros_like(v.view(np.ndarray)).view(cctk.OneIndexedArray)
+                        break
+                    else:
+                        logger.error(f"Error initializing trajectory -- attempt {idx}/{MAX_QC_ATTEMPTS}")
+
+                    if idx == MAX_QC_ATTEMPTS - 1:
+                        logger.error("Could not initialize!")
+                        return None
 
             else:
                 assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"

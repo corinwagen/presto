@@ -83,5 +83,5 @@ class Controller():
 #            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
             self.trajectory.finished = True # somehow that previous line was not working
 
-        logger.info(f"Trajectory finished with {self.trajectory.num_frames()} frames.")
+        logger.info(f"Trajectory done running with {self.trajectory.num_frames()} frames.")
         return
