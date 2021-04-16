@@ -1,4 +1,4 @@
-import sys, re, glob, cctk, argparse, yaml, os, tqdm
+import sys, re, glob, cctk, argparse, yaml, os, tqdm, pandas
 import numpy as np
 import multiprocessing as mp
 from asciichartpy import plot
@@ -8,25 +8,33 @@ import presto
 
 # usage: python wham.py run 1 17 1.43 2.95 300 "../equil-00*/*_preequil.chk"
 
-parser = argparse.ArgumentParser(prog="wham.py")
-parser.add_argument("-c", "--config", type=str, default="wham.yaml")
-parser.add_argument("-C", "--cutoff", type=int, default=1000)
-parser.add_argument("type", type=str)
-parser.add_argument("atom1", type=int)
-parser.add_argument("atom2", type=int)
-parser.add_argument("min_x", type=float)
-parser.add_argument("max_x", type=float)
-parser.add_argument("num", type=int)
-parser.add_argument("chks")
+parser = argparse.ArgumentParser(
+    prog="wham.py",
+#    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Create and parse files for integration with ``wham`` (1-dimensional weighted histogram analysis method).
+Choosing type ``run`` means this script will take in one or more equilibrated starting trajectories and generate ``num`` constrained input files from each one. These trajectories can then be run in parallel.
+Choosing type ``analyze`` means this script will take in finished trajectories (generated from ``run``) and generate files for use with ``wham`` software as distributed by the Grossfield lab (http://membrane.urmc.rochester.edu/?page_id=126).""")
+parser.add_argument("-c", "--config", type=str, default="wham.yaml", help="path to default .yaml config file")
+parser.add_argument("-C", "--cutoff", type=int, default=1000, help="cutoff for reading each individual file. frames before this cutoff will be discarded.")
+parser.add_argument("type", type=str, help="either ``run`` (to generate input files) or ``analyze`` (to parse output files).")
+parser.add_argument("atom1", type=int, help="number of first atom of interest")
+parser.add_argument("atom2", type=int, help="number of second atom of interest")
+parser.add_argument("points_csv", type=str, help="path to .csv file containing distances")
+parser.add_argument("chks", help="path to .chk files. for ``run``, this must be equilibrated starting configurations. for ``analyze``, this must be finished points.")
 args = vars(parser.parse_args(sys.argv[1:]))
 
 print("wham - weighted histogram analysis method")
 
-if args["type"] == "run":
-    delta = (args["max_x"] - args["min_x"]) / args["num"]
-    k = 10 / delta
-    print(f"∆x: {delta:.3f}\tk = {k:.2f} kcal/(mol • Å)")
+print(f"reading {args['points_csv']} as coordinates file")
+crdfile = pandas.read_csv(args["points_csv"])
+assert "X" in crdfile, f"{args['points_csv']} must have column ``X`` defined!"
+assert "k" in crdfile, f"{args['points_csv']} must have column ``k`` defined!"
+coordinates = crdfile.to_dict("records")
 
+min_x = min([c["X"] for c in coordinates])
+max_x = max([c["X"] for c in coordinates])
+
+if args["type"] == "run":
     settings = None
     assert os.path.exists(args["config"]), f"can't find file {args['config']}"
     print(f"reading {args['config']} as input file")
@@ -37,9 +45,9 @@ if args["type"] == "run":
     files = glob.glob(args["chks"], recursive=True)
     count = 0
     for file in files:
-        for i, x in np.ndenumerate(np.linspace(args["min_x"], args["max_x"], args["num"])):
+        for i, c in enumerate(coordinates):
             name = file.rsplit('/',1)[-1]
-            name = re.sub(".chk", f"_{int(i[0]):04d}", name)
+            name = re.sub(".chk", f"_{i:04d}", name)
 
             if os.path.exists("{name}.chk"):
                 continue
@@ -47,8 +55,8 @@ if args["type"] == "run":
             constraint_dict = {
                 "atom1": args['atom1'],
                 "atom2": args['atom2'],
-                "equilibrium": float(x),
-                "force_constant": float(k),
+                "equilibrium": float(c["X"]),
+                "force_constant": float(c["k"]),
             }
             if "constraints" in settings:
                 settings["constraints"]["wham"] = constraint_dict
@@ -62,11 +70,11 @@ if args["type"] == "run":
             # the structures will still have to relax, of course
             traj = presto.config.build(f"{name}.yaml", f"{name}.chk", oldchk=file)
             m = traj.frames[-1].molecule()
-            m.set_distance(args["atom1"], args["atom2"], x)
+            m.set_distance(args["atom1"], args["atom2"], float(c["X"]))
             traj.frames[-1].positions = m.geometry
             traj.save()
 
-            assert traj.frames[-1].molecule().get_distance(args["atom1"], args["atom2"]) - x < 0.01
+            assert traj.frames[-1].molecule().get_distance(args["atom1"], args["atom2"]) - c["X"] < 0.01
 
             count += 1
 
@@ -77,7 +85,7 @@ elif args["type"] == "analyze":
     files = glob.glob(args["chks"], recursive=True)
     print(f"Ignoring first {args['cutoff']} frames of every trajectory: set --cutoff option to change!")
 
-    histogram = np.zeros(shape=args['num'])
+    histogram = np.zeros(shape=100)
     bin_edges = None
     count = 0
 
@@ -86,30 +94,38 @@ elif args["type"] == "analyze":
         name = re.sub(".chk", "", name)
 
         timeseries_text = f"# autogenerated from {name}.chk\n"
-        traj = presto.config.build(f"{name}.yaml", f"{name}.chk", oldchk=file)
+        traj = presto.config.build(f"{name}.yaml", f"{name}.chk", oldchk=file, load_frames=slice(args['cutoff'], None))
         k = traj.calculator.constraints[-1].force_constant / 0.0004184 # convert to kcal/mol
         d = traj.calculator.constraints[-1].equilibrium
 
+        if len(traj.frames) == 1:
+            return None, None, None
+
         dists = []
-        for idx, frame in enumerate(traj.frames[args["cutoff"]:]):
+        for idx, frame in enumerate(traj.frames):
             mol = frame.molecule()
             dist = mol.get_distance(int(args['atom1']), int(args['atom2']))
             dists.append(dist)
             timeseries_text += f"{idx}\t{dist:.4f}\n"
 
-        with open(f"{name}.csv", "w") as timeseries:
-            timeseries.write(timeseries_text)
+        if len(dists):
+            with open(f"{name}.csv", "w") as timeseries:
+                timeseries.write(timeseries_text)
+        else:
+            print(f"skipping {file}")
 
-        file_hist, bin_edges = np.histogram(dists, bins=args['num'], range=(args['min_x'], args['max_x']))
+        file_hist, bin_edges = np.histogram(dists, bins=100, range=(min_x, max_x))
         return file_hist, len(dists), f"{name}.csv\t{d:.4f}\t{k:.4f}\n"
 
+    # reading is slow, do it in parallel
     pool = mp.Pool(processes=16)
     for (file_hist, file_count, file_metadata_text) in tqdm.tqdm(pool.imap(read_chk, files), total=len(files)):
-        histogram += file_hist
-        count += file_count
-        metadata_text += file_metadata_text
+        if file_count:
+            histogram += file_hist
+            count += file_count
+            metadata_text += file_metadata_text
 
-    print(f"\nhistogram ({args['min_x']:.2f} to {args['max_x']:.2f}, n={count}):")
+    print(f"\nhistogram ({min_x:.2f} to {max_x:.2f}, n={count}):")
     print(plot(histogram, {"height": 10}))
 
     with open("metadata.txt", "w") as metadata:
