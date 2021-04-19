@@ -73,7 +73,7 @@ with open("temp.inp", "w+") as file:
 print(f"temp.inp created!")
 
 #### call packmol!
-subprocess.call(['/bin/bash', '-i', '-c', "packmol < temp.inp"])
+subprocess.call(['/bin/bash', '-c', "packmol < temp.inp"])
 
 #### either delete temporary file or leave it if packmol failed
 if os.path.exists(args["output"]):
