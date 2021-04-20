@@ -1,0 +1,26 @@
+# presto config file
+
+type: reaction
+
+timestep: 1
+stop_time: 500
+
+integrator:
+    type: verlet
+
+calculator:
+    type: gaussian
+    route_card: "#p force b3lyp/6-31g(d) pop=none empiricaldispersion=gd3bj"
+    link0:
+        mem: 8GB
+        nprocshared: 4
+
+termination_function:
+    constraint1r: bond 15 12
+    constraint2f: bond 15 7
+    constraint3f: bond 1 8
+
+monitor:
+    var1: distance 15 12
+    var2: distance 15 7
+    var3: distance 1 8
