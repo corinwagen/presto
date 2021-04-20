@@ -20,7 +20,7 @@ class PairwisePolynomialConstraint(Constraint):
 
     This will lead to a force of the form ``constant`` * (distance - ``equilibrium``) ** (``power`` - 1).
 
-    If ``atom1`` or ``atom2`` is a list, then the closest distance will be taken. This corresponds to Singleton's "interlocking sphere biasing potential".
+    If ``atom1`` or ``atom2`` is a list, then the closest/farthest distance will be taken. This corresponds to Singleton's "interlocking sphere biasing potential".
 
     Attributes:
         atom1 (int): number of 1st atom
@@ -28,9 +28,10 @@ class PairwisePolynomialConstraint(Constraint):
         power (float): dependence on distance
         force_constant (float): force constant
         equilibrium (float): desired distance in Å
+        min (bool): whether the largest or smallest distance should be taken.
     """
 
-    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True):
+    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True):
         assert isinstance(atom1, (list, int)), "atom number must be integer"
         assert isinstance(atom2, (list, int)), "atom number must be integer"
         assert isinstance(power, (int, float)), "power must be numeric"
@@ -51,6 +52,11 @@ class PairwisePolynomialConstraint(Constraint):
         self.force_constant = force_constant
         self.equilibrium = equilibrium
 
+        if min:
+            self.min = True
+        else:
+            self.min = False
+
     def __str__(self):
         return f"PairwisePolynomialConstraint(atom1={self.atom1}, atom2={self.atom2}, equilibrium={self.equilibrium:.3f}, power={self.power}, force_constant={self.force_constant:.5f})"
 
@@ -69,14 +75,24 @@ class PairwisePolynomialConstraint(Constraint):
             atoms2 = [atoms2]
 
         # this is where we find the right pair of atoms
-        min_d = 100
-        for x in atoms1:
-            for y in atoms2:
-                d = np.linalg.norm(positions[x] - positions[y])
-                if d < min_d:
-                    min_d = d
-                    x1 = positions[x]
-                    x2 = positions[y]
+        if self.min = True:
+            min_d = 100
+            for x in atoms1:
+                for y in atoms2:
+                    d = np.linalg.norm(positions[x] - positions[y])
+                    if d < min_d:
+                        min_d = d
+                        x1 = positions[x]
+                        x2 = positions[y]
+        else:
+            max_d = 0
+            for x in atoms1:
+                for y in atoms2:
+                    d = np.linalg.norm(positions[x] - positions[y])
+                    if d > max_d:
+                        max_d = d
+                        x1 = positions[x]
+                        x2 = positions[y]
 
         delta = np.linalg.norm(x1-x2) - self.equilibrium
         direction = (x2 - x1)/np.linalg.norm(x1-x2)
@@ -153,6 +169,13 @@ def build_constraints(settings):
         if "force_constant" in row:
             assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
             args["force_constant"] = row["force_constant"]
+
+        if "which" in row:
+            assert row["which"] in ["min", "max"], "`which` must be `min` or `max`"
+            if row["which"] == "min":
+                args["min"] = True
+            else:
+                args["min"] = False
 
         constraints.append(PairwisePolynomialConstraint(**args))
     return constraints
