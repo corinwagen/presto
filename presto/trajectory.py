@@ -382,7 +382,7 @@ class Trajectory():
                 else:
                     raise ValueError(f"unknown solvents keyword {solvents} -- must be 'high' or 'all'")
             elif isinstance(solvents, int):
-                molecule = self.frames[0].molecule()
+                molecule = self.frames[0].molecule().assign_connectivity()
                 idxs = molecule.limit_solvent_shell(num_solvents=solvents, return_idxs=True)
             else:
                 raise ValueError("``solvents`` must be int, 'high', or 'all'!")

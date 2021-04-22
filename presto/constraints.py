@@ -75,7 +75,7 @@ class PairwisePolynomialConstraint(Constraint):
             atoms2 = [atoms2]
 
         # this is where we find the right pair of atoms
-        if self.min = True:
+        if self.min == True:
             min_d = 100
             for x in atoms1:
                 for y in atoms2:
