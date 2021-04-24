@@ -32,6 +32,7 @@ class ReplicaExchange():
             assert np.array_equal(traj.high_atoms, trajectories[0].high_atoms), "all trajectories must have same ``high_atoms``"
             assert np.array_equal(traj.active_atoms, trajectories[0].active_atoms), "all trajectories must have same ``active_atoms``"
 
+        # sort by temp
         self.trajectories = sorted(trajectories, key=lambda x: x.bath_scheduler(0))
         self.stop_time = trajectories[0].stop_time
 
@@ -86,12 +87,15 @@ class ReplicaExchange():
         processes = [None]*len(self.trajectories)
         start_idx = self.current_idx
 
-        # we break the runs up into small chunks
+        # we break the runs up into small chunks of size swap_interval
+        # each trajectory is basically run in parallel for time swap_interval in each iter
         for current_idx in range(start_idx, int(self.stop_time/self.swap_interval)):
             next_idx = current_idx + 1
             target_time = next_idx * self.swap_interval
+            
             for idx, traj in enumerate(self.trajectories):
                 # how long does each traj need to run for?
+                # the last iter may have time_remaining \neq swap_interval
                 time_remaining = max(0, target_time - traj.last_time_run())
 
                 if time_remaining:
@@ -100,22 +104,26 @@ class ReplicaExchange():
                         "checkpoint_interval": min(MIN_CHECKPOINT_INTERVAL, self.swap_interval),
                     })
                     processes[idx].start()
-
+                    
             for process in processes:
                 if process is not None:
                     process.join()
+            # all the chunks in this iter are done
 
+            # run saves frames to chk file, so this ensures that run is done and saved properly
             for traj in self.trajectories:
                 traj.load_from_checkpoint()
                 assert traj.last_time_run() == target_time
 
-            self.exchange(next_idx*self.swap_interval)
+            self.exchange(next_idx * self.swap_interval)
             self.current_idx = next_idx
             self.save()
         self.finished = True
         return self
 
     def exchange(self, time):
+        """ time is from 0
+        """
         kB = presto.constants.BOLTZMANN_CONSTANT
 
         for i in range(len(self.trajectories)-1):
@@ -132,6 +140,7 @@ class ReplicaExchange():
             logger.info(f"E{i} & E{j}\tp={p}")
 
             if p > random.random():
+                # or momenta scaling
                 v_i_scaling = np.sqrt(T_j/T_i)
                 v_j_scaling = np.sqrt(T_i/T_j)
 
@@ -148,6 +157,7 @@ class ReplicaExchange():
 
     def report(self):
         counts = np.zeros(shape=len(self.trajectories))
+        #len of counts is no of temps
         possible = self.current_idx * (len(self.trajectories) - 1)
 
         for swap in self.swaps:
