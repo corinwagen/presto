@@ -184,6 +184,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                         return None
 
             else:
+                assert oldchk, f"Need old checkpoint file for reaction trajectory!"
                 assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"
                 with h5py.File(oldchk, "r") as h5:
                     atomic_numbers = h5.attrs["atomic_numbers"]
