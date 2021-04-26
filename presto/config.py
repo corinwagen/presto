@@ -113,6 +113,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"
+
     if settings["type"].lower() == "equilibration":
         mol, x, v, a = None, None, None, None
         if not os.path.exists(checkpoint):
@@ -194,10 +195,11 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                     temp = h5.get("bath_temperatures")[oldchk_idx]
 
                     args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+                
 
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
-
+        
         if "time_after_finished" in settings:
             assert isinstance(settings["time_after_finished"], (float, int)), "Need `time_after_finished` to be numeric!"
             args["time_after_finished"] = settings["time_after_finished"]
