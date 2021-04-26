@@ -1,5 +1,11 @@
 import numpy as np
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+
+
 class ParTest(object):
     """Testing how MPI4py works in classes
 
@@ -9,16 +15,27 @@ class ParTest(object):
         self.y = y
 
     def add(self):
-        from mpi4py import MPI
-        size = MPI.COMM_WORLD.Get_size()
-        rank = MPI.COMM_WORLD.Get_rank()
 
-        print(f"hello from process {rank} of {size}")
+        print(f"for process {rank}, self.x is at {id(self.x)}")
         if not rank:
             return self.x + self.y
         else:
             return 'abc'
 
+    def report(self, arg):
+        print("done")
+
+
 if __name__ == "__main__":
-    p = ParTest(1, 2)
-    print(p.add())
+    # p = ParTest(1, 2)
+    # print("pre-addition")
+    # print(p.add())
+    # p.report()
+
+    sendbuf = float(rank)
+    # recvbuf = None
+    # if rank == 0:
+    #     recvbuf = np.empty(size, dtype='f')
+    recvbuf = comm.gather(sendbuf, root=0)
+    print(f"sendbuf of process {rank}:{sendbuf}")
+    print(f"recvbuf of process {rank}:{recvbuf}")
