@@ -48,10 +48,10 @@ The overall workflow then, looks like this:
 
 ## Step 1: Build Solvated System
 
-The starting material and product were brought together in GaussView to a rough pre-reactive conformation (``AcCl_NaN3.xyz``), and the system was solvated with 50 acetonitrile molecules using ``packmol/build_input.py`` (which automatically creates a sphere at the correct density for STP):
+The starting material and product were brought together in GaussView to a rough pre-reactive conformation (``AcCl_NaN3.xyz``), and the system was solvated with 50 acetonitrile molecules using ``presto/scripts/solvate.py`` (which automatically creates a sphere at the correct density for STP):
 
 ```
-$ python ../packmol/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitrile -n 50
+$ python <presto install directory>/scripts/build_input.py -f AcCl_NaN3.xyz -o solvated.xyz -s acetonitrile -n 50
 ```
 
 The radius of the resultant solvated system was 10.2 Å, and the system had 311 atoms in total. 
