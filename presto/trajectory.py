@@ -31,6 +31,7 @@ class Trajectory():
 
         checkpoint_filename (str):
         lock (fasteners.InterProcessLock): lock object
+        save_interval (int): how many frames to save
     """
 
     def __init__(
@@ -45,6 +46,7 @@ class Trajectory():
         forwards=True,
         checkpoint_filename=None,
         stop_time=None,
+        save_interval=1,
         **kwargs
     ):
 
@@ -123,6 +125,10 @@ class Trajectory():
             assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
             assert stop_time > 0, "stop_time needs to be positive!"
             self.stop_time = stop_time
+
+        assert isinstance(save_interval, int), "save_interval needs to be positive"
+        assert save_interval > 0, "save_interval needs to be positive"
+        self.save_interval = save_interval
 
     def __str__(self):
         return f"Trajectory({len(self.frames)} frames)"
@@ -224,13 +230,14 @@ class Trajectory():
                 all_accels = h5.get("all_accelerations")[frames]
                 temperatures = h5.get("bath_temperatures")[frames]
 
-                all_times = None
-                try:
-                    all_times = h5.get("all_times")[frames]
-                except Exception as e:
-                    all_times = np.arange(0, self.timestep*len(all_energies), self.timestep)
-                    # this was added recently, so may be some backwards compatibility issues.
-                    pass
+                # v0.2.2 - provisionally removing this
+#                all_times = None
+#                try:
+                all_times = h5.get("all_times")[frames]
+#                except Exception as e:
+#                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
+#                    # this was added recently, so may be some backwards compatibility issues.
+#                    pass
 
                 if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
@@ -277,14 +284,15 @@ class Trajectory():
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
-                if "all_times" not in h5:
-                    # time is a new column, so old checkpoints may not have it.
-                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
-                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
+                # v0.2.2 - provisionally removing this
+#                if "all_times" not in h5:
+#                    # time is a new column, so old checkpoints may not have it.
+#                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
+#                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 all_times = h5.get("all_times")
                 last_saved_time = all_times[-1]
-                new_n_frames = int((last_run_time - last_saved_time) / self.timestep)
+                new_n_frames = int((last_run_time - last_saved_time) / (self.timestep*self.save_interval))
                 now_n_frames = new_n_frames + old_n_frames
 
                 if new_n_frames == 0:
@@ -292,38 +300,46 @@ class Trajectory():
                     return
                 assert new_n_frames > 0, f"we can't write negative frames ({old_n_frames} previously in {self.checkpoint_filename}, but now only {now_n_frames})"
 
-                new_times = np.asarray([frame.time for frame in self.frames[-new_n_frames-1:]])
+                frames_to_add = list()
+                # there is probably a more elegant way to handle this, but this seems robust at least
+                for frame in self.frames[-(new_n_frames*self.save_interval)-1:]:
+                    if frame.time <= last_saved_time:
+                        continue
+                    if frame.time % (self.timestep * self.save_interval) == 0:
+                        frames_to_add.append(frame)
+                assert new_n_frames == len(frames_to_add), "pernicious math error in frame numbers!"
+
+                new_times = np.asarray([frame.time for frame in frames_to_add])
                 all_times.resize((now_n_frames,))
-                all_times[-new_n_frames-1:] = new_times
+                all_times[-new_n_frames:] = new_times
 
                 all_energies = h5.get("all_energies")
-                new_energies = np.asarray([frame.energy for frame in self.frames[-new_n_frames-1:]])
+                new_energies = np.asarray([frame.energy for frame in frames_to_add])
                 all_energies.resize((now_n_frames,))
-                all_energies[-new_n_frames-1:] = new_energies
+                all_energies[-new_n_frames:] = new_energies
 
-                new_positions = np.stack([frame.positions for frame in self.frames[-new_n_frames:]])
+                new_positions = np.stack([frame.positions for frame in frames_to_add])
                 all_positions = h5.get("all_positions")
                 all_positions.resize((now_n_frames,n_atoms,3))
                 all_positions[-new_n_frames:] = new_positions
 
-                new_velocities= np.stack([frame.velocities for frame in self.frames[-new_n_frames:]])
+                new_velocities= np.stack([frame.velocities for frame in frames_to_add])
                 all_velocities = h5.get("all_velocities")
                 all_velocities.resize((now_n_frames,n_atoms,3))
                 all_velocities[-new_n_frames:] = new_velocities
 
-                new_accels = np.stack([frame.accelerations for frame in self.frames[-new_n_frames:]])
+                new_accels = np.stack([frame.accelerations for frame in frames_to_add])
                 all_accels = h5.get("all_accelerations")
                 all_accels.resize((now_n_frames,n_atoms,3))
                 all_accels[-new_n_frames:] = new_accels
 
-                new_temps = np.stack([frame.bath_temperature for frame in self.frames[-new_n_frames:]])
+                new_temps = np.stack([frame.bath_temperature for frame in frames_to_add])
                 all_temps = h5.get("bath_temperatures")
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
 
             logger.info(f"Saving to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         else:
-            logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(self.frames)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
             with h5py.File(self.checkpoint_filename, "w") as h5:
                 h5.attrs['atomic_numbers'] = self.atomic_numbers.view(np.ndarray)
                 h5.attrs['masses'] = self.masses.view(np.ndarray)
@@ -332,24 +348,30 @@ class Trajectory():
 
                 n_atoms = len(self.atomic_numbers)
 
-                energies = np.asarray([frame.energy for frame in self.frames])
+                frames_to_add = list()
+                for frame in self.frames:
+                    if frame.time % (self.timestep * self.save_interval) == 0:
+                        frames_to_add.append(frame)
+
+                energies = np.asarray([frame.energy for frame in frames_to_add])
                 h5.create_dataset("all_energies", data=energies, maxshape=(None,), compression="gzip", compression_opts=9)
 
-                times = np.asarray([frame.time for frame in self.frames])
+                times = np.asarray([frame.time for frame in frames_to_add])
                 h5.create_dataset("all_times", data=times, maxshape=(None,), compression="gzip", compression_opts=9)
 
-                all_positions = np.stack([frame.positions for frame in self.frames])
+                all_positions = np.stack([frame.positions for frame in frames_to_add])
                 h5.create_dataset("all_positions", data=all_positions, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
-                all_velocities = np.stack([frame.velocities for frame in self.frames])
+                all_velocities = np.stack([frame.velocities for frame in frames_to_add])
                 h5.create_dataset("all_velocities", data=all_velocities, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
-                all_accels= np.stack([frame.accelerations for frame in self.frames])
+                all_accels= np.stack([frame.accelerations for frame in frames_to_add])
                 h5.create_dataset("all_accelerations", data=all_accels, maxshape=(None,n_atoms,3), compression="gzip", compression_opts=9)
 
-                temps = np.asarray([frame.bath_temperature for frame in self.frames])
+                temps = np.asarray([frame.bath_temperature for frame in frames_to_add])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,), compression="gzip", compression_opts=9)
 
+        logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(frames_to_add)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         self.lock.release()
 
         # lower memory usage
@@ -405,71 +427,6 @@ class Trajectory():
         for frame in self.frames[:-1]:
             ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
-
-    def spawn_reaction_trajectory(self, termination_function, stop_time, f_filename=None, r_filename=None):
-        """
-        Args:
-            termination_function:
-            max_time:
-
-        Returns:
-            forward ReactionTrajectory
-            reverse ReactionTrajectory
-        """
-        if os.path.exists(f_filename) and os.path.exists(r_filename):
-            logger.info(f"Trajectories to spawn already exist!")
-
-            f_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=f_filename)
-            f_traj.termination_function = termination_function
-            f_traj.stop_time = stop_time
-
-            r_traj = ReactionTrajectory(calculator=self.calculator, integrator=self.integrator, checkpoint_filename=r_filename, forwards=False)
-            r_traj.termination_function = termination_function
-            r_traj.stop_time = stop_time
-
-            return f_traj, r_traj
-
-        # add random velocity to previously inactive atoms
-        frame = self.frames[frame_idx]
-
-        random_gaussian = np.random.normal(size=frame.positions.shape).view(cctk.OneIndexedArray)
-        random_gaussian[frame.active_mask()] = 0
-        new_velocities = random_gaussian * np.sqrt(frame.bath_temperature * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
-
-        f_traj = ReactionTrajectory(
-            timestep = self.timestep,
-            atomic_numbers = self.atomic_numbers,
-            high_atoms = self.high_atoms,
-            active_atoms = np.array(list(range(1, len(self.atomic_numbers)+1))), # all atoms are active now
-            calculator = self.calculator,
-            integrator = self.integrator,
-            checkpoint_filename = f_filename,
-        )
-
-        f_traj.termination_function = termination_function
-        f_traj.stop_time = stop_time
-        f_traj.initialize(frame=frame, new_velocities=new_velocities)
-
-        r_traj = ReactionTrajectory(
-            timestep = self.timestep,
-            atomic_numbers = self.atomic_numbers,
-            high_atoms = self.high_atoms,
-            active_atoms = np.array(list(range(1, len(self.atomic_numbers)+1))), # all atoms are active now
-            calculator = self.calculator,
-            integrator = self.integrator,
-            checkpoint_filename = r_filename,
-        )
-
-        r_traj.forwards = False
-        r_traj.termination_function = termination_function
-        r_traj.stop_time = stop_time
-        r_traj.initialize(frame=frame, new_velocities=new_velocities)
-
-        assert os.path.exists(f_filename), f"didn't save to {f_filename} successfully"
-        assert os.path.exists(r_filename), f"didn't save to {r_filename} successfully"
-        logger.info(f"Two new reaction trajectories spawned and saved to {f_filename} and {r_filename}")
-
-        return f_traj, r_traj
 
     @classmethod
     def new_from_checkpoint(cls, checkpoint, frame):
