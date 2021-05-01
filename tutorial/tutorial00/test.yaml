@@ -3,6 +3,7 @@ type: equilibration
 timestep: 1
 stop_time: 250
 anchor: 1
+save_interval: 5
 
 integrator:
     type: langevin

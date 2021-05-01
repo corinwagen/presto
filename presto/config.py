@@ -96,6 +96,13 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     assert isinstance(settings["stop_time"], int), "`stop_time` must be an integer."
     args["stop_time"] = settings["stop_time"]
 
+    if "save_interval" in settings:
+        assert isinstance(settings["save_interval"], int) and settings["save_interval"] > 0, "`save_interval` must be positive integer"
+        args["save_interval"] = settings["save_interval"]
+
+    if "forwards" in settings:
+        args["forwards"] = settings["forwards"]
+
     p = None
     if "potential" in settings:
         p = presto.potentials.build_potential(settings["potential"])

@@ -18,6 +18,7 @@ class Controller():
     def run(self, checkpoint_interval=25, end_time=None, runtime=None, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
+        interval = self.trajectory.save_interval
 
         if end_time is None:
             if runtime is not None:
@@ -46,7 +47,7 @@ class Controller():
 
             new_frame = None
             try:
-                new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=current_frame.bath_temperature)
+                new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
             except Exception as e:
                 logger.info(f"Error at time {current_time} - terminating run")
                 raise ValueError(f"Controller failed: {e}")
