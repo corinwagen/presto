@@ -7,6 +7,7 @@ import presto.trajectory
 import presto.analysis
 import presto.constraints
 import presto.replica_exchange
+import presto.replica_exchange_par
 import presto.controller
 import presto.checks
 import presto.reporters
