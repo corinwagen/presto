@@ -49,10 +49,10 @@ class ReplicaExchange():
         self.load()
 
     def __str__(self):
-        return f"ReplicaExchange({len(trajectories)} trajectories, swap_interval={swap_interval} fs, checkpoint_file={checkpoint_filename})"
+        return f"ReplicaExchange({len(self.trajectories)} trajectories, swap_interval={self.swap_interval} fs, checkpoint_file={self.checkpoint_filename})"
 
     def __repr__(self):
-        return f"ReplicaExchange({len(trajectories)} trajectories, swap_interval={swap_interval} fs, checkpoint_file={checkpoint_filename})"
+        return f"ReplicaExchange({len(self.trajectories)} trajectories, swap_interval={self.swap_interval} fs, checkpoint_file={self.checkpoint_filename})"
 
     def save(self):
         file_dict = {
