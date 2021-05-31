@@ -1,0 +1,21 @@
+05-30 21:38 presto.config  Loaded configuration data from /home/mhs65/.config/presto/presto.config.
+05-30 21:38 presto.trajectory  Initializing new equilibration trajectory...
+05-30 21:38 presto.trajectory  Saving to new checkpoint file 300k.chk (1 frames added; 0.0/250.0 fs run in total)
+05-30 21:38 presto.trajectory  Initializing new equilibration trajectory...
+05-30 21:38 presto.trajectory  Saving to new checkpoint file 400k.chk (1 frames added; 0.0/250.0 fs run in total)
+05-30 21:38 presto.trajectory  Loaded trajectory from checkpoint file 300k.chk -- 1 frames read.
+05-30 21:38 presto.controller  Trajectory will run 50 frames (current time = 0.0 fs, end time = 50.0 fs)
+05-30 21:38 presto.controller  Run initiated ok - frame 00001 completed in 0.19 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00002 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00003 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00004 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00005 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00006 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00007 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00008 completed in 0.04 s.
+05-30 21:38 presto.controller  Run initiated ok - frame 00009 completed in 0.04 s.
+05-30 21:38 presto.trajectory  Saving to existing checkpoint file 300k.chk (50 frames added; 50.0/250.0 fs run in total)
+05-30 21:38 presto.controller  Trajectory done running with 51 frames.
+05-30 21:38 presto.trajectory  Loaded trajectory from checkpoint file 300k.chk -- 51 frames read.
+05-30 21:38 presto.replica_exchange_par  gathered frames
+05-30 21:38 presto.replica_exchange_par  E_i is -15.406513014878293

@@ -1,0 +1,15 @@
+constraints: traj needs to be buit from a yaml, need to write one yaml per t
+
+for each cycle:
+    set up trajectories
+
+   for each traj:
+      read setup info
+      run as separate job (run.py has master script that takes temp as param)
+      dump frame with attrs into chk file
+
+   exchange script starts (slurm controls dependency):
+      for each traj, loads frame info from chk
+      compares energies and 
+      
+      

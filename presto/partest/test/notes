@@ -1,0 +1,2 @@
+tested that calling mpi comm world on calling script and imported script
+is fine

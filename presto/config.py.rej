@@ -1,0 +1,30 @@
+diff a/presto/config.py b/presto/config.py	(rejected hunks)
+@@ -237,23 +237,18 @@ def build_bath_scheduler(settings):
+ 
+         delta = settings["start_temp"] - settings["target_temp"]
+ 
+-        def sched(time):
+-            if time > settings["target_time"]:
+-                return settings["target_temp"]
+-            else:
+-                return settings["target_temp"] + delta * (1 - time / settings["target_time"])
++        if time > settings["target_time"]:
++            return settings["target_temp"]
++        else:
++            return settings["target_temp"] + delta * (1 - time / settings["target_time"])
+ 
+-        return sched
+ 
+     elif settings["type"].lower() == "constant":
+         assert "target_temp" in settings, "Need `target_temp` for this bath scheduler!"
+         assert isinstance(settings["target_temp"], (float, int)), "`target_temp` must be numeric!"
+         assert settings["target_temp"] > 0, "`target_temp` must be positive!"
+ 
+-        def sched(time):
+-            return settings["target_temp"]
+-
+-        return sched
++        return settings["target_temp"]
+ 
+     else:
+         raise ValueError(f"Unknown bath scheduler type {settings['type']}! Allowed options are `linear` or `constant`.")
