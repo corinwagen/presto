@@ -393,8 +393,16 @@ class Trajectory():
         """
 
         # what do we make a movie of?
-        if idxs is not None:
-            assert isinstance(idxs, list), "idxs must be list of indices or ``None``!"
+        if idxs:
+            if isinstance(idxs, str):
+                if idxs == "high":
+                    idxs = self.high_atoms
+                elif idxs == "all":
+                    idxs = None
+                else:
+                    raise ValueError(f"unknown idxs keyword {idxs} -- must be 'high' or 'all'")
+            else:
+                raise ValueError(f"unknown idxs keyword {idxs} -- must be 'high' or 'all'")
         else:
             if isinstance(solvents, str):
                 if solvents == "high":
