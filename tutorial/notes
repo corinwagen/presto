@@ -1,0 +1,9 @@
+Notes for use of presto:
+
+1. preequilibration of solvent (preequil.yaml)
+2. equilibration of system (equil.yaml)
+
+(1) and (2) are run with run.py
+
+3. reaction simulation (rxn.yaml)
+(3) is run with run_ts.py
