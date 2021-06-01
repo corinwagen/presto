@@ -1,12 +1,21 @@
+from mpi4py import MPI
 import numpy as np
-import math, copy, cctk, os, re, logging, time, yaml, random
-import multiprocessing as mp
-
+import argparse
+import copy
+import cctk
+import dill
+import logging
+import math
+import os
+import random
+import re
+import sys
+import time
+import yaml
 import presto
 
 logger = logging.getLogger(__name__)
 
-from mpi4py import MPI
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
@@ -26,24 +35,28 @@ class ReplicaExchange():
         checkpoint_filename (int):
         finished (bool):
         current_idx (int):
-    
+
     Assumes there are ranks from 0 to len(trajectories) - 1
 
     """
+
     def __init__(self, trajectories, checkpoint_filename="remd.chk", swap_interval=10):
         if rank == 0:
             # rank 0 does all the checking
             for idx, traj in enumerate(trajectories):
-                assert isinstance(traj, presto.trajectory.EquilibrationTrajectory), "all trajectories must be EquilibrationTrajectories"
+                assert isinstance(
+                    traj, presto.trajectory.EquilibrationTrajectory), "all trajectories must be EquilibrationTrajectories"
                 assert traj.timestep == trajectories[0].timestep, "all trajectories must have same ``timestep``"
                 assert traj.stop_time == trajectories[0].stop_time, "all trajectories must have same ``stop_time``"
-                assert np.array_equal(traj.high_atoms, trajectories[0].high_atoms), "all trajectories must have same ``high_atoms``"
-                assert np.array_equal(traj.active_atoms, trajectories[0].active_atoms), "all trajectories must have same ``active_atoms``"
+                assert np.array_equal(
+                    traj.high_atoms, trajectories[0].high_atoms), "all trajectories must have same ``high_atoms``"
+                assert np.array_equal(
+                    traj.active_atoms, trajectories[0].active_atoms), "all trajectories must have same ``active_atoms``"
 
             assert isinstance(swap_interval, (float, int))
             assert swap_interval % trajectories[0].timestep == 0, "swap_interval must be a multiple of timestep"
             assert isinstance(checkpoint_filename, str)
-        
+
         # these attributes are privately owned by all process
         self.swaps = []
         self.trajs = sorted(trajectories, key=lambda x: x.bath_scheduler(0))
@@ -59,10 +72,10 @@ class ReplicaExchange():
         self.load()
 
     def __str__(self):
-        return f"ReplicaExchange({len(trajectories)} trajectories, swap_interval={swap_interval} fs, checkpoint_file={checkpoint_filename})"
+        return f"ReplicaExchange({len(self.trajs)}) trajectories, swap_interval={self.swap_interval} fs, checkpoint_file={self.checkpoint_filename}"
 
     def __repr__(self):
-        return f"ReplicaExchange({len(trajectories)} trajectories, swap_interval={swap_interval} fs, checkpoint_file={checkpoint_filename})"
+        return f"ReplicaExchange({len(self.trajs)} trajectories, swap_interval={self.swap_interval} fs, checkpoint_file={self.checkpoint_filename})"
 
     def save(self):
         file_dict = {
@@ -86,13 +99,15 @@ class ReplicaExchange():
                 self.swaps = file_dict["swaps"]
                 self.finished = file_dict["finished"]
                 self.current_idx = file_dict["current_idx"]
-            logger.info(f"Loaded ReplicaExchange from {self.checkpoint_filename}.")
+            logger.info(
+                f"Loaded ReplicaExchange from {self.checkpoint_filename}.")
         return self
 
     def run(self):
         if self.finished:
             if rank == 0:
-                logger.info(f"From rank {rank}: Replica exchange already finished!")
+                logger.info(
+                    f"From rank {rank}: Replica exchange already finished!")
             return self
 
         start_idx = self.current_idx
@@ -101,22 +116,28 @@ class ReplicaExchange():
         for current_idx in range(start_idx, int(self.stop_time/self.swap_interval)):
             next_idx = current_idx + 1
             target_time = next_idx * self.swap_interval
-            
-            time_remaining = max(0, target_time - self.trajs[rank].last_time_run())
+
+            time_remaining = max(
+                0, target_time - self.trajs[rank].last_time_run())
 
             if time_remaining:
-                self.traj.run(time=self.swap_interval, checkpoint_interval=min(MIN_CHECKPOINT_INTERVAL, self.swap_interval))
+                self.traj.run(time=self.swap_interval, checkpoint_interval=min(
+                    MIN_CHECKPOINT_INTERVAL, self.swap_interval))
                 self.traj.load_from_checkpoint()
                 assert self.traj.last_time_run() == target_time
 
                 self.exchange(next_idx * self.swap_interval)
                 # barrier at exchange
-                
+
                 self.current_idx = next_idx
-                self.save()
+
+                if rank == 0:
+                    self.save()
 
         # all done
         self.finished = True
+        if rank == 0:
+            self.save()
         return self
 
     def exchange(self, time):
@@ -129,35 +150,30 @@ class ReplicaExchange():
 
         # now, we read all properties from frames[-1]
         g_frames = comm.gather(self.traj.frames[-1], root=0)
-        logger.info(f"g_frames is {g_frames}")
-        if rank == 0:                        
+
+        if rank == 0:
             kB = presto.constants.BOLTZMANN_CONSTANT
-            
+
             # make one pass from low to high T
             for i in range(len(self.trajs) - 1):
                 j = i+1
 
                 E_i = g_frames[i].energy
-                logger.info(f"E_i is {E_i}")
 
                 E_j = g_frames[j].energy
-                logger.info(f"E_j is {E_j}")
 
                 b_i = 1 / (kB * self.temps[i])
-                logger.info(f"b_i is {b_i}")
 
                 b_j = 1 / (kB * self.temps[j])
-                logger.info(f"b_j is {b_j}")
 
-
-                p = min(1, np.exp( (E_i - E_j) * (b_i - b_j) ) )
+                p = min(1, np.exp((E_i - E_j) * (b_i - b_j)))
                 logger.info(f"E{i} & E{j}\tp={p}")
 
                 if p > random.random():
                     # or momenta scaling
                     v_i_scaling = np.sqrt(self.temps[j] / self.temps[i])
                     v_j_scaling = np.sqrt(self.temps[i] / self.temps[j])
-                    
+
                     frame_i = g_frames[i]
                     frame_j = g_frames[j]
                     frame_i.velocities *= v_i_scaling
@@ -167,7 +183,8 @@ class ReplicaExchange():
                     g_frames[j] = frame_i
 
                     self.swaps.append({"time": time, "i": i, "j": j})
-                    logger.info(f"\nReplicas {i} & {j} swapped after {time} fs!\t{E_i} {E_j} p={p}")
+                    logger.info(
+                        f"\nReplicas {i} & {j} swapped after {time} fs!\t{E_i} {E_j} p={p}")
 
         # all together now: update own trajectory's last frame to g_frames[rank]
         new_last_frame = comm.scatter(g_frames, root=0)
@@ -179,7 +196,7 @@ class ReplicaExchange():
     def report(self):
         if rank == 0:
             counts = np.zeros(shape=len(self.trajs))
-            #len of counts is no of temps
+            # len of counts is no of temps
             possible = self.current_idx * (len(self.trajs) - 1)
             for swap in self.swaps:
                 counts[swap["i"]] += 1
