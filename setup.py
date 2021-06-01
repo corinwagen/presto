@@ -19,7 +19,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/cwagen/presto",
 #    packages=setuptools.find_packages(),
-    install_requires=["cctk", "tqdm", "h5py", "pyyaml", "matplotlib", "asciichartpy", "fasteners"],
+    install_requires=["cctk", "tqdm", "h5py", "pyyaml", "matplotlib", "asciichartpy", "fasteners", "dill"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Development Status :: 3 - Alpha",
