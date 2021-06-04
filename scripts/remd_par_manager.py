@@ -1,4 +1,4 @@
-# presto/scripts/run_remd_par.py
+# presto/scripts/remd_par_manager.py
 # Marcus Sak, Jun 2021
 # Manager script to run slurm-parallelized remd
 
@@ -8,7 +8,6 @@ import os
 import sys
 import numpy as np
 import presto
-import dill
 import subprocess
 
 logging.basicConfig(level=logging.INFO, filename=f"remd_par.log", filemode='a',
@@ -39,7 +38,7 @@ def sbatch_self(slurm_script, dependency):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog="run_remd_par.py", description="Runs replica exchange MD for accelerated sampling of conformational space. Outputs chkfiles for all trajectories. Run > python replica_exchange_mpi.py --help for options.")
+        prog="remd_par_manager.py", description="Runs replica exchange MD for accelerated sampling of conformational space. Outputs chkfiles for all trajectories. Run > python replica_exchange_mpi.py --help for options.")
     parser.add_argument("--checkpoint_filename", type=str, default="remd.chk",
                         help="path to checkpoint file (usually ends in .chk)")
     parser.add_argument("--input", default=None, type=str,
@@ -51,11 +50,11 @@ if __name__ == "__main__":
     parser.add_argument("--maxtemp", "-z", default=800,
                         type=int, help="maximum trajectory temperature (K)")
     parser.add_argument("--trajs", "-n", default=8, type=int,
-                        help="number of trajectories (equal to slurm --ntasks)")
+                        help="number of trajectories")
     parser.add_argument("--swap", "-s", default=50, type=int,
                         help="time interval between swaps (fs)")
     parser.add_argument('--spawn', action='store_true',
-                        help="add this flag when recursively called from run_remd_par.py")
+                        help="add this flag when recursively called from remd_par_manager.py")
 
     args = vars(parser.parse_args(sys.argv[1:]))
     chkfile = args["checkpoint_filename"]
@@ -77,26 +76,17 @@ if __name__ == "__main__":
         remd = presto.replica_exchange_par.ReplicaExchange(trajectories=all_trajs, checkpoint_filename=args["checkpoint_filename"],
                                                             swap_interval=args["swap"])
     else:
-        try:
-            with (open(chkfile, "rb")) as f:
-                remd = dill.load(f)
-        except FileNotFoundError:
-            print("checkpoint file not found, do not call this script with --spawn on the first instance")
-        logger.info(f"Loaded ReplicaExchange from {chkfile}.")
+        remd = presto.replica_exchange_par.ReplicaExchange.load(args["checkpoint_filename"])
         remd.update_trajs()  # load each traj from chkfile and add 1 to current index
         remd.exchange()  # pass self.current_idx * self.swap_interval as current time
         # exchannge will save trajectories into chkfile
         if remd.finished:
-            with (open(args["checkpoint_filename"], "wb")) as f:
-                dill.dump(remd, f)
-            logger.info(f"Replica exchange completed, saved ReplicaExchange to {chkfile}.")
+            remd.save()
             print(remd.report())
+            logger.info(f"Replica exchange completed.")
             sys.exit(0)
         
-
-    with (open(args["checkpoint_filename"], "wb")) as f:
-        dill.dump(remd, f, protocol=-1) # HIGHEST_PROTOCOL
-    logger.info(f"Saved ReplicaExchange to {chkfile}.")
+    remd.save()
     trajs_slurm_job_id = remd.run()  # nonblocking, needs to return slurm jobID of submitted array
 
     slurm_script = f'remd_{os.path.splitext(args["input"])[0]}.sh'

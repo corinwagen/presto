@@ -8,6 +8,7 @@ import random
 import sys
 import subprocess
 import presto
+import dill
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,8 @@ class ReplicaExchange():
             traj.save()
 
     def report(self):
+
+
         counts = np.zeros(shape=len(self.trajectories))
         # len of counts is no of temps
         possible = self.current_idx * (len(self.trajectories) - 1)
@@ -189,3 +192,34 @@ class ReplicaExchange():
             text += f"\tReplica {i} <=> Replica {i+1}  \t{counts[i]/self.current_idx:.2%}\n"
 
         return text
+
+    def save(self): 
+        """
+        Saves ReplicaExchange object to chkfile (pickle), keeping only the last frame of each trajectory
+
+        """
+        for traj in self.trajectories:
+            traj.frames = [traj.frames[-1]]
+
+        with (open(self.checkpoint_filename, "wb")) as f:
+            dill.dump(self, f, protocol=-1) # HIGHEST_PROTOCOL
+        
+        logger.info(f"Saved ReplicaExchange to {self.checkpoint_filename}.")
+
+    @classmethod
+    def load(cls, checkpoint):
+        """ Loads ReplicaExchange object from chkfile
+
+        Returns:
+            ReplicaExchange object
+        """
+
+        try:
+            with (open(checkpoint, "rb")) as f:
+                remd = dill.load(f)
+        except FileNotFoundError:
+            print("checkpoint file not found, do not call this script with --spawn on the first instance")
+        logger.info(f"Loaded ReplicaExchange from {checkpoint}.")
+        
+        return remd
+

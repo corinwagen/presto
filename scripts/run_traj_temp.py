@@ -24,10 +24,7 @@ parser.add_argument("--swap", "-s", default=50, type=int,
                     help="time interval between swaps (fs)")
 
 args = vars(parser.parse_args(sys.argv[1:]))
-
-chkfile = args["checkpoint_filename"]
-with (open(chkfile, "rb")) as f:
-    remd = dill.load(f)
+remd = presto.replica_exchange_par.ReplicaExchange.load(args["checkpoint_filename"])
 
 traj = remd.trajectories[args["index"]]
 traj.run(time=args["swap"], checkpoint_interval=min(MIN_CHECKPOINT_INTERVAL, args["swap"]))
