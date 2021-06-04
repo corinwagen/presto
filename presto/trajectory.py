@@ -107,7 +107,8 @@ class Trajectory():
             self.set_inactive_atoms(kwargs["inactive_atoms"])
         else:
             # assume all atoms are active
-            self.set_inactive_atoms(np.ndarray([]))
+            self.set_inactive_atoms(None)
+            
 
         if not hasattr(self, "masses"):
             self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
@@ -139,14 +140,17 @@ class Trajectory():
     def set_inactive_atoms(self, inactive_atoms):
         """
         Since sometimes it's easier to specify the inactive atoms than the inactive atoms, this method updates ``self.active_atoms`` with the complement of ``inactive_atoms``.
+
+        Args:
+        inactive_atoms (None or np.ndarray)
         """
-        assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
-        if len(inactive_atoms):
+        if inactive_atoms:
+            assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
             for atom in inactive_atoms:
                 active_atoms.remove(atom)
-        active_atoms = np.array(active_atoms)
-        self.active_atoms = active_atoms
+        
+        self.active_atoms = np.array(active_atoms)
 
     def run(self, checkpoint_interval=10, keep_all=False, time=None, **kwargs):
         """
@@ -229,15 +233,7 @@ class Trajectory():
                 all_velocities= h5.get("all_velocities")[frames]
                 all_accels = h5.get("all_accelerations")[frames]
                 temperatures = h5.get("bath_temperatures")[frames]
-
-                # v0.2.2 - provisionally removing this
-#                all_times = None
-#                try:
                 all_times = h5.get("all_times")[frames]
-#                except Exception as e:
-#                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
-#                    # this was added recently, so may be some backwards compatibility issues.
-#                    pass
 
                 if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
@@ -284,11 +280,6 @@ class Trajectory():
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
-                # v0.2.2 - provisionally removing this
-#                if "all_times" not in h5:
-#                    # time is a new column, so old checkpoints may not have it.
-#                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
-#                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 all_times = h5.get("all_times")
                 last_saved_time = all_times[-1]
@@ -437,7 +428,7 @@ class Trajectory():
         return ensemble
 
     @classmethod
-    def new_from_checkpoint(cls, checkpoint, frame):
+    def new_from_checkpoint(cls, checkpoint, frame): # TODO: shouldn't frame be a slice?
         """
         Creates new trajectory from the given checkpoint file.
 

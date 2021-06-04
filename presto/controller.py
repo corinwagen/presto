@@ -49,7 +49,7 @@ class Controller():
             try:
                 new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
             except Exception as e:
-                logger.info(f"Error at time {current_time} - terminating run")
+                logger.error(f"Error at time {current_time} - terminating run")
                 raise ValueError(f"Controller failed: {e}")
             assert new_frame.time == current_time, f"frame time {new_frame.time} does not match loop time {current_time}"
             self.trajectory.frames.append(new_frame)

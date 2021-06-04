@@ -52,7 +52,7 @@ logger.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     """
-    Build a *presto* trajectory from a ``.yml`` config file.
+    Build a *presto* trajectory from a ``.yaml`` config file.
 
     The config file does not specify the actual structure (geometry and atomic numbers). This can come from one of two sources:
     1. An existing ``presto`` trajectory saved as an ``.chk`` file.
