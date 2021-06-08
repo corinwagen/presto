@@ -14,7 +14,7 @@ The bottleneck in this loop is step (1), which is fortunately embarrassingly par
 
 ## Required files and input arguments
 
-This implementation of parallelized REMD requires the [Slurm](https://Slurm.schedmd.com/documentation.html) scheduling system to be installed, and assumes that jobs are submitted using `sbatch <jobscript>`.
+This implementation of parallelized REMD requires the [Slurm](https://Slurm.schedmd.com/documentation.html) scheduling system, and assumes that jobs are submitted using `sbatch <jobscript>`.
 
 ### Provided files
 
@@ -30,8 +30,6 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
    Run `$ python run_remd_par.py --help` for more details and options.
 2. `scripts/run_traj_temp.py`: auxiliary script to run individual trajectories, not intended to be called alone
 3. `presto/replica_exchange_par.py`: contains the ReplicaExchange class
-
-   `ReplicaExchange.run()` writes and submits a Slurm script for a job array for trajectories every swap interval. The `#SBATCH` options and `module load` commands are (currently) hardcoded and may have to be changed depending on the resource requirements of the trajectories. The code also assumes that `run_traj_temp.py` is in the directory from which the job was submitted.
 
 ### User-supplied files
 
@@ -56,17 +54,67 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
        module load miniconda
        # activate presto environment
        conda activate presto
-
+       # add the path to run_remd_par.py if necessary. Remove --spawn whenever calling manually
        python run_remd_par.py --input geom.xyz --mintemp 300 --maxtemp 400 --trajs 3 --template template.yaml
    ```
 
-## Instructions
+4. `traj_array.sh`: Slurm submit script for `scripts/run_traj_temp.py`, not intended to be called by the user. Example:
 
-After setting up all the necessary files, initiate the run using `$ sbatch run_remd_par.py`. The only practical resource limitation is that the runtime of each trajectory for the swap interval (e.g. 25 fs) on one node cannot exceed the walltime of the cluster/partition. The total REMD runtime (`stop_time` in the config file) is restricted only by `sys.maxint` and the available storage for the trajectory checkpoint files; the number of trajectories is additionally restricted by the system-dependent Slurm `MaxArraySize` configuration parameter (usually 4E6).
+   ``` sh
+       #!/bin/bash
+       ### this file is not intended to be sbatch'ed on its own
+       #SBATCH --job-name=remd_traj_array_fs
+       #SBATCH --output=slurm-traj_arrays.out
+       #SBATCH --open-mode=append
+       #SBATCH --ntasks=1
+       ## do not modify above this line
+       # set array indices from 0 to (number of trajectories - 1)
+       #SBATCH --array=0-2
+       # settings below are per-trajectory
+       #SBATCH --cpus-per-task=4
+       #SBATCH --mem-per-cpu=8000mb
+       #SBATCH -t 00:15:00
+       #SBATCH --partition=day
+ 
+       # unload all modules
+       module purge
+       # load anaconda module
+       module load miniconda
+       # load gaussian if necessary
+       # module load Gaussian
+       # activate presto environment
+       conda activate presto-d
+       
+       # add the path to run_traj_temp.py and the name of your checkfile after -c 
+       python run_traj_temp.py -i $SLURM_ARRAY_TASK_ID -c remd.chk
+ 
+   ```
 
-To prematurely cancel the run, execute `$ scancel <jobid>` on the `remd_par_manager` job.
+### Output files
+
+1. `<temp>k.chk`: checkpoint file for a trajectory at \<temp\> K. Examine the trajectory with `scripts/analyze.py`.
+2. `remd_par.log`: log file for all running modules. Use this file to monitor trajectory progress and check for warnings.
+3. `remd.chk`: checkpoint file for `ReplicaExchange` object. Contains a pickled `ReplicaExchange` object that is loadable with `presto.replica_exchange_par.ReplicaExchange.load()`.
+4. `slurm-remd_par_manager.out`: Slurm output file from manager script. Contains tracebacks of critical unhandled exceptions (look at this file if the job unexpectedly terminates).
+5. `slurm-traj_arrays.out`: Slurm output file from run_traj_temp.py submit script. Rarely useful.
+
+## Instructions for use
+
+1. After setting up all the necessary files, initiate the run using `$ sbatch remd_<jobname>.sh`.
+
+   The only practical resource limitation is that the runtime of each trajectory for the swap interval (e.g. 50 fs) on one node cannot exceed the walltime of the cluster/partition. The total REMD runtime (`stop_time` in the config file) is restricted only by `sys.maxint` and the available storage for the trajectory checkpoint files; the number of trajectories is additionally restricted by the system-dependent Slurm `MaxArraySize` configuration parameter (usually 4E6).
+
+2. This slurm script will start a job named `remd_par_manager`, which will initiate a Slurm job array named `remd_traj_array_<current time>fs`.
+
+3. The manager script will spawn another instance of itself (`remd_par_manager`), which will start running when the job array is completed.
+
+4. When the REMD run ends, each trajectory can be examined by running `scripts/analyze.py` on its .chk file.
+
+5. To prematurely cancel the run, execute `$ scancel <jobid>` on the `remd_par_manager` job.
 
 ## Parallelizing REMD with Slurm
+
+_This is meant as a developer's note, i.e. not required reading._
 
 This implementation leverages the [Slurm job array](https://Slurm.schedmd.com/job_array.html) feature to run trajectories as individual Slurm jobs within a Slurm job array.
 

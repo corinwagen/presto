@@ -9,10 +9,17 @@ import sys
 import subprocess
 import presto
 import dill
+import re
+import os
 
 logger = logging.getLogger(__name__)
 
 MIN_CHECKPOINT_INTERVAL = 50
+
+
+class MissingSbatchFlags(Exception):
+    pass
+
 
 class ReplicaExchange():
     """
@@ -82,10 +89,10 @@ class ReplicaExchange():
         next_idx = self.current_idx + 1
         target_time = next_idx * self.swap_interval
 
-        #time_remaining = max(
+        # time_remaining = max(
         #    0, target_time - self.trajectories[0].last_time_run())
 
-        #if not time_remaining:
+        # if not time_remaining:
         #    return
 
         #temps_str = ','.join([str(temp) for temp in self.temps])
@@ -99,42 +106,58 @@ class ReplicaExchange():
                 self.trajectories[0].calculator.link0["nprocshared"])
 
         if slurm:
-            with open(f"traj_array.sh", 'w') as f:
-                f.write("#!/bin/bash\n")
-                f.write(f"#SBATCH --job-name=remd_traj_array_{target_time}fs\n")
-                f.write(f"#SBATCH --output=slurm-traj_arrays.out\n")
-                f.write(f"#SBATCH --open-mode=append\n")
-                f.write(f"#SBATCH --ntasks=1\n")
-                f.write(f"#SBATCH --cpus-per-task={n_threads}\n")
-                f.write(f"#SBATCH --array=0-{len(self.trajectories)-1}\n")
-                f.write(f"#SBATCH --partition=day\n")
-                # TODO: modifiable time and mem?
-                f.write(f"#SBATCH -t 00:15:00\n")
-                f.write(f"#SBATCH --mem-per-cpu=8000mb\n")
-                #f.write(f"#SBATCH --mail-type=END,FAIL\n")
-                f.write("\n")
-                f.write(f"module purge\n")
-                # TODO: needs to be modifiable, maybe use template file
-                # load anaconda module
-                f.write(f"module load miniconda\n")
-                #f.write(f"source /gpfs/loomis/apps/avx/software/miniconda/4.9.2/etc/profile.d/conda.sh\n")
-                # load gaussian module
-                if is_gaussian:
-                    f.write(f"module load Gaussian\n")
-                #activate presto venv
-                f.write(f"conda activate presto-d\n")
-                f.write(f"python run_traj_temp.py -i $SLURM_ARRAY_TASK_ID -c {self.checkpoint_filename}\n")
+            slurm_script = 'traj_array.sh'
+
+            assert os.path.exists(slurm_script), "The Slurm submit script traj.array.sh is required but not found"
+
+            # dict to ensure that (some) necessary sbatch options are specified
+            sbatch_flags = {'-J': False, '-c': False, '--array': False}
+            with open(slurm_script, 'r') as f:
+                source = f.read().splitlines()  # no newline in source
+
+            with open(slurm_script, 'w') as f:
+                for line in source:
+                    if "job-name" in line or '-J ' in line:
+                        # modify job name appropriately
+                        line = re.sub('array_(.*?)fs', f'array_{target_time}fs', line)
+                        sbatch_flags['-J'] = True
+                    elif "cpus-per-task" in line or '#SBATCH -c' in line:
+                        # check if cpus-per-task is equal to n_threads
+                        sbatch_flags['-c'] = True
+                        thread_match = re.search('(\d+)$', line)
+                        input_threads = int(thread_match.group())
+                        if input_threads != n_threads:
+                            line = re.sub('(\d+)$', str(n_threads), line)
+                            logger.warning(
+                                "--cpus-per-task in traj_array.sh is not equal to number of processors specified in config file, automatically changing")
+                    elif "--array" in line:
+                        # check if array size is equal to num of trajs
+                        input_trajs = int(re.search('(\d+)$', line).group())
+                        sbatch_flags['--array'] = True
+                        if input_trajs != len(self.trajectories) - 1:
+                            line = re.sub('(\d+)$', str(len(self.trajectories) - 1), line)
+                            logger.warning(
+                                "--array size in traj_array.sh is not equal to number of trajectories specified when calling remd_par_manager.py, automatically changing")
+                    
+                    f.write(line+'\n')
+
+                for k, v in sbatch_flags.items():
+                    if not v:
+                        logger.error(
+                            f"did not specify sbatch option {k} in traj_array.sh, exiting now")
+                        sys.exit(1)
 
             try:
-                sbatch_msg = subprocess.check_output(['sbatch', 'traj_array.sh'])
+                sbatch_msg = subprocess.check_output(
+                    ['sbatch', slurm_script])
                 if 'Submitted' not in sbatch_msg.decode('utf-8'):
                     raise subprocess.CalledProcessError
 
             except subprocess.CalledProcessError as e:
                 logger.error("Could not submit slurm job array script")
                 sys.exit(1)
-
-            return int(sbatch_msg.split()[-1]) # slurm jobid of the 
+            logger.info("Wrote and submitted traj_array.sh")
+            return int(sbatch_msg.split()[-1])  # slurm jobid of the
 
     def exchange(self):
         """ time is from 0
@@ -178,7 +201,6 @@ class ReplicaExchange():
 
     def report(self):
 
-
         counts = np.zeros(shape=len(self.trajectories))
         # len of counts is no of temps
         possible = self.current_idx * (len(self.trajectories) - 1)
@@ -193,7 +215,7 @@ class ReplicaExchange():
 
         return text
 
-    def save(self): 
+    def save(self):
         """
         Saves ReplicaExchange object to chkfile (pickle), keeping only the last frame of each trajectory
 
@@ -202,8 +224,8 @@ class ReplicaExchange():
             traj.frames = [traj.frames[-1]]
 
         with (open(self.checkpoint_filename, "wb")) as f:
-            dill.dump(self, f, protocol=-1) # HIGHEST_PROTOCOL
-        
+            dill.dump(self, f, protocol=-1)  # HIGHEST_PROTOCOL
+
         logger.info(f"Saved ReplicaExchange to {self.checkpoint_filename}.")
 
     @classmethod
@@ -218,8 +240,8 @@ class ReplicaExchange():
             with (open(checkpoint, "rb")) as f:
                 remd = dill.load(f)
         except FileNotFoundError:
-            print("checkpoint file not found, do not call this script with --spawn on the first instance")
+            print(
+                "checkpoint file not found, do not call this script with --spawn on the first instance")
         logger.info(f"Loaded ReplicaExchange from {checkpoint}.")
-        
-        return remd
 
+        return remd
