@@ -108,7 +108,7 @@ class ReplicaExchange():
         if slurm:
             slurm_script = 'traj_array.sh'
 
-            assert os.path.exists(slurm_script), "The Slurm submit script traj.array.sh is required but not found"
+            assert os.path.exists(slurm_script), "The Slurm submit script traj_array.sh is required but not found"
 
             # dict to ensure that (some) necessary sbatch options are specified
             sbatch_flags = {'-J': False, '-c': False, '--array': False}

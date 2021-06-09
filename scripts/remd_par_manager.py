@@ -82,8 +82,9 @@ if __name__ == "__main__":
         # exchannge will save trajectories into chkfile
         if remd.finished:
             remd.save()
-            print(remd.report())
             logger.info(f"Replica exchange completed.")
+            logger.info("\n\n----------------REPORT----------------\n")
+            logger.info(remd.report())
             sys.exit(0)
         
     remd.save()
