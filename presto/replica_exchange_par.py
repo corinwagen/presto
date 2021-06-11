@@ -194,7 +194,7 @@ class ReplicaExchange():
 
                 self.swaps.append({"time": time, "i": i, "j": j})
                 logger.info(
-                    f"\nReplicas {i} & {j} swapped after {time} fs!\t{E_i} {E_j} p={p}")
+                    f"\nConfigurations from trajectories {i} & {j} swapped after {time} fs!\t{E_i} {E_j} p={p}")
 
         for traj in self.trajectories:
             traj.save()

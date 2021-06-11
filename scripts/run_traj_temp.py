@@ -6,7 +6,6 @@ import sys
 import presto
 import logging
 import argparse
-import dill
 
 logging.basicConfig(level=logging.INFO, filename=f"remd_par.log", filemode='a',
                     format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M')
@@ -20,14 +19,12 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--checkpoint_filename", "-c", type=str,
                     help="path to remd checkpoint file")
 parser.add_argument("--index", "-i", type=int, help="index of trajectory")
-parser.add_argument("--swap", "-s", default=50, type=int,
-                    help="time interval between swaps (fs)")
 
 args = vars(parser.parse_args(sys.argv[1:]))
 remd = presto.replica_exchange_par.ReplicaExchange.load(args["checkpoint_filename"])
 
 traj = remd.trajectories[args["index"]]
-traj.run(time=args["swap"], checkpoint_interval=min(MIN_CHECKPOINT_INTERVAL, args["swap"]))
+traj.run(time=remd.swap_interval, checkpoint_interval=min(MIN_CHECKPOINT_INTERVAL, remd.swap_interval))
 traj.save()
 
 sys.exit(0)

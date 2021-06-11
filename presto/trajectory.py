@@ -409,7 +409,7 @@ class Trajectory():
                 raise ValueError("``solvents`` must be int, 'high', or 'all'!")
 
         ensemble = self.as_ensemble(idxs)
-        logger.info("Writing trajectory to {filename}")
+        logger.info(f"Writing trajectory to {filename}")
         if re.search("pdb$", filename):
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
@@ -423,12 +423,13 @@ class Trajectory():
 
     def as_ensemble(self, idxs=None):
         ensemble = cctk.ConformationalEnsemble()
-        for frame in self.frames[:-1]:
+        # for frame in self.frames[:-1]: # why is this up to only the second last frame?
+        for frame in self.frames:
             ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
     @classmethod
-    def new_from_checkpoint(cls, checkpoint, frame): # TODO: shouldn't frame be a slice?
+    def new_from_checkpoint(cls, checkpoint, frame=slice(None)):
         """
         Creates new trajectory from the given checkpoint file.
 
@@ -439,12 +440,13 @@ class Trajectory():
         Returns:
             new ``Trajectory`` object
         """
-        assert isinstance(frame, int), "need an integer frame number"
+        assert isinstance(frame, slice), "frame needs to be a Slice object"
 
-        new_traj = cls(checkpoint_filename=checkpoint)
-        new_traj.load_from_checkpoint(idxs=frame)
+        new_traj = cls(checkpoint_filename=checkpoint, stop_time=10000, save_interval=1) 
+        # added defaults here to avoid errors when creating new trajectory object
+        new_traj.load_from_checkpoint(frames=frame)
 
-        assert len(new_traj.frames) == 1, "got too many frames!"
+        #assert len(new_traj.frames) == 1, "got too many frames!"
         return new_traj
 
     def initialize_lock(self):

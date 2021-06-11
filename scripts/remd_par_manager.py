@@ -51,7 +51,7 @@ if __name__ == "__main__":
                         type=int, help="maximum trajectory temperature (K)")
     parser.add_argument("--trajs", "-n", default=8, type=int,
                         help="number of trajectories")
-    parser.add_argument("--swap", "-s", default=50, type=int,
+    parser.add_argument("--swap", "-s", default=2000, type=int,
                         help="time interval between swaps (fs)")
     parser.add_argument('--spawn', action='store_true',
                         help="add this flag when recursively called from remd_par_manager.py")
