@@ -146,7 +146,8 @@ elif args["type"] == "analyze":
         x_histogram += x_file_hist
         y_histogram += y_file_hist
         count += file_count
-        metadata_text += file_metadata_text
+        if file_count > 0:
+            metadata_text += file_metadata_text
 
     print(f"\nX histogram ({min_x:.2f} to {max_x:.2f}, n={count}):")
     print(plot(x_histogram, {"height": 10}))
