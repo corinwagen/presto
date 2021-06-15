@@ -1,6 +1,6 @@
-# presto/scripts/remd_par_manager.py
+# presto/scripts/traj_cluster.py
 # Marcus Sak, Jun 2021
-# Script to demux remd replicas
+# Script for cluster analysis
 
 import argparse
 import sys
@@ -12,16 +12,16 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="traj_cluster.py", description="Given checkpoint file for trajectory and up to two desired internal coordinates, plots     their distribution over the frames of the trajectory. Atom indices start from 1. Run $ python traj_cluster.py --help for options.")
+        prog="traj_cluster.py", description="Given checkpoint file for trajectory and up to two desired internal coordinates, plots their distribution over the frames of the trajectory. Atom indices start from 1.")
 
     parser.add_argument("--checkpoint_filename", "-c", type=str,
                         help="path to trajectory checkpoint file (usually ends in .chk)    ", required=True)
     parser.add_argument("--distance", "-l", type=int, nargs=2, action='append',
-                        help="a pair of atom indices to track distance",     required=False)
+                        help="a pair of atom indices to track distance", required=False)
     parser.add_argument("--angle", "-a", type=int, nargs=3, action='append',
-                        help="three atom indices to track angle",     required=False)
+                        help="three atom indices to track angle", required=False)
     parser.add_argument("--dihedral", "-d", type=int, nargs=4, action='append',
-                        help="four atom indices to track dihedral",     required=False)
+                        help="four atom indices to track dihedral", required=False)
 
     args = vars(parser.parse_args(sys.argv[1:]))
     chkfile = args['checkpoint_filename']
@@ -32,7 +32,8 @@ if __name__ == "__main__":
         while v:
             int_coords.append(v.pop(0))
 
-    assert len(int_coords) > 0 and len(int_coords) < 3, "only one or two internal coordinates should be specified"
+    assert len(int_coords) > 0 and len(
+        int_coords) < 3, "only one or two internal coordinates should be specified"
 
     traj = presto.trajectory.Trajectory.new_from_checkpoint(chkfile)
     frames = traj.as_ensemble().molecules
@@ -50,7 +51,7 @@ if __name__ == "__main__":
             for frame in frames:
                 value.append(frame.get_dihedral(atoms=coord))
         coord_values.append(value)
-    
+
     label = {2: 'distance', 3: 'angle', 4: 'dihedral'}
 
     if len(coord_values) == 1:  # only one internal coordinate

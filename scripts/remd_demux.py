@@ -8,7 +8,6 @@ import numpy as np
 import presto
 import logging
 import copy
-import os
 from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO, filename=f"demux.log", filemode='a',
