@@ -162,22 +162,33 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                 assert "output_file" in settings["quasiclassical"], f"Need Gaussian output file for quasiclassical initialization!"
                 assert os.path.exists(settings["quasiclassical"]["output_file"]), f"Need Gaussian output file for quasiclassical initialization!"
 
+                assert "tolerance" in settings["quasiclassical"], "Need tolerance for quasiclassical initialization"
+                tol = settings["quasiclassical"]["tolerance"]
+                assert isinstance(tol, (int, float)), "Tolerance must be numeric!"
+
+                assert "max_attempts" in settings["quasiclassical"], "Need max attempts for quasiclassical initialization"
+                max_attempts = settings["quasiclassical"]["temperature"]
+                assert isinstance(max_attempts, int), "Max attempts must be integer"
+
+                assert "init_method" in settings["quasiclassical"], "Need max attempts for quasiclassical initialization"
+
                 assert "temperature" in settings["quasiclassical"], "Need temperature for quasiclassical initialization"
                 temp = settings["quasiclassical"]["temperature"]
                 assert isinstance(temp, (int, float)), "Temperature must be numeric!"
 
                 # thermal excitations using quantum harmonic oscillator. see cctk/quasiclassical.py for details
-                for idx in range(MAX_QC_ATTEMPTS):
+                for idx in range(max_attempts):
                     qcf = cctk.GaussianFile.read_file(settings["quasiclassical"]["output_file"])
                     mol = qcf.get_molecule()
-                    excited, expected_PE, _, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(mol, return_velocities=True)
+                    excited, expected_PE, _, text, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(mol, return_velocities=True, which=settings["quasiclassical"]["init_method"])
 
                     # check that we're close to expected additional PE, and that our perturbation hasn't done anything wild.
                     # if so we just try again.
                     actual_PE, _ = c.evaluate(mol.atomic_numbers, excited.geometry, args["high_atoms"])
                     extra_PE = (actual_PE - qcf.ensemble[-1, "energy"]) * presto.constants.KCAL_PER_HARTREE
                     diff = abs(expected_PE - extra_PE)
-                    if (diff < (QC_TOL * expected_PE)):
+                    if (diff < (tol * expected_PE)):
+                        logger.info(f"Successfully initialized!\n{text}")
                         args["atomic_numbers"] = mol.atomic_numbers
                         x = excited.geometry
                         v = velocities
@@ -186,7 +197,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                     else:
                         logger.error(f"Error initializing trajectory -- attempt {idx}/{MAX_QC_ATTEMPTS}")
 
-                    if idx == MAX_QC_ATTEMPTS - 1:
+                    if idx == max_attempts - 1:
                         logger.error("Could not initialize!")
                         return None
 

@@ -20,3 +20,6 @@ termination_function:
 quasiclassical:
     output_file: test/static/nazarov_elim.out
     temperature: 298
+    tolerance: 0.01
+    max_attempts: 100
+    init_method: quasiclassical
