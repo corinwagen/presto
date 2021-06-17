@@ -70,9 +70,10 @@ class ReplicaExchange():
         self.current_idx += 1
 
         for traj in self.trajectories:
-            traj.load_from_checkpoint()
+            traj.load_from_checkpoint(frames=slice(-2, None, None))
+            # need last two frames to do exchange
             # ensure all the trajectories are run up to the same time
-            assert traj.last_time_run() == self.current_idx * self.swap_interval
+            assert traj.last_time_run() == self.current_idx * self.swap_interval, "ensure that trajectories all ended at the same time"
 
         if self.current_idx * self.swap_interval == self.stop_time:
             self.finished = True

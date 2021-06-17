@@ -108,6 +108,8 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
 
 6. To prematurely cancel the run, execute `$ scancel <jobid>` on the `remd_par_manager` job.
 
+7. If the REMD run was prematurely stopped/failed during execution of the manager script, the run may be resumed by running the manager script with the additional flag `--spawn`, i.e. in `remd_<jobname>.sh`, change the final line to `python run_remd_par.py <other options> --spawn`.
+
 ## Parallelizing REMD with Slurm
 
 _This is meant as a developer's note, i.e. not required reading._
