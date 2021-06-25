@@ -34,6 +34,7 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
    - `--maxtemp`: maximum trajectory temperature in K
    - `--trajs`: number of trajectories
    - `--swap`: length of swap interval in fs (default 2000)
+   - `--spawn`: initiate REMD run from REMD and trajectory checkpoint files
 
    Run `$ python run_remd_par.py --help` for more details and options.
 2. `scripts/run_traj_temp.py`: auxiliary script to run individual trajectories, not intended to be called alone
@@ -53,12 +54,12 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
        #SBATCH --ntasks=1
        #SBATCH --cpus-per-task=1
        #SBATCH --partition=day
-       #SBATCH -t 00:05:00
-       #SBATCH --mem-per-cpu=4000mb
-       #SBATCH --mail-type=END,FAIL
+       #SBATCH -t 00:10:00
+       #SBATCH --mem-per-cpu=8000mb
+       #SBATCH --mail-type=FAIL
 
        # add the path to run_remd_par.py if necessary. Remove --spawn whenever calling manually
-       python run_remd_par.py --input geom.xyz --mintemp 300 --maxtemp 400 --trajs 3 --template template.yaml
+       python run_remd_par.py --input geom.xyz --mintemp 300 --maxtemp 400 --trajs 3 --swap 1000 --template template.yaml
    ```
 
 4. `traj_array.sh`: Slurm submit script for `scripts/run_traj_temp.py`, not intended to be called by the user. Example:
@@ -70,10 +71,10 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
        #SBATCH --output=slurm-traj_arrays.out
        #SBATCH --open-mode=append
        #SBATCH --ntasks=1
-       ## do not modify above this line
-       # set array indices from 0 to (number of trajectories - 1)
+       ### do not modify above this line
+       ### set array indices from 0 to (number of trajectories - 1)
        #SBATCH --array=0-2
-       # settings below are per-trajectory
+       ### each trajectory is one slurm task, adjust accordingly below:
        #SBATCH --cpus-per-task=4
        #SBATCH --mem-per-cpu=8000mb
        #SBATCH -t 00:15:00
@@ -94,9 +95,9 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
 
 ## Instructions
 
-1. If necessary, load the requisite software modules (Anaconda, Gaussian, xTB), e.g. `module load Gaussian`. Activate the presto virtual environment, e.g. `$ conda activate presto`.
+1. If necessary, load the requisite software modules (Anaconda, Gaussian, xTB), e.g. `$ module load Gaussian`. Activate the presto virtual environment, e.g. `$ conda activate presto`.
 
-2. Ensure that After setting up all the necessary files, initiate the run using `$ sbatch remd_<jobname>.sh`.
+2. After setting up all the necessary files, initiate the run using `$ sbatch remd_<jobname>.sh`.
 
    The only practical resource limitation is that the runtime of each trajectory for the swap interval (e.g. 50 fs) on one node cannot exceed the walltime of the cluster/partition. The total REMD runtime (`stop_time` in the config file) is restricted only by `sys.maxint` and the available storage for the trajectory checkpoint files; the number of trajectories is additionally restricted by the system-dependent Slurm `MaxArraySize` configuration parameter (usually 4E6).
 
@@ -108,7 +109,7 @@ This implementation of parallelized REMD requires the [Slurm](https://Slurm.sche
 
 6. To prematurely cancel the run, execute `$ scancel <jobid>` on the `remd_par_manager` job.
 
-7. If the REMD run was prematurely stopped/failed during execution of the manager script, the run may be resumed by running the manager script with the additional flag `--spawn`, i.e. in `remd_<jobname>.sh`, change the final line to `python run_remd_par.py <other options> --spawn`.
+7. If the REMD run was prematurely stopped/failed during execution of the manager script, the run may be resumed by running the manager script with the additional flag `--spawn`, i.e. in `remd_<jobname>.sh`, change the final line to `python run_remd_par.py <options> --spawn`.
 
 ## Parallelizing REMD with Slurm
 
@@ -136,11 +137,11 @@ The one notable drawback occurs in cases where each _swap\_interval_ chunk takes
 
 ### Reconstructing the temperature evolution of each replica
 
-In REMD, efficient diffusion of configurations between temperatures is desired. _presto_ keeps tracks of the swaps performed after each _swap\_interval_ in the REMD checkpoint file, and provides a script (`scripts/remd_demux.py`) to demultiplex (or "demux") the trajectories, enabling the user to examine the walks taken by each replica through temperature space.
+In REMD, efficient diffusion of configurations between temperatures is desired. _presto_ keeps tracks of the swaps performed after each _swap\_interval_ in the REMD checkpoint file, and provides a script (`scripts/remd_demux.py`) to demultiplex (or "demux") the trajectories, enabling the user to examine the (random) walks taken by each replica through temperature space.
 
 **Required files**:
 
-1. checkpoint file to *completed* REMD run.
+1. checkpoint file to a *completed* REMD run.
 2. checkpoint files for all the trajectories (e.g. `300k.chk`).
 3. `scripts/remd_demux.py`
 

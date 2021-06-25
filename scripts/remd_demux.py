@@ -23,7 +23,7 @@ def exchange(array, i, j):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog="remd_demux.py", description="Given a completed REMD run, reconstructs the continuous trajectories of each replica and outputs trajectory checkfiles and the temperature evolution for each replica. Run $ python remd_demux.py --help for options.")
+        prog="remd_demux.py", description="Given a REMD run, reconstructs the continuous trajectories of each replica and outputs trajectory checkfiles and the temperature evolution for each replica. Run $ python remd_demux.py --help for options.")
     parser.add_argument("--checkpoint_filename", "-c", type=str, default="remd.chk",
                         help="path to checkpoint file (usually ends in .chk)")
 
@@ -31,15 +31,19 @@ if __name__ == "__main__":
     chkfile = args["checkpoint_filename"]
 
     remd = presto.replica_exchange_par.ReplicaExchange.load(chkfile)
-    assert remd.finished, "REMD run from this checkpoint file is unfinished!"
+    # assert remd.finished, "REMD run from this checkpoint file is unfinished!"
+    if not remd.finished:
+        remd.update_trajs()  # load each traj from chkfile and add 1 to current index
+        remd.exchange()  # pass self.current_idx * self.swap_interval as current time
 
     trajs = remd.trajectories
     swap_int = int(remd.swap_interval)
-    stop_time = int(remd.stop_time)
+    end_time = int(remd.current_idx * remd.swap_interval)
+    assert trajs[0].last_time_run() == end_time, "End time recorded in trajectory checkpoint file does not agree with end time recorded in REMD checkpoint file."
 
     # list of lists of temp history
     traj_hists = np.zeros(
-        (len(trajs), int(stop_time/swap_int) + 1), dtype=int)
+        (len(trajs), int(end_time/swap_int) + 1), dtype=int)
     # add 1 to shape[1] if we don't want to ignore the last swap
 
     for i, hist in enumerate(traj_hists):
@@ -56,6 +60,7 @@ if __name__ == "__main__":
         exchange(curr_arrangement, swap["i"], swap["j"])
 
     # we ignore the final swap
+    print(f"{curr_time} fs have been run, and the swap interval is {swap_int} fs.")
     assert curr_time/swap_int == traj_hists.shape[1] - 1  # last column
     traj_hists[:, int(curr_time/swap_int)] = curr_arrangement  # do the final one
     
@@ -88,12 +93,12 @@ if __name__ == "__main__":
 
         traj.save()
 
-    times = np.arange(0, stop_time + 1, swap_int)
+    times = np.arange(0, end_time + 1, swap_int)
     assert traj_hists.shape[1] == times.size, "length of time array should be the same as number of swaps"
 
     print("writing temperature evolutions to csv files...")
     for i, hist in tqdm(enumerate(traj_hists)):
-        time_hist = np.array([times, hist])
+        time_hist = np.array([times, hist]).astype(int)
         csv_filename = f"traj{i}.csv"
         np.savetxt(csv_filename, time_hist.transpose(), delimiter=',', header='time(fs), temperature index')
         logger.info(f"Wrote temperature evolution to {csv_filename}")

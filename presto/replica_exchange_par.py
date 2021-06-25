@@ -66,6 +66,7 @@ class ReplicaExchange():
         """
         Updates all trajectories from respective chk files on newly unpickled remd object
         Not run in the first iteration
+        Does not modify any files
         """
         self.current_idx += 1
 
@@ -162,6 +163,7 @@ class ReplicaExchange():
 
     def exchange(self):
         """ time is from 0
+            Saves updates trajectories to trajectory chkfiles
         """
         time = self.current_idx * self.swap_interval
         kB = presto.constants.BOLTZMANN_CONSTANT
