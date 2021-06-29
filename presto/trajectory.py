@@ -30,6 +30,7 @@ class Trajectory():
         forwards (bool):
 
         checkpoint_filename (str):
+        checkpoint_interval (int):
         lock (fasteners.InterProcessLock): lock object
         save_interval (int): how many frames to save
     """
@@ -45,6 +46,7 @@ class Trajectory():
         high_atoms=None,
         forwards=True,
         checkpoint_filename=None,
+        checkpoint_interval=10,
         stop_time=None,
         save_interval=1,
         load_frames="all", # or ``first`` or ``last`` or a slice
@@ -59,6 +61,9 @@ class Trajectory():
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
+
+        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "checkpoint_interval must be positive integer"
+        self.checkpoint_interval = checkpoint_interval
 
         self.lock = None
         self.initialize_lock()
@@ -154,12 +159,11 @@ class Trajectory():
         active_atoms = np.array(active_atoms)
         self.active_atoms = active_atoms
 
-    def run(self, checkpoint_interval=10, keep_all=False, time=None, **kwargs):
+    def run(self, keep_all=False, time=None, **kwargs):
         """
         Run the trajectory.
 
         Args:
-            checkpoint_interval (int): interval at which to save (in frames, not fs)
             keep_all (bool): whether or not to keep all frames in memory
             time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
@@ -178,7 +182,7 @@ class Trajectory():
             # initialize runtime controller
             controller = presto.controller.Controller(self, **kwargs)
             try:
-                controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+                controller.run(runtime=time)
             except Exception as e:
                 raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
 

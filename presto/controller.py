@@ -15,7 +15,7 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, checkpoint_interval=25, end_time=None, runtime=None, **kwargs):
+    def run(self, end_time=None, runtime=None, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
         interval = self.trajectory.save_interval
@@ -70,7 +70,7 @@ class Controller():
                         finished_early = True
                         logger.info(f"Reaction trajectory finished! {self.trajectory.time_after_finished} additional fs will be run.")
 
-            if int(current_time/dt) % int(checkpoint_interval/dt) == 0:
+            if int(current_time/dt) % int(self.trajectory.checkpoint_interval/dt) == 0:
                 self.trajectory.save()
 
             count += 1
