@@ -26,6 +26,6 @@ If you are interesting in using *presto* or contributing as a developer, please 
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0. Please see `LICENSE` for full terms and conditions.
+This project is licensed under the GNU General Public License, Version 3.0. Please see `LICENSE` for full terms and conditions.
 
 *Copyright 2021 by Corin Wagen*
