@@ -13,8 +13,8 @@ A *presto* trajectory can be created from a config file through ``presto.config.
 ```
 import presto
 
-trajectory1 = presto.config.build("config.yaml", "checkpoint1.chk", geometry="solvated_ts.xyz")
-trajectory2 = presto.config.build("config.yaml", "checkpoint2.chk", geometry="solvated_ts.xyz")
+trajectory1 = presto.build("config.yaml", "checkpoint1.chk", geometry="solvated_ts.xyz")
+trajectory2 = presto.build("config.yaml", "checkpoint2.chk", geometry="solvated_ts.xyz")
 ```
 
 ## Options
@@ -60,6 +60,16 @@ You would only want to run a ``ReactionTrajectory`` backwards in time, usually f
 **``constraints``**:
 
 **``quasiclassical``** (``ReactionTrajectory`` only):
+
+* **``output_file``**
+    
+* **``temperature``**
+    
+* **``init_method``**
+   
+* **``max_attempts``**
+    
+* **``tolerance``**
 
 **``termination_function``** (``ReactionTrajectory`` only):
 
