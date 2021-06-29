@@ -304,16 +304,18 @@ class ONIOMCalculator(Calculator):
         self.high_calculator = high_calculator
         self.low_calculator = low_calculator
 
-        for c in constraints:
-            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
-        self.high_calculator.constraints = constraints
-        self.constraints = constraints
-
-        #### prevent namespace collisions
+        # prevent namespace collisions
         self.full_calculator = copy.deepcopy(self.low_calculator)
         if isinstance(self.full_calculator, XTBCalculator):
             if self.full_calculator.gfn == "ff":
                 self.full_calculator.topology = self.full_calculator.topology.replace(".low", ".full")
+
+        # atom numbering gets messed up if you don't give full_calculator the constraints
+        for c in constraints:
+            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
+        self.full_calculator.constraints = constraints
+        self.constraints = constraints
+
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
         """

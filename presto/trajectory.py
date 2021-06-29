@@ -47,6 +47,7 @@ class Trajectory():
         checkpoint_filename=None,
         stop_time=None,
         save_interval=1,
+        load_frames="all", # or ``first`` or ``last`` or a slice
         **kwargs
     ):
 
@@ -64,10 +65,15 @@ class Trajectory():
         self.frames = list()
 
         if self.has_checkpoint():
-            if "load_frames" in kwargs:
-                self.load_from_checkpoint(kwargs["load_frames"])
-            else:
+            if load_frames=="all":
+                self.load_from_checkpoint(slice(None))
+            elif load_frames=="first":
+                self.load_from_checkpoint(slice(1,None,None))
+            elif load_frames=="last":
                 self.load_from_checkpoint(slice(-1,None,None))
+            else:
+                assert isinstance(load_frames, slice), "load_frames must be ``all``, ``first``, ``last``, or slice"
+                self.load_from_checkpoint(load_frames)
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
