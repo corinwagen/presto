@@ -1,0 +1,40 @@
+---
+title: Details
+blog: False
+---
+<h1> Details </h1>
+
+<p>
+  There are numerous challenges with running molecular dynamics that are not present with ordinary DFT calculations. 
+  Here are a few challenges, and the solutions chosen by <i>presto</i>:
+
+  <ul>
+    <li>
+      Edge effects can result in unrealistic solvation: only a vanishingly small percentage of solvent molecules are near an interface in a real (macroscopic) reaction, 
+      but a large fraction of the system is near the boundary for small spheres of solvent. 
+      Accordingly, <i>presto</i> confines the system of interest to the center of the solvent sphere with a shallow harmonic potential, 
+      ensuring that several solvent shells insulate the system from any boundaries.
+    </li>
+    <li>
+      An actual microdroplet of organic solvent would evaporate rapidly in the gas phase. 
+      To address this, <i>presto</i> applies a restoring force to any molecules which stray farther than a user-defined radius from the origin. 
+      This enforces a realistic solvent density and prevents evaporative cooling.
+    </li>
+    <li>
+      Real reactions are in thermodynamic equilibrium with an external heat bath, and thus maintain a steady temperature by changing their total energy. 
+      However, conventional “thermostats” for molecular dynamics simulations result in unphysical dynamics, 
+      either by scaling particle velocities (Berendsen) or by inducing collisions with an imaginary heat bath (Langevin). 
+      <i>presto</i> employs the Langevin thermostat, but only for the outer solvent shells not directly in contact with the system of interest. 
+      Since the different layers of the droplet are in thermal equilibrium, 
+      this has the effect of controlling the entire system’s temperature while preserving realistic (non-Langevin) dynamics for the solute and its immediate environment.
+    </li>
+    <li>
+      For all but the fastest reactions, the timescales accessible by molecular dynamics are insufficient to observe processes of interest. 
+      (At room temperature, it will take roughly 17,000 fs to observe a process with ∆G = 4.0 kcal/mol—which is still a relatively low barrier for an organic reaction!) 
+      Accordingly, <i>presto</i> permits the addition of pairwise constraining potentials to study non-ground states (akin to a "scan" in electronic structure programs). 
+      The transition state can be located using biased sampling methods, and individual reaction trajectories can then be started from the region of the transition state. 
+      See the tutorial for more details.
+    </li>
+  </ul>
+</p>
+

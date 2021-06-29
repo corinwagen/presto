@@ -49,6 +49,13 @@ li:not(:last-child) {
   max-width:50%;
 }
 
+.centered-img {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 60%;
+  display: block;
+}
+
 .menu-list {
   list-style-type: none;
   margin: 0;
