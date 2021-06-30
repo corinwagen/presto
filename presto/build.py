@@ -116,6 +116,15 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     if settings["type"].lower() == "reaction":
         if not os.path.exists(checkpoint):
             x, v, a, temp = None, None, None, None
+            if os.path.exists(oldchk):
+                with h5py.File(oldchk, "r") as h5:
+                    atomic_numbers = h5.attrs["atomic_numbers"]
+                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
+                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
+                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
+                    temp = h5.get("bath_temperatures")[oldchk_idx]
+                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+
             if "quasiclassical" in settings:
                 assert "output_file" in settings["quasiclassical"], f"Need Gaussian output file for quasiclassical initialization!"
                 assert os.path.exists(settings["quasiclassical"]["output_file"]), f"Need Gaussian output file for quasiclassical initialization!"
@@ -160,15 +169,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                         return None
 
             else:
-                assert os.path.exists(oldchk), f"Need old checkpoint file for reaction trajectory!"
-                with h5py.File(oldchk, "r") as h5:
-                    atomic_numbers = h5.attrs["atomic_numbers"]
-                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
-                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
-                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
-                    temp = h5.get("bath_temperatures")[oldchk_idx]
-
-                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+                raise ValueError("no old checkpoint file, no current checkpoint file, and no QC init - can't create trajectory")
 
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
