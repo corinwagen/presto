@@ -39,12 +39,12 @@ def initialize(calc, output_file, tolerance=0.001, max_attempts=50, init_method=
         actual_PE, _ = calc.evaluate(mol.atomic_numbers, excited.geometry, high_atoms)
         extra_PE = (actual_PE - qcf.ensemble[-1, "energy"]) * presto.constants.KCAL_PER_HARTREE
         diff = abs(expected_PE - extra_PE)
-        if (diff < (tol * expected_PE)):
-            logger.info(f"Successful initialization! ({expected_PE:.2f} expected, {actual_PE:.2f} obtained, ∆ {diff:.2f}, max ∆ {tol*expected_PE:.2f}) -- attempt {idx}/{max_attempts}")
+        if (diff < (tolerance * expected_PE)):
+            logger.info(f"Successful initialization! ({expected_PE:.2f} expected, {actual_PE:.2f} obtained, ∆ {diff:.2f}, max ∆ {tolerance*expected_PE:.2f}) -- attempt {idx}/{max_attempts}")
             logger.info(f"{text}")
             return mol.atomic_numbers, excited.geometry, velocities, np.zeros_like(v.view(np.ndarray)).view(cctk.OneIndexedArray)
         else:
-            logger.error(f"Error initializing trajectory ({expected_PE:.2f} expected, {actual_PE:.2f} obtained, ∆ {diff:.2f}, max ∆ {tol*expected_PE:.2f}) -- attempt {idx}/{max_attempts}")
+            logger.error(f"Error initializing trajectory ({expected_PE:.2f} expected, {actual_PE:.2f} obtained, ∆ {diff:.2f}, max ∆ {tolerance*expected_PE:.2f}) -- attempt {idx}/{max_attempts}")
 
         if idx == max_attempts - 1:
             logger.error("Could not initialize!")
