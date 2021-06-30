@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
 class TestONIOM(unittest.TestCase):
     def test_simple(self):
-        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
+        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").get_molecule()
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         high_atoms = np.array([1])

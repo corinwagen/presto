@@ -12,3 +12,4 @@ import presto.controller
 import presto.checks
 import presto.reporters
 import presto.potentials
+import presto.quasiclassical
