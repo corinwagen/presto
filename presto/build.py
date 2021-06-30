@@ -128,7 +128,9 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
             elif "quasiclassical" in settings:
                 try:
                     # moved to its own file - ccw 6.30.21 
-                    presto.quasiclassical.initialize(c, **settings["quasiclassical"], high_atoms=args["high_atoms"])
+                    atomic_numbers, x, v, a = presto.quasiclassical.initialize(c, **settings["quasiclassical"], high_atoms=args["high_atoms"])
+                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+                    temp = settings["quasiclassical"]["temperature"]
                 except Exception as e:
                     raise ValueError(f"Quasiclassical initialization failed: {e}")
             else:
