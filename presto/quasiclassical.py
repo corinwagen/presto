@@ -23,10 +23,10 @@ def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="qua
     assert isinstance(temperature, (int, float)), "temperature must be numeric!"
     assert isinstance(high_atoms, (list, np.ndarray)), "high_atoms must be list!"
 
-    for idx in range(max_attempts):
-        qcf = cctk.GaussianFile.read_file(output_file)
-        mol = qcf.get_molecule()
+    qcf = cctk.GaussianFile.read_file(output_file)
+    mol = qcf.get_molecule()
 
+    for idx in range(max_attempts):
         excited, expected_PE, _, text, velocities = cctk.quasiclassical.get_quasiclassical_perturbation(
             mol,
             return_velocities=True,
@@ -45,6 +45,8 @@ def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="qua
             return mol.atomic_numbers, excited.geometry, velocities, np.zeros_like(velocities.view(np.ndarray)).view(cctk.OneIndexedArray)
         else:
             logger.error(f"Error initializing trajectory ({expected_PE:.2f} expected, {extra_PE:.2f} obtained, ∆ {diff:.2f}, max ∆ {tolerance:.2f}) -- attempt {idx}/{max_attempts}")
+            # for debug purposes, might remove later
+            logger.debug(f"\n{text}")
 
         if idx == max_attempts - 1:
             logger.error("Could not initialize!")

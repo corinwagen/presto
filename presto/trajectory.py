@@ -684,7 +684,7 @@ def join(traj1, traj2):
 
     new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
 
-    if traj1.finished == 2:
+    if traj1.finished == 2 and traj2.finished == 1:
         #### if the first traj finished with the reverse condition, reverse order
         new_traj.frames = new_traj.frames[::-1]
 
