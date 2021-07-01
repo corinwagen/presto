@@ -490,7 +490,7 @@ class ReactionTrajectory(Trajectory):
     def new_from_checkpoint(self):
         pass
 
-    def __init__(self, termination_function=None, time_after_finished=100, **kwargs):
+    def __init__(self, termination_function=None, time_after_finished=20, **kwargs):
         super().__init__(**kwargs)
 
         assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"

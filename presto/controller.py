@@ -77,12 +77,12 @@ class Controller():
             if count < 10:
                 logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
-        self.trajectory.save()
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:
-#            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
-            self.trajectory.finished = True # somehow that previous line was not working
+            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
+#            self.trajectory.finished = True # somehow that previous line was not working
+        self.trajectory.save()
 
         logger.info(f"Trajectory done running with {self.trajectory.num_frames()} frames.")
         return
