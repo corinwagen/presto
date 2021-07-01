@@ -70,15 +70,7 @@ class Trajectory():
         self.frames = list()
 
         if self.has_checkpoint():
-            if load_frames=="all":
-                self.load_from_checkpoint(slice(None))
-            elif load_frames=="first":
-                self.load_from_checkpoint(slice(1,None,None))
-            elif load_frames=="last":
-                self.load_from_checkpoint(slice(-1,None,None))
-            else:
-                assert isinstance(load_frames, slice), "load_frames must be ``all``, ``first``, ``last``, or slice"
-                self.load_from_checkpoint(load_frames)
+            self.load_from_checkpoint(load_frames)
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
@@ -206,18 +198,28 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self, frames=slice(None)):
+    def load_from_checkpoint(self, frames="all"):
         """
         Loads frames from ``self.checkpoint_filename``.
 
         Args:
             frames (Slice object): if not all frames are desired, a Slice object can be passed
+                or a string - ``all``, ``first``, or ``last``
 
         Returns:
             nothing
         """
         if not self.has_checkpoint():
             return # nothing to load!
+
+        if frames=="all":
+            frames = slice(None)
+        elif frames=="first":
+            frames = slice(1, None, None)
+        elif frames=="last":
+            frames = slice(-1, None, None)
+        else:
+            assert isinstance(frames, slice), "load_frames must be ``all``, ``first``, ``last``, or slice"
 
         self.initialize_lock()
         self.lock.acquire()
@@ -291,14 +293,10 @@ class Trajectory():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
+                h5.attrs['forwards'] = self.forwards
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
-                # v0.2.2 - provisionally removing this
-#                if "all_times" not in h5:
-#                    # time is a new column, so old checkpoints may not have it.
-#                    old_times = np.arange(0, self.timestep, self.timestep*old_n_frames)
-#                    h5.create_dataset("all_times", data=old_times, maxshape=(None,), compression="gzip", compression_opts=9)
 
                 all_times = h5.get("all_times")
                 last_saved_time = all_times[-1]
@@ -661,6 +659,10 @@ def join(traj1, traj2):
 
     assert traj1.finished, "First trajectory must be finished!"
     assert traj2.finished, "Second trajectory must be finished!"
+
+    # load all frames
+    traj1.load_from_checkpoint()
+    traj2.load_from_checkpoint()
 
     assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
     assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
