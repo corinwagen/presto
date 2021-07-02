@@ -58,6 +58,13 @@ class Trajectory():
             assert timestep > 0, "can't have timestep ≤ 0!"
             self.timestep = float(timestep)
 
+        # also do this first, so checkpoint file can overrule as needed
+        if forwards is not None:
+            assert isinstance(forwards, bool), "forwards must be bool"
+            self.forwards = forwards
+        elif not hasattr(self, "forwards"):
+            self.forwards = True
+
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
@@ -117,12 +124,6 @@ class Trajectory():
 
         if not hasattr(self, "frames"):
             self.frames = []
-
-        if forwards is not None:
-            assert isinstance(forwards, bool), "forwards must be bool"
-            self.forwards = forwards
-        elif not hasattr(self, "forwards"):
-            self.forwards = True
 
         if not hasattr(self, "stop_time"):
             assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
