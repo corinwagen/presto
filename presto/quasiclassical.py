@@ -41,9 +41,10 @@ def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="qua
         actual_PE, _ = calc.evaluate(mol.atomic_numbers, excited.geometry, high_atoms)
         extra_PE = (actual_PE - qcf.ensemble[-1, "energy"]) * presto.constants.KCAL_PER_HARTREE
         diff = expected_PE - extra_PE
+
         logger.info(f"Expected extra potential energy: {expected_PE:.2f} kcal/mol")
         logger.info(f"Actual extra potential energy:   {extra_PE:.2f} kcal/mol")
-        logger.info(f"Difference (threshold={.2f}):   {extra_PE:.2f} kcal/mol")
+        logger.info(f"Difference (threshold={threshold:.2f}):   {extra_PE:.2f} kcal/mol")
 
         if abs(diff) < tolerance:
             logger.info("> Initialization was successful.")
