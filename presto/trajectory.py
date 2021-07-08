@@ -521,10 +521,12 @@ class ReactionTrajectory(Trajectory):
         Returns:
             frame
         """
-        logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint(slice(-1,None,None))
+            logger.info(f"Loaded trajectory from {self.checkpoint_filename}.")
             return
+        else:
+            logger.info("Initializing new reaction trajectory...")
 
         if frame is not None:
             assert isinstance(frame, presto.frame.Frame), "need a valid frame"
