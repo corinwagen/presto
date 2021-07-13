@@ -39,6 +39,7 @@ if __name__ == "__main__":
     frames = traj.as_ensemble().molecules
 
     coord_values = []  # 2D array of internal coordinate values for whole trajectory
+
     for coord in int_coords:
         value = []  # array of int coord values for all frames
         if len(coord) == 2:
@@ -64,6 +65,8 @@ if __name__ == "__main__":
         label1 = f"{label[len(int_coords[0])]} {int_coords[0]}"
         label2 = f"{label[len(int_coords[1])]} {int_coords[1]}"
         df = pd.DataFrame(np.transpose(coord_values), columns=[label1, label2])
+        #sns.jointplot(data=df, x=label1, y=label2)
         sns.jointplot(data=df, x=label1, y=label2, kind="kde")
+
         plt.savefig('cluster2d.png', dpi=300)
         plt.show()

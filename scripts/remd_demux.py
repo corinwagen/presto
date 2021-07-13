@@ -1,4 +1,4 @@
-# presto/scripts/remd_par_manager.py
+# presto/scripts/remd_demux.py
 # Marcus Sak, Jun 2021
 # Script to demux remd replicas
 
@@ -58,11 +58,14 @@ if __name__ == "__main__":
             traj_hists[:, int(curr_time/swap_int)] = curr_arrangement
             curr_time += swap_int
         exchange(curr_arrangement, swap["i"], swap["j"])
-
-    # we ignore the final swap
-    print(f"{curr_time} fs have been run, and the swap interval is {swap_int} fs.")
+    
+    #account for any final intervals without swaps
+    while curr_time != end_time:
+        traj_hists[:, int(curr_time/swap_int)] = curr_arrangement
+        curr_time += swap_int
+    
+    print(f"{end_time} fs have been run, and the swap interval is {swap_int} fs.")
     assert curr_time/swap_int == traj_hists.shape[1] - 1  # last column
-    traj_hists[:, int(curr_time/swap_int)] = curr_arrangement  # do the final one
     
     demux_trajs = copy.deepcopy(trajs)
     for traj in demux_trajs:
