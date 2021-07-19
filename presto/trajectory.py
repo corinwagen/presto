@@ -30,6 +30,7 @@ class Trajectory():
         forwards (bool):
 
         checkpoint_filename (str):
+        checkpoint_interval (int):
         lock (fasteners.InterProcessLock): lock object
         save_interval (int): how many frames to save
     """
@@ -45,8 +46,10 @@ class Trajectory():
         high_atoms=None,
         forwards=True,
         checkpoint_filename=None,
+        checkpoint_interval=10,
         stop_time=None,
         save_interval=1,
+        load_frames="all", # or ``first`` or ``last`` or a slice
         **kwargs
     ):
 
@@ -55,19 +58,26 @@ class Trajectory():
             assert timestep > 0, "can't have timestep ≤ 0!"
             self.timestep = float(timestep)
 
+        # also do this first, so checkpoint file can overrule as needed
+        if forwards is not None:
+            assert isinstance(forwards, bool), "forwards must be bool"
+            self.forwards = forwards
+        elif not hasattr(self, "forwards"):
+            self.forwards = True
+
         if checkpoint_filename is not None:
             assert isinstance(checkpoint_filename, str), "need string for file"
         self.checkpoint_filename = checkpoint_filename
+
+        assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "checkpoint_interval must be positive integer"
+        self.checkpoint_interval = checkpoint_interval
 
         self.lock = None
         self.initialize_lock()
         self.frames = list()
 
         if self.has_checkpoint():
-            if "load_frames" in kwargs:
-                self.load_from_checkpoint(kwargs["load_frames"])
-            else:
-                self.load_from_checkpoint(slice(-1,None,None))
+            self.load_from_checkpoint(load_frames)
 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
@@ -116,12 +126,6 @@ class Trajectory():
         if not hasattr(self, "frames"):
             self.frames = []
 
-        if forwards is not None:
-            assert isinstance(forwards, bool), "forwards must be bool"
-            self.forwards = forwards
-        elif not hasattr(self, "forwards"):
-            self.forwards = True
-
         if not hasattr(self, "stop_time"):
             assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
             assert stop_time > 0, "stop_time needs to be positive!"
@@ -152,12 +156,11 @@ class Trajectory():
         
         self.active_atoms = np.array(active_atoms)
 
-    def run(self, checkpoint_interval=10, keep_all=False, time=None, **kwargs):
+    def run(self, keep_all=False, time=None, **kwargs):
         """
         Run the trajectory.
 
         Args:
-            checkpoint_interval (int): interval at which to save (in frames, not fs)
             keep_all (bool): whether or not to keep all frames in memory
             time (float): total time to run for -- default is None, implying trajectory should be run until finished
         """
@@ -176,7 +179,7 @@ class Trajectory():
             # initialize runtime controller
             controller = presto.controller.Controller(self, **kwargs)
             try:
-                controller.run(checkpoint_interval=checkpoint_interval, runtime=time)
+                controller.run(runtime=time)
             except Exception as e:
                 raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
 
@@ -200,18 +203,28 @@ class Trajectory():
         else:
             return False
 
-    def load_from_checkpoint(self, frames=slice(None)):
+    def load_from_checkpoint(self, frames="all"):
         """
         Loads frames from ``self.checkpoint_filename``.
 
         Args:
             frames (Slice object): if not all frames are desired, a Slice object can be passed
+                or a string - ``all``, ``first``, or ``last``
 
         Returns:
             nothing
         """
         if not self.has_checkpoint():
             return # nothing to load!
+
+        if frames=="all":
+            frames = slice(None)
+        elif frames=="first":
+            frames = slice(1, None, None)
+        elif frames=="last":
+            frames = slice(-1, None, None)
+        else:
+            assert isinstance(frames, slice), "load_frames must be ``all``, ``first``, ``last``, or slice"
 
         self.initialize_lock()
         self.lock.acquire()
@@ -277,6 +290,7 @@ class Trajectory():
             with h5py.File(self.checkpoint_filename, "r+") as h5:
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
+                h5.attrs['forwards'] = self.forwards
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
@@ -481,7 +495,7 @@ class ReactionTrajectory(Trajectory):
     def new_from_checkpoint(self):
         pass
 
-    def __init__(self, termination_function=None, time_after_finished=100, **kwargs):
+    def __init__(self, termination_function=None, time_after_finished=20, **kwargs):
         super().__init__(**kwargs)
 
         assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
@@ -513,10 +527,12 @@ class ReactionTrajectory(Trajectory):
         Returns:
             frame
         """
-        logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint(slice(-1,None,None))
+            logger.info(f"Loaded trajectory from {self.checkpoint_filename}.")
             return
+        else:
+            logger.info("Initializing new reaction trajectory...")
 
         if frame is not None:
             assert isinstance(frame, presto.frame.Frame), "need a valid frame"
@@ -636,6 +652,8 @@ def join(traj1, traj2):
     Join two reaction trajectories together -- one forward and one reverse!
     Returns a single reaction trajectory.
 
+    Eugene edit: Times for the reverse trajectory will be made negative.
+
     Args:
         traj1 (presto.ReactionTrajectory): forward trajectory
         traj2 (presto.ReactionTrajectory): reverse trajectory
@@ -650,8 +668,13 @@ def join(traj1, traj2):
     assert traj1.forwards == True, "First trajectory must be forwards!"
     assert traj2.forwards == False, "Second trajectory must be reverse!"
 
-    assert traj1.finished, "First trajectory must be finished!"
-    assert traj2.finished, "Second trajectory must be finished!"
+    # Eugene edit: there doesn't seem to be a need to have the trajectories be finished
+    #assert traj1.finished, "First trajectory must be finished!"
+    #assert traj2.finished, "Second trajectory must be finished!"
+
+    # load all frames
+    traj1.load_from_checkpoint()
+    traj2.load_from_checkpoint()
 
     assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
     assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
@@ -673,11 +696,19 @@ def join(traj1, traj2):
     r_frames = copy.deepcopy(traj2.frames)
     r_frames.reverse()
 
+    # Eugene edit: make reverse reverse frame times negative
+    for frame in r_frames:
+        frame.time = -frame.time
+
     new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
 
-    if traj1.finished == 2:
+    if traj1.finished == 2 and traj2.finished == 1:
         #### if the first traj finished with the reverse condition, reverse order
         new_traj.frames = new_traj.frames[::-1]
+
+        # Eugene edit: if this happens, reverse all times
+        for frame in new_traj.frames:
+            frame.time = -frame.time
 
     return new_traj
 

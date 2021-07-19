@@ -1,0 +1,56 @@
+---
+title: Structure
+blog: False
+---
+<h1> Structure </h1>
+
+<h2> Object Hierarchy </h2>
+
+<p>
+  The core object in <i>presto</i> is the <span class=code>Trajectory</span>, which represents a single trajectory from start to finish. 
+  More specifically, there are <span class=code>EquilibrationTrajectory</span> objects, which are run for a user-defined time,
+  and <span class=code>ReactionTrajectory</span> objects, which are run for a short time and terminate based on user-defined conditions.
+  Every trajectory is associated with a <span class=code>.chk</span> checkpoint file, which represents a saved snapshot of the trajectory and, 
+  in combination with the appropriate <span class=code>.yaml</span> config file, can be used to rebuild the object.
+</p>
+
+<pre class=code-block>
+  &gt; trajectory = presto.build(config.yaml, save.chk)
+  &gt; print(trajectory)
+  ReactionTrajectory(243 frames)
+</pre>
+
+<p>
+  Each trajectory contains a number of <span class=code>Frame</span> objects, which represent snapshots of atomic positions, velocities, and accelerations.
+  Frames can be converted into <span class=code>cctk.Molecule</span> objects by calling <span class=code>frame.molecule()</span>.
+  Frames are added to <span class=code>trajectory.frames</span> as <i>presto</i> runs before being saved to disk every <span class=code>trajectory.checkpoint_interval</span> frames.
+</p>
+
+<p>
+  When a trajectory is run (using <span class=code>trajectory.run()</span>), a complex sequence of events occurs:
+</p>
+
+<ol>
+  <li>
+    The trajectory spawns a <span class=code>Controller</span> object, which manages running new frames.
+  </li>
+  <li>
+    The controller determines the new forces using the trajectory's <span class=code>Calculator</span> (<span class=code>trajectory.calculator</span>).
+    <ol style="list-style-type:lower-alpha;">
+      <li>
+        The calculator dispatches force jobs to Gaussian or <i>xtb</i> and parses the output. (This is usually the slow step.)
+      </li>
+      <li>
+        Then, the calculator applies whatever constraints the user has defined, to freeze certain bonds or prevent atoms from leaving the sphere.
+      </li>
+    </ol>
+  </li>
+  <li>
+    The <span class=code>Integrator</span> (<span class=code>trajectory.integrator</span>) then calculates new coordinates based on the previous frame,
+    writes a new frame, and appends it to <span class=code>trajectory.frames</span>.
+  </li>
+  <li>
+    The controller checks if the new frame satisfies the termination conditions (for a <span class=code>ReactionTrajectory</span>) or if the timelimit has been exceeded.
+    If not, the cycle repeats!
+  </li>
+</ol>

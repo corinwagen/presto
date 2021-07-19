@@ -13,8 +13,8 @@ A *presto* trajectory can be created from a config file through ``presto.config.
 ```
 import presto
 
-trajectory1 = presto.config.build("config.yaml", "checkpoint1.chk", geometry="solvated_ts.xyz")
-trajectory2 = presto.config.build("config.yaml", "checkpoint2.chk", geometry="solvated_ts.xyz")
+trajectory1 = presto.build("config.yaml", "checkpoint1.chk", geometry="solvated_ts.xyz")
+trajectory2 = presto.build("config.yaml", "checkpoint2.chk", geometry="solvated_ts.xyz")
 ```
 
 ## Options
@@ -48,6 +48,8 @@ For instance, ``high_atoms: 1-4, 7, 9`` will be parsed into the list ``[1, 2, 3,
 
 **``save_interval``**: Which frames to save. The default value of 1 saves every frame, while setting this to 10 will save every 10th frame.
 
+**``checkpoint_interval``**: How frequently to save to the checkpoint file. The default value of 10 saves the trajectory to disk after every 10 frames.
+
 **``anchor``**: If present, tells *presto* to apply a weak harmonic potential between the origin and the specified atom number, to keep a given molecule centered.
 
 **``forwards``**: Whether to run a trajectory forwards in time (``True``, default) or backwards (``False``). 
@@ -60,6 +62,16 @@ You would only want to run a ``ReactionTrajectory`` backwards in time, usually f
 **``constraints``**:
 
 **``quasiclassical``** (``ReactionTrajectory`` only):
+
+* **``output_file``**
+    
+* **``temperature``**
+    
+* **``init_method``**
+   
+* **``max_attempts``**
+    
+* **``tolerance``**
 
 **``termination_function``** (``ReactionTrajectory`` only):
 

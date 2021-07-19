@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
 class TestXTB(unittest.TestCase):
     def test_gfn2(self):
-        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
+        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").get_molecule()
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1)
@@ -26,7 +26,7 @@ class TestXTB(unittest.TestCase):
                 self.assertLessEqual(delta, 0.00000001)
 
     def test_gfn0(self):
-        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule
+        hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").get_molecule()
         atomic_numbers = hydrogen_molecule.atomic_numbers
         positions = hydrogen_molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn=0)
@@ -34,7 +34,7 @@ class TestXTB(unittest.TestCase):
         self.assertLessEqual(abs(energy+1.0083914049), 0.00000001)
 
     def test_big(self):
-        molecule = cctk.XYZFile.read_file("test/static/nazarov-elim-solvated.xyz").molecule
+        molecule = cctk.XYZFile.read_file("test/static/nazarov-elim-solvated.xyz").get_molecule()
         atomic_numbers = molecule.atomic_numbers
         positions = molecule.geometry
         xtb_calculator = calculators.XTBCalculator(charge=0, multiplicity=1, gfn="ff", parallel=4, topology="test/static/nazarov-elim.top")

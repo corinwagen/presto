@@ -1,0 +1,223 @@
+---
+title: Tutorial 0 
+blog: False
+---
+<h1> Tutorial 0</h1>
+
+This tutorial will introduce you to running molecular dynamics on ground states in <i>presto</i>.
+
+<h2> Introduction </h2>
+<p>
+  For each trajectory, <i>presto</i> requires both a config file and a checkpoint file.
+</p>
+
+<p>
+  A config file contains information about the run: how the forces will be computed, the desired temperature, runtime, and so forth. 
+  Config files are agnostic to molecular structure and can be recycled for many different trajectories; 
+  they are written in the <span class=code>.yaml</span> format and are easily editable by hand.
+</p>
+
+<p>
+  A checkpoint file contains the masses, positions, forces, and accelerations of individual atoms at each timestep. 
+  Checkpoint files are written in the <span class=code>.hdf5</span> format and are not human-readable. 
+  If your run is very long, the checkpoint file may grow to several gigabytes or more! 
+  To begin a new run, either an <span class=code>.xyz</span> geometry or a previous checkpoint file must be supplied to initialize the new checkpoint file.
+</p>
+
+<p>
+  Here, we will run molecular dynamics on a single benzene molecule using GFN2-xtb.
+</p>
+
+<p>
+  The config file (<span class=code>test.yaml</span>) is shown here:
+</p>
+
+<pre class=code-block>
+  # presto config file
+  type: equilibration
+  timestep: 1
+  stop_time: 250
+  anchor: 1
+
+  integrator:
+      type: langevin
+      viscosity: 0.0001
+
+  calculator:
+      type: xtb
+      gfn : 2
+      parallel: 8
+
+  bath_scheduler:
+      type: constant
+      target_temp: 298
+</pre>
+
+<p>
+  This config file tells <i>presto</i> several important facts:
+</p>
+<ul>
+  <li>
+    This is an "equilibration" trajectory, not a "reaction" trajectory, so we don't need to check to see if a reaction is done.
+  </li>
+  <li>
+    The timestep will be 1 fs, and the trajectory will run for 250 fs in total.
+  </li>
+  <li>
+    Atom #1 is "anchored" to the origin by a weak harmonic potential.
+  </li>
+  <li>
+    We will use the Langevin integrator to control temperature, with a viscosity of 0.0001 Pascal-seconds (a reasonable default).
+  </li>
+  <li>
+    We will use GFN2-xtb to compute forces, using 8 processors.
+  </li>
+  <li>
+    We will set the temperature to a constant 298 K (no gradual heating/cooling).
+  </li>
+</ul>
+
+<p>
+  We also need a starting geometry (<span class=code>benzene.xyz</span>):
+</p>
+
+<pre class=code-block>
+  12
+  benzene
+  C                 -3.00142242   -0.33428165    0.00000000
+  C                 -1.60626242   -0.33428165    0.00000000
+  C                 -0.90872442    0.87346935    0.00000000
+  C                 -1.60637842    2.08197835   -0.00119900
+  C                 -3.00120342    2.08190035   -0.00167800
+  C                 -3.69880442    0.87369435   -0.00068200
+  H                 -3.55118142   -1.28659865    0.00045000
+  H                 -1.05675442   -1.28679465    0.00131500
+  H                  0.19095558    0.87354935    0.00063400
+  H                 -1.05617842    3.03412135   -0.00125800
+  H                 -3.55132542    3.03418135   -0.00263100
+  H                 -4.79840842    0.87387735   -0.00086200
+</pre>
+
+<p>
+  Finally, we need an actual script to load and run our trajectory (<span class=code>test_presto.py</span>):
+</p>
+
+<pre class=code-block>
+  import logging, presto
+  logging.basicConfig(level=logging.INFO, filename=f"test.log", format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M')
+
+  traj = presto.config.build("test.yaml", "test.chk", geometry="benzene.xyz")
+  print("Built trajectory...")
+  traj.run(checkpoint_interval=25)
+  print("Trajectory finished!")
+</pre>
+
+<p>
+  Here, we initialize the <span class=code>logging</span> module so we can monitor the progress of our trajectory at <span class=code>test.log</span>. 
+  We then initialize a <span class=code>presto.trajectory.Trajectory</span> object from <span class=code>test.yaml</span> 
+  and <span class=code>benzene.xyz</span>, creating <span class=code>test.chk</span> in the process. 
+  Finally, we run our trajectory, saving to <span class=code>test.chk</span> every 25 frames.
+</p>
+
+<h2> Running </h2>
+
+<p>
+This script should only take 1-2 minutes to run. After it finishes, you can see two new files:
+</p>
+
+<pre class=code-block>
+  (presto) [tutorial00]$ ls
+  benzene.xyz  presto.config  test_presto.py  test.yaml
+  (presto) [tutorial00]$ python test_presto.py
+  Built trajectory...
+  Trajectory finished!
+  (presto) [tutorial00]$ ls
+  benzene.xyz  presto.config  test.chk  test.log  test_presto.py  test.yaml
+  (presto) [tutorial00]$ cat test.log
+  11-28 14:24 presto.trajectory  Initializing new equilibration trajectory...
+  11-28 14:24 presto.trajectory  Saving trajectory to new checkpoint file test.chk (1 frames)
+  11-28 14:24 presto.trajectory  Loaded trajectory from checkpoint file test.chk -- 1 frames read.
+  11-28 14:24 presto.trajectory  Propagating trajectory.
+  11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 26 in total)
+  11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 51 in total)
+  11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 76 in total)
+  11-28 14:24 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 101 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 126 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 151 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 176 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 201 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (25 frames added; 226 in total)
+  11-28 14:25 presto.trajectory  Saving trajectory to existing checkpoint file test.chk (24 frames added; 250 in total)
+  (presto) [tutorial00]$
+</pre>
+
+<p>
+  If you see a logfile like this, <i>presto</i> has successfully completed the trajectory!
+</p>
+
+<h2> Analysis </h2>
+
+<p>
+  You can analyze the checkpoint file using <a class=code href="https://github.com/corinwagen/presto/blob/master/scripts/analyze.py">scripts/analyze.py</a>. 
+  (Run <span class=code>python analyze.py --help</span> to view script options.)
+</p>
+
+<pre class=code-block>
+  (presto) [tutorial00]$ cp ../../scripts/analyze.py .
+  (presto) [tutorial00]$ python analyze.py -c 0 -m all test.yaml test.chk
+  250 frames loaded from test.chk (250 total)
+  trajectory finished!
+  TEMPERATURE:		374.54 K (± 93.13)
+    599.87  ┤                             ╭╮
+    573.65  ┤                             ││
+    547.44  ┤                             │╰╮╭╮
+    521.22  ┤                       ╭╮╭╮  │ ╰╯│
+    495.01  ┤                       │╰╯╰╮ │   │            ╭╮   ╭╮
+    468.79  ┤                      ╭╯   │╭╯   │  ╭╮╭╮      ││   ││
+    442.57  ┤          ╭╮ ╭──╮     │    ╰╯    │  ││││      │╰─╮ ││ ╭╮
+    416.36  ┤        ╭╮││ │  │    ╭╯          │  ││││  ╭─╮ │  │ ││ ││              ╭╮
+    390.14  ┤        ││││╭╯  ╰─╮  │           │  │╰╯╰─╮│ │ │  │ ││ │╰─╮            ││   ╭╮   ╭╮
+    363.92  ┤      ╭─╯╰╯╰╯     ╰╮ │           ╰╮╭╯    ╰╯ │ │  ╰─╯╰╮│  ╰╮           ││╭╮ │╰╮  ││
+    337.71  ┼╮     │            │╭╯            ││        ╰╮│      ╰╯   │ ╭╮╭─╮ ╭─╮╭╯╰╯│ │ ╰╮ ││
+    311.49  ┤│ ╭╮ ╭╯            ╰╯             ││         ╰╯           ╰─╯││ │ │ ││   ╰─╯  │ ││
+    285.27  ┤│ │╰╮│                            ││                         ││ │ │ ││        ╰╮││
+    259.06  ┤│ │ ╰╯                            ╰╯                         ╰╯ ╰╮│ ╰╯         ││╰
+    232.84  ┤│ │                                                              ╰╯            ╰╯
+    206.62  ┤╰╮│
+    180.41  ┤ ╰╯
+    154.19  ┤
+  ENERGY:			-15.86 (± 2.68 kcal/mol)
+  -9946.49  ┤                                 ╭╮
+  -9947.26  ┤                           ╭╮    │╰╮
+  -9948.03  ┤                           ││    │ │
+  -9948.80  ┤                           ││    │ │        ╭╮               ╭╮
+  -9949.57  ┤                          ╭╯╰╮   │ ╰╮       ││      ╭╮      ╭╯│
+  -9950.34  ┤         ╭─╮              │  │   │  │╭─╮    ││   ╭─╮││      │ │
+  -9951.11  ┤         │ ╰─╮     ╭╮     │  ╰─╮╭╯  ╰╯ ╰╮  ╭╯│   │ ││╰╮╭╮   │ │
+  -9951.88  ┤         │   │     │╰╮    │    ││       │  │ │  ╭╯ ╰╯ ╰╯│  ╭╯ │        ╭╮
+  -9952.65  ┤        ╭╯   │    ╭╯ ╰─╮  │    ││       ╰╮╭╯ ╰╮ │       │ ╭╯  │   ╭──╮ │╰─╮
+  -9953.42  ┤    ╭╮  │    │    │    │ ╭╯    ╰╯        ││   │ │       │ │   ╰╮  │  │ │  ╰╮ ╭─╮
+  -9954.19  ┤  ╭─╯╰╮ │    ╰─╮  │    ╰╮│               ╰╯   │ │       ╰╮│    │╭─╯  ╰─╯   │ │ │
+  -9954.95  ┤  │   │╭╯      │╭─╯     ╰╯                    │╭╯        ╰╯    ╰╯          │ │ ╰╮
+  -9955.72  ┤╭─╯   ╰╯       ╰╯                             ╰╯                           │ │  │
+  -9956.49  ┤│                                                                          ╰╮│  │
+  -9957.26  ┤│                                                                           ╰╯  │
+  -9958.03  ┤│                                                                               ╰─
+  -9958.80  ┼╯
+  -9959.57  ┤
+  writing movie to test.pdb...
+</pre>
+
+<p>
+  Here, we can see that the temperature and energy fluctuate a lot initially but gradually approach the desired value. 
+  250 fs is not very long, and a longer trajectory would permit better equilibration. 
+  (As a bulk property, temperature is also prone to fluctuation on a system this small.)
+</p>
+
+<p>
+  The movie (<span class=code>test.pdb</span>) can be viewed using any trajectory viewer (e.g. Avogadro), and shows the expected combination of vibrational modes.
+</p>
+
+<p>
+  Congratulations! You have completed your first <i>presto</i> trajectory!
+</p>

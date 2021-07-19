@@ -1,3 +1,4 @@
+from presto.build import build
 import presto.config
 import presto.constants
 import presto.calculators
@@ -13,3 +14,9 @@ import presto.controller
 import presto.checks
 import presto.reporters
 import presto.potentials
+import presto.quasiclassical
+
+import logging
+logger = logging.getLogger()
+
+logger.info(f"presto initialized successfully")

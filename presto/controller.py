@@ -15,7 +15,7 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, checkpoint_interval=25, end_time=None, runtime=None, **kwargs):
+    def run(self, end_time=None, runtime=None, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
         interval = self.trajectory.save_interval
@@ -36,7 +36,7 @@ class Controller():
 
         count = 0
         finished_early = False
-        logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)") 
+        logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
         while current_time < end_time:
             current_time += dt
             current_frame = self.trajectory.frames[-1]
@@ -70,19 +70,19 @@ class Controller():
                         finished_early = True
                         logger.info(f"Reaction trajectory finished! {self.trajectory.time_after_finished} additional fs will be run.")
 
-            if int(current_time/dt) % int(checkpoint_interval/dt) == 0:
+            if int(current_time/dt) % int(self.trajectory.checkpoint_interval/dt) == 0:
                 self.trajectory.save()
 
             count += 1
             if count < 10:
                 logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
-        self.trajectory.save()
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:
-#            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
-            self.trajectory.finished = True # somehow that previous line was not working
+            self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
+#            self.trajectory.finished = True # somehow that previous line was not working
+        self.trajectory.save()
 
         logger.info(f"Trajectory done running with {self.trajectory.num_frames()} frames.")
         return

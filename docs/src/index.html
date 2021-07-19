@@ -1,0 +1,80 @@
+---
+title: presto 
+blog: False
+---
+<h1> presto </h1>
+
+<em>python-based reactions in explicit solvent with trajectories via ONIOM</em>
+
+<h2 id="introduction"> Introduction </h2>
+<p>
+  <i>presto</i> is a Python 3-based package that runs QM/QM' molecular dynamics simulations 
+  of small organic molecules in spheres of explicit solvent (50-250 solvent molecules). 
+  <i>presto</i> is loosely based on Singleton’s <i>PROGDYN</i>, as described in recent publications on the 
+  <a href="https://pubs.acs.org/doi/abs/10.1021/jacs.6b07328">nitration of toluene</a> and 
+  <a href="https://pubs.acs.org/doi/abs/10.1021/jacs.0c06295">hydrochlorination of dienes</a>.
+</p>
+
+<!-- <img class=centered-img style="width:25em;" src="../img/solvent_sphere.png" alt="photo of a solvent sphere" /> -->
+
+<h2 id="overview"> Overview </h2>
+
+<p>
+  Conventional quantum chemical calculations (such as <i>ab initio</i> wavefunction methods and density functional theory) can describe chemical reactivity with high accuracy, 
+  but scale poorly with increasing system size. 
+  As a consequence, most computational analyses of organic reactions are performed in the gas phase with implicit solvation, 
+  which is unable to describe the behavior of many common species (e.g. ion pairs). 
+  In contrast, molecular dynamics permits the study of large, explicitly solvated systems, 
+  but the underlying molecular mechanics-based Hamiltonian renders such simulations unable to describe changes in bonding. 
+  <i>presto</i> seeks to combine elements of both approaches to permit the study of reactivity in explicit solvent.
+</p>
+
+<p>
+  Following precedent by Singleton and others, <i>presto</i> employs the 
+  <a href="https://pubs.acs.org/doi/10.1021/cr5004419">ONIOM scheme</a> developed by Morokuma to embed an accurate “high” system (typically modelled using DFT) 
+  inside a larger “low” system (modelled using semiempirical methods). 
+  Internally, <i>presto</i> repeatedly writes coordinates to each individual program and reads the corresponding energy and forces using 
+  <a href="https://cctk.readthedocs.io/en/latest/"><i>cctk</i></a>. 
+  Currently, <i>presto</i> is compatible with Gaussian 16 and Stefan Grimme’s 
+  <a href="https://xtb-docs.readthedocs.io/en/latest/contents.html"><i>xtb</i></a>, but support for other programs can easily be added.
+</p>
+
+<p>
+  The speed of <i>presto</i> is entirely limited by the speed of the force calculations, which in turn depend on the size of the system. 
+  For medium-sized systems (10–20 heavy atoms) each individual DFT calculation takes about 30–90 seconds. 
+  The recommended timestep is 0.5 or 1.0 femtoseconds, resulting in an overall simulation speed of 1–2 picoseconds/day. 
+  If a faster simulation is desired, <i>xtb</i>-based methods can be used for both components of the ONIOM system: 
+  as with all computational projects, judicious benchmarking is key for determining the minimum acceptable level of theory.
+</p>
+
+<h2 id="how-to-cite"> How To Cite </h2>
+<p>
+   Wagen, C. C. <i>presto</i> <b>2021</b>, <a href="https://github.com/corinwagen/presto">github.com/corinwagen/presto</a>. 
+</p>
+
+<h2 id="acknowledgements"> Acknowledgements </h2>
+<ul>
+  <li>
+    <b>Eugene Kwan</b> for assistance with software design, extensive technical help, and preliminary testing.
+  </li>
+  <li>
+    <b>J. Daniel Gezelter</b> for helpful discussions and advice about best practices in molecular dynamics, 
+    and an incredible willingness to help a complete stranger debug his Langevin integration code.
+  </li>
+  <li>
+    <b>Stefan Grimme</b> and <b>Sebastian Ehlert</b> for help with <i>xtb</i>.
+  </li>
+</ul>
+
+<h2 id="issues"> Issues </h2>
+<p>
+  <i>presto</i> is under active development by <a href="mailto:cwagen@g.harvard.edu">Corin Wagen</a>. 
+  Please use the <a href="https://github.com/corinwagen/presto/issues">issues page</a> 
+  for feature requests or bug reports, and contact me if you have more substantive inquiries.
+</p>
+
+<h2 id="license"> License </h2>
+<p>
+  This project is licensed under the GNU General Public License, Version 3.0. 
+  Please see <a href="https://github.com/corinwagen/presto/blob/master/LICENSE">LICENSE</a> for full terms and conditions.
+</p>
