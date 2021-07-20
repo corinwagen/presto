@@ -1,8 +1,5 @@
 import setuptools
 
-<<<<<<< HEAD
-setuptools.setup()
-=======
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -28,4 +25,3 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
 )
->>>>>>> upstream/master

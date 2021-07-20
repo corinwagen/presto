@@ -30,7 +30,7 @@ if __name__ == "__main__":
     args = vars(parser.parse_args(sys.argv[1:]))
     chkfile = args["checkpoint_filename"]
 
-    remd = presto.replica_exchange_par.ReplicaExchange.load(chkfile)
+    remd = presto.replica_exchange.ReplicaExchangeParallel.load(chkfile)
     # assert remd.finished, "REMD run from this checkpoint file is unfinished!"
     if not remd.finished:
         remd.update_trajs()  # load each traj from chkfile and add 1 to current index
@@ -87,10 +87,10 @@ if __name__ == "__main__":
         for j in np.arange(n_frames, dtype=int): # each timestep
             demux_trajs[i].frames.append(trajs[traj_hists[i, int(j/swap_int)]].frames[j])
 
-    print("writing demuxed trajectories to pdb files...")
+    print("writing demuxed trajectories to PDB and .chk files:")
     for i, traj in tqdm(enumerate(demux_trajs)):
-        traj.checkpoint_filename = traj.checkpoint_filename.replace('.chk', '_demux.chk')
-        pdb_filename = f'traj{i}.pdb'
+        traj.checkpoint_filename = f"replica{i}.chk"
+        pdb_filename = f'replica{i}.pdb'
         traj.write_movie(pdb_filename)
         logger.info(f"Wrote movie to {pdb_filename}.")
 
@@ -99,10 +99,10 @@ if __name__ == "__main__":
     times = np.arange(0, end_time + 1, swap_int)
     assert traj_hists.shape[1] == times.size, "length of time array should be the same as number of swaps"
 
-    print("writing temperature evolutions to csv files...")
+    print("writing temperature evolutions to CSV files...")
     for i, hist in tqdm(enumerate(traj_hists)):
         time_hist = np.array([times, hist]).astype(int)
-        csv_filename = f"traj{i}.csv"
+        csv_filename = f"replica{i}.csv"
         np.savetxt(csv_filename, time_hist.transpose(), delimiter=',', header='time(fs), temperature index')
         logger.info(f"Wrote temperature evolution to {csv_filename}")
 

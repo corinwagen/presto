@@ -1,0 +1,25 @@
+type: equilibration
+
+timestep: 1
+high_atoms: 1-22
+stop_time: 1000000
+save_interval: 10
+
+anchor: 1
+
+integrator: 
+    type: langevin
+    viscosity: 0.0001
+
+potential:
+    type: spherical_harmonic
+    radius: 10
+
+calculator:
+    type: xtb
+    gfn : ff
+    parallel: 2
+
+bath_scheduler: 
+    type: constant
+    target_temp: <TEMP>

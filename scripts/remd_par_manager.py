@@ -10,7 +10,7 @@ import numpy as np
 import presto
 import subprocess
 
-logging.basicConfig(level=logging.INFO, filename=f"remd_par.log", filemode='a',
+logging.basicConfig(level=logging.INFO, filename=f"remd.log", filemode='a',
                     format='%(asctime)s %(name)-12s  %(message)s', datefmt='%m-%d %H:%M')
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,8 @@ def sbatch_self(slurm_script, dependency):
     try:
         subprocess.run(
             ['sbatch', f'--dependency=afterok:{dependency}', slurm_script])
-        logger.info(f"Self-spawned with dependency on slurm job array {dependency}")
+        logger.info(
+            f"Self-spawned with dependency on slurm job array {dependency}")
     except subprocess.CalledProcessError as e:
         logger.error("Could not submit slurm script")
         sys.exit(1)
@@ -38,7 +39,7 @@ def sbatch_self(slurm_script, dependency):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog="remd_par_manager.py", description="Runs replica exchange MD for accelerated sampling of conformational space. Outputs chkfiles for all trajectories. Run > python replica_exchange_mpi.py --help for options.")
+        prog="remd_par_manager.py", description="Runs replica exchange MD for accelerated sampling of conformational space. Outputs chkfiles for all trajectories. Run > python replica_exchange.py --help for options.")
     parser.add_argument("--checkpoint_filename", type=str, default="remd.chk",
                         help="path to checkpoint file (usually ends in .chk)")
     parser.add_argument("--input", default=None, type=str,
@@ -70,25 +71,26 @@ if __name__ == "__main__":
             filedata = filedata.replace("<TEMP>", f"{temp:.2f}")
             with open(f"{name}.yaml", 'w') as file:
                 file.write(filedata)
-            traj = presto.config.build(
-                f"{name}.yaml", f"{name}.chk", geometry=args["input"])
+            traj = presto.build.build(
+                f"{name}.yaml", f"{name}.chk", geometry=args["input"], checkpoint_interval=min(50, args["swap"]))
             all_trajs.append(traj)
-        remd = presto.replica_exchange_par.ReplicaExchange(trajectories=all_trajs, checkpoint_filename=args["checkpoint_filename"],
-                                                            swap_interval=args["swap"])
+        remd = presto.replica_exchange.ReplicaExchangeParallel(trajectories=all_trajs, checkpoint_filename=args["checkpoint_filename"], swap_interval=args["swap"])
     else:
-        remd = presto.replica_exchange_par.ReplicaExchange.load(args["checkpoint_filename"])
+        remd = presto.replica_exchange.ReplicaExchangeParallel.load(
+            args["checkpoint_filename"])
         remd.update_trajs()  # load each traj from chkfile and add 1 to current index
         remd.exchange()  # pass self.current_idx * self.swap_interval as current time
-        # exchannge will save trajectories into chkfile
+        # exchange will save trajectories into chkfile
         if remd.finished:
             remd.save()
             logger.info(f"Replica exchange completed.")
             logger.info("\n\n----------------REPORT----------------\n")
             logger.info(remd.report())
             sys.exit(0)
-        
+
     remd.save()
-    trajs_slurm_job_id = remd.run()  # nonblocking, needs to return slurm jobID of submitted array
+    # nonblocking, needs to return slurm jobID of submitted array
+    trajs_slurm_job_id = remd.run()
 
     slurm_script = f'remd_{os.path.splitext(args["input"])[0]}.sh'
     sbatch_self(slurm_script, trajs_slurm_job_id)
