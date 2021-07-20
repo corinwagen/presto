@@ -35,8 +35,10 @@ We then prepare two Slurm submit scripts. The first, named `remd_ala2.sh`, is us
 ## partition is Yale cluster-specific
 #SBATCH --partition=day
 
-module purge 2>/dev/null
-module load miniconda 2>/dev/null
+# Yale cluster-specific
+# module purge 2>/dev/null
+# module load miniconda 2>/dev/null
+
 conda activate presto 2>/dev/null
 python remd_par_manager.py --input ala2.xyz --swap 2000 --mintemp 300 --maxtemp 1000 --trajs 4 -t template.yaml
 ```
