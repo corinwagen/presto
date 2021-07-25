@@ -75,3 +75,16 @@ class TestConstraint(unittest.TestCase):
         for x in list(f[1]):
             self.assertTrue(x + 0.0004184 < 0.000001)
         self.assertTrue(e - 0.0031379999999999997 < 0.000001)
+
+    def test_interlocking_sphere_pot(self):
+        # nazarov ts
+        traj = presto.config.build("test/static/ex.yaml", "test/static/ex.chk", "test/static/nazarov-elim-solvated.xyz")
+        mol = traj.frames[0].molecule()
+
+        constraint = presto.constraints.PairwisePolynomialConstraint(13, [14,15,16], 1.0, min=False, force_constant=50)
+        f, e = constraint.evaluate(mol.geometry)
+        self.assertTrue(np.linalg.norm(f[14]) == 0)
+        self.assertFalse(np.linalg.norm(f[15]) == 0)
+        self.assertTrue(np.linalg.norm(f[16]) == 0)
+
+        os.remove("test/static/ex.chk")

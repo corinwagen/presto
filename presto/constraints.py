@@ -74,6 +74,9 @@ class PairwisePolynomialConstraint(Constraint):
         if isinstance(atoms2, int):
             atoms2 = [atoms2]
 
+        which_atom1 = 0
+        which_atom2 = 0
+
         # this is where we find the right pair of atoms
         if self.min == True:
             min_d = 100
@@ -82,6 +85,8 @@ class PairwisePolynomialConstraint(Constraint):
                     d = np.linalg.norm(positions[x] - positions[y])
                     if d < min_d:
                         min_d = d
+                        which_atom1 = x
+                        which_atom2 = y
                         x1 = positions[x]
                         x2 = positions[y]
         else:
@@ -91,6 +96,8 @@ class PairwisePolynomialConstraint(Constraint):
                     d = np.linalg.norm(positions[x] - positions[y])
                     if d > max_d:
                         max_d = d
+                        which_atom1 = x
+                        which_atom2 = y
                         x1 = positions[x]
                         x2 = positions[y]
 
@@ -98,8 +105,8 @@ class PairwisePolynomialConstraint(Constraint):
         direction = (x2 - x1)/np.linalg.norm(x1-x2)
 
         forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
-        forces[self.atom1] = delta ** (self.power - 1) * self.force_constant * 1 * direction
-        forces[self.atom2] = delta ** (self.power - 1) * self.force_constant * -1 * direction
+        forces[which_atom1] = delta ** (self.power - 1) * self.force_constant * 1 * direction
+        forces[which_atom2] = delta ** (self.power - 1) * self.force_constant * -1 * direction
 
         energy = self.force_constant / self.power * delta ** self.power
 

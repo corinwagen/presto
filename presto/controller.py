@@ -36,7 +36,11 @@ class Controller():
 
         count = 0
         finished_early = False
-        logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
+        if self.trajectory.forwards:
+            logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames forwards in time (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
+        else:
+            logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames backwards in time (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
+
         while current_time < end_time:
             current_time += dt
             current_frame = self.trajectory.frames[-1]
