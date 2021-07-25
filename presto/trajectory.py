@@ -521,10 +521,12 @@ class ReactionTrajectory(Trajectory):
         Returns:
             frame
         """
-        logger.info("Initializing new reaction trajectory...")
         if self.has_checkpoint():
             self.load_from_checkpoint(slice(-1,None,None))
+            logger.info(f"Loaded trajectory from {self.checkpoint_filename}.")
             return
+        else:
+            logger.info("Initializing new reaction trajectory...")
 
         if frame is not None:
             assert isinstance(frame, presto.frame.Frame), "need a valid frame"
@@ -644,6 +646,8 @@ def join(traj1, traj2):
     Join two reaction trajectories together -- one forward and one reverse!
     Returns a single reaction trajectory.
 
+    Eugene edit: Times for the reverse trajectory will be made negative.
+
     Args:
         traj1 (presto.ReactionTrajectory): forward trajectory
         traj2 (presto.ReactionTrajectory): reverse trajectory
@@ -658,8 +662,9 @@ def join(traj1, traj2):
     assert traj1.forwards == True, "First trajectory must be forwards!"
     assert traj2.forwards == False, "Second trajectory must be reverse!"
 
-    assert traj1.finished, "First trajectory must be finished!"
-    assert traj2.finished, "Second trajectory must be finished!"
+    # Eugene edit: there doesn't seem to be a need to have the trajectories be finished
+    #assert traj1.finished, "First trajectory must be finished!"
+    #assert traj2.finished, "Second trajectory must be finished!"
 
     # load all frames
     traj1.load_from_checkpoint()
@@ -685,11 +690,19 @@ def join(traj1, traj2):
     r_frames = copy.deepcopy(traj2.frames)
     r_frames.reverse()
 
+    # Eugene edit: make reverse reverse frame times negative
+    for frame in r_frames:
+        frame.time = -frame.time
+
     new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
 
     if traj1.finished == 2 and traj2.finished == 1:
         #### if the first traj finished with the reverse condition, reverse order
         new_traj.frames = new_traj.frames[::-1]
+
+        # Eugene edit: if this happens, reverse all times
+        for frame in new_traj.frames:
+            frame.time = -frame.time
 
     return new_traj
 
