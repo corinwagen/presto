@@ -64,14 +64,12 @@ if __name__ == "__main__":
     for i, swap in enumerate(remd.swaps):
         while int(swap["time"]) != curr_time:
             # finished swapping or no swaps for this time, write final arrangement for curr_time
-            print(f'at {curr_time} fs, the arrangement is {curr_arrangement}')
             traj_hists[:, int(curr_time/swap_int)] = curr_arrangement
             curr_time += swap_int
         exchange(curr_arrangement, swap["i"], swap["j"])
     
     #account for any final intervals without swaps
     while curr_time <= run_time:
-        print(f'at {curr_time} fs, the arrangement is {curr_arrangement}')
         traj_hists[:, int(curr_time/swap_int)] = curr_arrangement
         
         if curr_time != run_time:

@@ -174,8 +174,8 @@ $ mv cluster2d.png 300k_demux_1ns_cluster.png
 
 Here are the plots for the trajectories at 300 K (left) and the demuxed trajectory for Replica 0 (right). _φ_ is plotted on the x-axis and _ψ_ on the y-axis.
 
-<img src="300k_1ns_cluster.png" alt="300kcluster" style="width:500px;"/>
-<img src="300k_demux_1ns_cluster.png" alt="300kdemuxcluster" style="width:500px;"/>
+<img src="300k_cluster_1ns.png" alt="300kcluster" style="width:500px;"/>
+<img src="300k_1ns_demux_cluster.png" alt="300kdemuxcluster" style="width:500px;"/>
 
 The first key observation is that Replica 0 is sampling all the minima exhibited by the 300 K trajectory; in other words, within this replica, the system was able to cross energy barriers separating the minima. We can verify that the other trajectories also exhibit this characteristic, indicating that replica exchange is indeed allowing us to efficiently explore the alanine dipeptide PES.
 
