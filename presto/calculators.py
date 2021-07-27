@@ -260,9 +260,7 @@ class GaussianCalculator(Calculator):
                 if os.path.exists(self.gaussian_chk):
                     shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
                     link0["oldchk"] = "oldchk.chk"
-
-                if "guess=read" not in route_card:
-                    logger.info("checkpoint file employed but guess=read not found in route card - is this a mistake?")
+                    route_card = f"{route_card} guess=read"
 
             cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
             command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
