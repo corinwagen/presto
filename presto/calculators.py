@@ -254,10 +254,12 @@ class GaussianCalculator(Calculator):
             link0 = copy.deepcopy(self.link0)
 
             # we will try and use the previous checkpoint file to accelerate the current run.
-            if self.gaussian_chk and os.path.exists(self.gaussian_chk):
-                shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
-                link0["oldchk"] = "oldchk.chk"
+            if self.gaussian_chk:
                 link0["chk"] = "chk.chk"
+
+                if os.path.exists(self.gaussian_chk):
+                    shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
+                    link0["oldchk"] = "oldchk.chk"
 
                 if "guess=read" not in route_card:
                     logger.info("checkpoint file employed but guess=read not found in route card - is this a mistake?")
