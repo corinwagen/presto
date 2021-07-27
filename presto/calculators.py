@@ -204,6 +204,7 @@ class GaussianCalculator(Calculator):
             route_card="#p hf/3-21g force",
             footer=None,
             constraints=list(),
+            gaussian_chk=None,
         ):
         if not re.search("force", route_card):
             raise ValueError("need a force job to calculate forces")
@@ -215,8 +216,12 @@ class GaussianCalculator(Calculator):
         self.footer = footer
 
         for c in constraints:
-            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
         self.constraints = constraints
+
+        if gaussian_chk is not None:
+            assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
+        self.gaussian_chk = gaussian_chk
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
         """
@@ -246,7 +251,18 @@ class GaussianCalculator(Calculator):
         energy, forces = None, None
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
-            cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, self.link0, self.footer)
+            link0 = copy.deepcopy(self.link0)
+
+            # we will try and use the previous checkpoint file to accelerate the current run.
+            if self.gaussian_chk and os.path.exists(self.gaussian_chk):
+                shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
+                link0["oldchk"] = "oldchk.chk"
+                link0["chk"] = "chk.chk"
+
+                if "guess=read" not in route_card:
+                    logger.info("checkpoint file employed but guess=read not found in route card - is this a mistake?")
+
+            cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
             command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
             # run g16
@@ -276,6 +292,10 @@ class GaussianCalculator(Calculator):
             energy = properties_dict["energy"]
             forces = properties_dict["forces"]
             forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
+
+            # save new checkpoint file
+            if self.gaussian_chk and os.path.exists(f"{tmpdir}/chk.chk"):
+                shutil.copyfile(f"{tmpdir}/chk.chk", self.gaussian_chk)
 
         # restore working directory
         os.chdir(old_working_directory)
@@ -409,10 +429,15 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
             assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
             footer = settings["footer"]
 
+        gaussian_chk = None
+        if "gaussian_chk" in settings:
+            assert isinstance(settings["gaussian_chk"], str), "Calculator `gaussian_chk` must be string"
+            gaussian_chk = settings["gaussian_chk"]
+
         if link0 is not None:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
         else:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
 
     elif settings["type"].lower() == "xtb":
         charge = 0

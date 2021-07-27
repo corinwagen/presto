@@ -84,7 +84,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
             if geometry is not None:
                 assert isinstance(geometry, str), "``geometry``must be a string!"
                 assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
-                mol = cctk.XYZFile.read_file(geometry).molecule
+                mol = cctk.XYZFile.read_file(geometry).get_molecule()
                 args["atomic_numbers"] = mol.atomic_numbers
                 x = mol.geometry
 
