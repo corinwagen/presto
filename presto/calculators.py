@@ -245,7 +245,7 @@ class GaussianCalculator(Calculator):
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
         route_card = self.route_card
         if qc:
-            logger.warning("warning: initial DIIS convergence failed, trying quadradic convergence")
+            logger.warning("warning: initial DIIS convergence failed, trying quadratic convergence")
             route_card = f"{self.route_card} scf=qc"
 
         energy, forces = None, None
@@ -431,8 +431,12 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
 
         gaussian_chk = None
         if "gaussian_chk" in settings:
-            assert isinstance(settings["gaussian_chk"], str), "Calculator `gaussian_chk` must be string"
-            gaussian_chk = settings["gaussian_chk"]
+            if isinstance(settings["gaussian_chk"], str):
+                gaussian_chk = settings["gaussian_chk"]
+            elif settings["gaussian_chk"] is True:
+                gaussian_chk = f"{self.checkpoint_filename}.gchk"
+            else:
+                raise ValueError("`gaussian_chk` must be string or True!")
 
         if link0 is not None:
             return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
