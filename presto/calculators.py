@@ -276,7 +276,7 @@ class GaussianCalculator(Calculator):
                 assert os.path.isfile(f"{tmpdir}/g16-out.out"), "no energy file!"
             except Exception as e:
                 try:
-                    assert qc is False # retry with quadradic convergence
+                    assert qc is False # retry with quadratic convergence
                     self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
                 except Exception as e:
                     shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-failed-input.gjf")

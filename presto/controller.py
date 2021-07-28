@@ -78,7 +78,7 @@ class Controller():
                 self.trajectory.save()
 
             count += 1
-            if count < 10:
+            if count < 100:
                 logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
         if current_time == self.trajectory.stop_time:
