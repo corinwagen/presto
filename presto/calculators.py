@@ -434,7 +434,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
             if isinstance(settings["gaussian_chk"], str):
                 gaussian_chk = settings["gaussian_chk"]
             elif settings["gaussian_chk"] is True:
-                gaussian_chk = f"{self.checkpoint_filename}.gchk"
+                gaussian_chk = f"{checkpoint_filename}.gchk"
             else:
                 raise ValueError("`gaussian_chk` must be string or True!")
 
