@@ -1,5 +1,6 @@
 import numpy as np
-import os, random, string, re, cctk, ctypes, copy, shutil, time, tempfile, logging
+import os, random, string, re, cctk, ctypes, copy, shutil, tempfile, logging
+import time as timelib
 import subprocess as sp
 import multiprocessing as mp
 import presto
@@ -26,7 +27,7 @@ class Calculator():
     def __init__(self):
         pass
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe, time=None):
         """
         Return energy, forces
         """
@@ -41,12 +42,12 @@ class NullCalculator(Calculator):
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
         energy = 0
         forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
 
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -92,7 +93,7 @@ class XTBCalculator(Calculator):
             assert isinstance(topology, str), "need path for topology file!"
         self.topology = topology
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -143,9 +144,9 @@ class XTBCalculator(Calculator):
 
             # run xtb
             try:
-                start = time.time()
+                start = timelib.time()
                 result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
-                end = time.time()
+                end = timelib.time()
                 elapsed = end - start
 
                 result.check_returncode()
@@ -183,7 +184,7 @@ class XTBCalculator(Calculator):
 
         # apply constraints
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -223,7 +224,7 @@ class GaussianCalculator(Calculator):
             assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
         self.gaussian_chk = gaussian_chk
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -245,7 +246,7 @@ class GaussianCalculator(Calculator):
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
         route_card = self.route_card
         if qc:
-            logger.warning("warning: initial DIIS convergence failed, trying quadratic convergence")
+            logger.warning(f"warning: initial DIIS convergence failed at {time} fs, trying quadratic convergence")
             route_card = f"{self.route_card} scf=qc"
 
         energy, forces = None, None
@@ -267,9 +268,9 @@ class GaussianCalculator(Calculator):
 
             # run g16
             try:
-                start = time.time()
+                start = timelib.time()
                 result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
-                end = time.time()
+                end = timelib.time()
                 elapsed = end - start
 
                 result.check_returncode()
@@ -302,7 +303,7 @@ class GaussianCalculator(Calculator):
 
         # apply constraints
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -337,7 +338,7 @@ class ONIOMCalculator(Calculator):
         self.constraints = constraints
 
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
@@ -353,6 +354,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hh,
+            "time": time,
         })
         process_hh.start()
 
@@ -361,6 +363,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
+            "time": time,
         })
         process_hl.start()
 
@@ -369,6 +372,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": atomic_numbers,
             "positions": positions,
             "pipe": child_ll,
+            "time": time,
         })
         process_ll.start()
 

@@ -21,7 +21,7 @@ class VelocityVerletIntegrator(Integrator):
             assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
         self.potential = potential
 
-    def next(self, frame, forwards=True):
+    def next(self, frame, forwards=True, time=None):
         calculator = frame.trajectory.calculator
         timestep = frame.trajectory.timestep
         if forwards == False:
@@ -30,7 +30,7 @@ class VelocityVerletIntegrator(Integrator):
         try:
             x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
-            energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+            energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
             if self.potential is not None:
                 pe, pf = self.potential.evaluate(x_full)
                 forces += pf
@@ -70,7 +70,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
             assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
         self.potential = potential
 
-    def next(self, frame, forwards=True):
+    def next(self, frame, forwards=True, time=None):
         """
         Using the approach from http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
         (Vanden-Eijden–Ciccotti second-order Langevin integrator)
@@ -98,7 +98,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full = frame.positions + timestep * frame.velocities + C
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
-        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms)
+        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
         if self.potential is not None:
             pe, pf = self.potential.evaluate(x_full)
             forces += pf

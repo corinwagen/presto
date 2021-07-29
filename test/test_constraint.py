@@ -81,10 +81,13 @@ class TestConstraint(unittest.TestCase):
         traj = presto.config.build("test/static/ex.yaml", "test/static/ex.chk", "test/static/nazarov-elim-solvated.xyz")
         mol = traj.frames[0].molecule()
 
-        constraint = presto.constraints.PairwisePolynomialConstraint(13, [14,15,16], 1.0, min=False, force_constant=50)
+        constraint = presto.constraints.PairwisePolynomialConstraint(13, [14,15,16], 1.0, min=False, force_constant=50, fadein=100)
         f, e = constraint.evaluate(mol.geometry)
         self.assertTrue(np.linalg.norm(f[14]) == 0)
         self.assertFalse(np.linalg.norm(f[15]) == 0)
         self.assertTrue(np.linalg.norm(f[16]) == 0)
+
+        f2, e2 = constraint.evaluate(mol.geometry, time=50)
+        self.assertTrue(np.linalg.norm(f[15])/np.linalg.norm(f2[15]) - 2 < 0.0001)
 
         os.remove("test/static/ex.chk")

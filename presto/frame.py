@@ -1,5 +1,7 @@
 import numpy as np
-import math, copy, cctk, time
+import math, copy, cctk
+
+import time as timelib
 
 import cctk
 from cctk.helper_functions import get_symbol, get_vdw_radius
@@ -72,9 +74,9 @@ class Frame():
         assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
 
         try:
-            start = time.time()
-            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards)
-            end = time.time()
+            start = timelib.time()
+            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
+            end = timelib.time()
             elapsed = end - start
 
             # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
