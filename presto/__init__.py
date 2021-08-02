@@ -12,9 +12,9 @@ import presto.controller
 import presto.checks
 import presto.reporters
 import presto.potentials
-import presto.quasiclassical
+import presto.initialization
 
 import logging
 logger = logging.getLogger()
 
-logger.info(f"presto initialized successfully")
+logger.info(f"presto initialized successfully - all modules loaded")
