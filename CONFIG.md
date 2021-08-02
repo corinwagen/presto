@@ -61,7 +61,9 @@ You would only want to run a ``ReactionTrajectory`` backwards in time, usually f
 
 **``constraints``**:
 
-**``quasiclassical``** (``ReactionTrajectory`` only):
+* **``fadein``
+
+**``initialization``** (``ReactionTrajectory`` only):
 
 * **``output_file``**
     
