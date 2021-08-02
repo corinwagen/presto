@@ -380,10 +380,17 @@ class ONIOMCalculator(Calculator):
         e_hl, f_hl = parent_hl.recv()
         e_ll, f_ll = parent_ll.recv()
 
-        process_hh.join()
-        process_hl.join()
-        process_ll.join()
+        # 1 hour is the limit, we're not waiting any longer than that!
+        process_hh.join(3600)
+        process_hl.join(3600)
+        process_ll.join(3600)
 
+        # check things actually finished okay
+        assert process_hh.exitcode == 0, f"process_hh exited not-ok with exit code {process_hh.exitcode}"
+        assert process_hl.exitcode == 0, f"process_hl exited not-ok with exit code {process_hl.exitcode}"
+        assert process_ll.exitcode == 0, f"process_ll exited not-ok with exit code {process_ll.exitcode}"
+
+        # do the ONIOM combination
         energy = e_hh + e_ll - e_hl
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
