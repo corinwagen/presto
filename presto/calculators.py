@@ -275,6 +275,9 @@ class GaussianCalculator(Calculator):
 
                 result.check_returncode()
                 assert os.path.isfile(f"{tmpdir}/g16-out.out"), "no energy file!"
+
+                # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
+                gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
             except Exception as e:
                 try:
                     assert qc is False # retry with quadratic convergence
@@ -285,7 +288,6 @@ class GaussianCalculator(Calculator):
                     raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
             # extract output
-            gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
             ensemble = gaussian_file.ensemble
             molecule = ensemble.molecules[-1]
 
