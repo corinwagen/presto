@@ -8,7 +8,7 @@ class Constraint():
     def __init__(self):
         pass
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, time=None):
         """
         Returns forces and energy.
         """
@@ -151,7 +151,7 @@ class Anchor(Constraint):
         self.power = power
         self.force_constant = force_constant
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, time=None):
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be one-indexed array"
         x = positions[self.atom]
 
