@@ -83,11 +83,11 @@ class Controller():
                     velocities.append(v)
                     accelerations.append(a)
                 atomic_symbols = molecule.get_atomic_symbols()
-                velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(len(atomic_symbols)) ]
+                velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
                 velocities_df = DataFrame(velocities, columns=velocity_names)
                 velocities_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_velocities.csv"
                 velocities_df.to_csv(velocities_filename)
-                acceleration_names = [ f"a_{atomic_symbols[i]}{i+1}" for i in range(len(atomic_symbols)) ]
+                acceleration_names = [ f"a_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
                 accelerations_df = DataFrame(accelerations, columns=acceleration_names)
                 accelerations_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_accelerations.csv"
                 accelerations_df.to_csv(accelerations_filename)
