@@ -89,16 +89,22 @@ class Controller():
                 accelerations = np.array(accelerations)
                 molecule_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug.gjf"
                 cctk.XYZFile.write_molecule_to_file(molecule_filename, molecule)
-                #atomic_symbols = molecule.get_atomic_symbols()
-                #velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
-                #velocities_df = DataFrame(velocities, columns=velocity_names)
+                atomic_symbols = molecule.get_atomic_symbols()
+                n_frames = len(velocities)
+                n_atoms = len(atomic_symbols)
+                velocities = velocities.reshape(n_frames,n_atoms*3)
                 velocities_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_velocities.csv"
                 np.savetxt(velocities_filename, velocities, delimiter=",")
+                accelerations_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_accelerations.csv"
+                accelerations = velocities.reshape(n_frames,n_atoms*3)
+                np.savetxt(accelerations_filename, accelerations, delimiter=",")
+
+
+                #velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
+                #velocities_df = DataFrame(velocities, columns=velocity_names)
                 #velocities_df.to_csv(velocities_filename)
                 #acceleration_names = [ f"a_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
                 #accelerations_df = DataFrame(accelerations, columns=acceleration_names)
-                accelerations_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_accelerations.csv"
-                np.savetxt(accelerations_filename, accelerations, delimiter=",")
                 #accelerations_df.to_csv(accelerations_filename)
 
                 # send an error message
