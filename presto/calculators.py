@@ -289,7 +289,8 @@ class GaussianCalculator(Calculator):
                     raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
             # check we read ok
-            assert gaussian_file is not None, "g16 must not have worked right"
+            if gaussian_file is None:
+                raise ValueError("g16 failure")
 
             # extract output
             ensemble = gaussian_file.ensemble
