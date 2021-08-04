@@ -71,14 +71,14 @@ class Controller():
 
                 # create a movie of the last n frames
                 ensemble = cctk.ConformationalEnsemble()
-                for frame in self.frames[-n_debug_frames:]:
+                for frame in self.trajectory.frames[-n_debug_frames:]:
                     ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
                 movie_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug.pdb"
                 cctk.PDBFile.write_ensemble_to_trajectory(movie_filename, ensemble)
 
                 # write out the velocities and accelerations of the last n frames
                 velocities, accelerations = [], []
-                for frame in self.frames[-n_debug_frames:]:
+                for frame in self.trajectory.frames[-n_debug_frames:]:
                     v, a = frame.velocities, frame.accelerations
                     velocities.append(v)
                     accelerations.append(a)
