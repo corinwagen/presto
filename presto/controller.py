@@ -80,17 +80,24 @@ class Controller():
                 velocities, accelerations = [], []
                 for frame in self.trajectory.frames[-n_debug_frames:]:
                     v, a = frame.velocities, frame.accelerations
+                    if len(velocities) == 0:
+                        logger.info(f"velocities {v.shape}")
+                        logger.info(f"accelerations {a.shape}")
                     velocities.append(v)
                     accelerations.append(a)
+                velocities = np.array(velocities)
+                accelerations = np.array(accelerations)
                 atomic_symbols = molecule.get_atomic_symbols()
                 velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
-                velocities_df = DataFrame(velocities, columns=velocity_names)
+                #velocities_df = DataFrame(velocities, columns=velocity_names)
                 velocities_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_velocities.csv"
-                velocities_df.to_csv(velocities_filename)
+                np.savetxt(velocities_filename, velocities, delimeter=",")
+                #velocities_df.to_csv(velocities_filename)
                 acceleration_names = [ f"a_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
-                accelerations_df = DataFrame(accelerations, columns=acceleration_names)
+                #accelerations_df = DataFrame(accelerations, columns=acceleration_names)
                 accelerations_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_accelerations.csv"
-                accelerations_df.to_csv(accelerations_filename)
+                np.savetxt(accelerations_filename, accelerations, delimeter=",")
+                #accelerations_df.to_csv(accelerations_filename)
 
                 # send an error message
                 logger.info(f"Error at time {current_time} - run terminated and debugging files written")
