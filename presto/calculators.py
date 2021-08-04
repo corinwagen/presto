@@ -267,6 +267,7 @@ class GaussianCalculator(Calculator):
             command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
             # run g16
+            gaussian_file = None
             try:
                 start = timelib.time()
                 result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
@@ -286,6 +287,9 @@ class GaussianCalculator(Calculator):
                     shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-failed-input.gjf")
                     shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-failed-output.out")
                     raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
+
+            # check we read ok
+            assert gaussian_file is not None, "g16 must not have worked right"
 
             # extract output
             ensemble = gaussian_file.ensemble
