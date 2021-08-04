@@ -4,6 +4,7 @@ import time as timelib
 import subprocess as sp
 import multiprocessing as mp
 import presto
+from random import randrange
 
 logger = logging.getLogger(__name__)
 
@@ -284,8 +285,10 @@ class GaussianCalculator(Calculator):
                     assert qc is False # retry with quadratic convergence
                     self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
                 except Exception as e:
-                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-failed-input.gjf")
-                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-failed-output.out")
+                    random_number = randrange(1000000)
+                    print(f"dumping gaussian files with label {random_number:06d}")
+                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
+                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
                     raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
             # check we read ok

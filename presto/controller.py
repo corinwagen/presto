@@ -99,14 +99,6 @@ class Controller():
                 accelerations = velocities.reshape(n_frames,n_atoms*3)
                 np.savetxt(accelerations_filename, accelerations, delimiter=",")
 
-
-                #velocity_names = [ f"v_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
-                #velocities_df = DataFrame(velocities, columns=velocity_names)
-                #velocities_df.to_csv(velocities_filename)
-                #acceleration_names = [ f"a_{atomic_symbols[i]}{i+1}" for i in range(1,len(atomic_symbols)+1) ]
-                #accelerations_df = DataFrame(accelerations, columns=acceleration_names)
-                #accelerations_df.to_csv(accelerations_filename)
-
                 # send an error message
                 logger.info(f"Error at time {current_time} - run terminated and debugging files written")
                 raise ValueError(f"Controller failed: {e}")
