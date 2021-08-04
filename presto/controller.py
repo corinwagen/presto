@@ -88,7 +88,7 @@ class Controller():
                 velocities = np.array(velocities)
                 accelerations = np.array(accelerations)
                 molecule_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug.gjf"
-                cctk.XYZFile.write_molecule_to_file(molecule_filename, molecule)
+                cctk.GaussianFile.write_ensemble_to_file(molecule_filename, ensemble, route_card="#")
                 atomic_symbols = molecule.get_atomic_symbols()
                 n_frames = len(velocities)
                 n_atoms = len(atomic_symbols)
