@@ -56,6 +56,7 @@ class PairwisePolynomialConstraint(Constraint):
         self.power = power
         self.force_constant = force_constant
         self.equilibrium = equilibrium
+        self.direction = direction
 
         if min:
             self.min = True
@@ -111,16 +112,16 @@ class PairwisePolynomialConstraint(Constraint):
 
         # compute distance and apply one-sided potential if requested
         delta = np.linalg.norm(x1-x2) - self.equilibrium
-        if direction == "left_only" and delta > 0:
+        if self.direction == "left_only" and delta > 0:
             # when delta is positive, the actual distance is larger than the equilibrium distance
             # so we are on the right side and we should not apply the constraint
             delta = 0
-        if direction == "right_only" and delta < 0:
+        if self.direction == "right_only" and delta < 0:
             # when delta is negative, the actual distance is smaller than the equilibrium distance
             # so we are on the left side and should not apply the constraint
             delta = 0
 
-        direction = (x2 - x1)/np.linalg.norm(x1-x2)
+        force_direction = (x2 - x1)/np.linalg.norm(x1-x2)
 
         # damp constraints at the very start of a trajectory
         force_constant = self.force_constant
@@ -130,8 +131,8 @@ class PairwisePolynomialConstraint(Constraint):
                 assert force_constant >= 0, f"force constant should not be negative, but somehow it's {force_constant} (default is {self.force_constant})"
 
         forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
-        forces[which_atom1] = delta ** (self.power - 1) * force_constant * 1 * direction
-        forces[which_atom2] = delta ** (self.power - 1) * force_constant * -1 * direction
+        forces[which_atom1] = delta ** (self.power - 1) * force_constant * 1 * force_direction
+        forces[which_atom2] = delta ** (self.power - 1) * force_constant * -1 * force_direction
 
         energy = force_constant / self.power * delta ** self.power
 
@@ -169,10 +170,10 @@ class Anchor(Constraint):
         x = positions[self.atom]
 
         delta = np.linalg.norm(x)
-        direction = (-1 * x)/np.linalg.norm(x)
+        force_direction = (-1 * x)/np.linalg.norm(x)
 
         forces = np.zeros(positions.shape).view(cctk.OneIndexedArray)
-        f = delta ** (self.power - 1) * self.force_constant * direction
+        f = delta ** (self.power - 1) * self.force_constant * force_direction
         forces[self.atom] = f
 
         energy = self.force_constant / self.power * delta ** self.power
