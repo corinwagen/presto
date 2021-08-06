@@ -31,9 +31,10 @@ class PairwisePolynomialConstraint(Constraint):
         min (bool): whether the largest or smallest distance should be taken.
         fadein (int): the constraint will linearly begin to be applied over this many frames.
             If ``fadein`` is 100, then at 0 fs there will be no constraint, at 50 fs there will be a constraint with 1/2 force constant, and from 100 fs onwards the full constraint will be active.
+        direction (str): None = regular harmonic constraint, "left" = apply constraint only if distance < equilibrium, "right" = apply constraint only if distance > equilibrium
     """
 
-    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0):
+    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
         assert isinstance(atom1, (list, int)), "atom number must be integer"
         assert isinstance(atom2, (list, int)), "atom number must be integer"
         assert isinstance(power, (int, float)), "power must be numeric"
@@ -106,7 +107,17 @@ class PairwisePolynomialConstraint(Constraint):
                         x1 = positions[x]
                         x2 = positions[y]
 
+        # compute distance and apply one-sided potential if requested
         delta = np.linalg.norm(x1-x2) - self.equilibrium
+        if direction == "left" and delta > 0:
+            # when delta is positive, the actual distance is larger than the equilibrium distance
+            # so we are on the right side and we should not apply the constraint
+            delta = 0
+        if direction == "right" and delta < 0:
+            # when delta is negative, the actual distance is smaller than the equilibrium distance
+            # so we are on the left side and should not apply the constraint
+            delta = 0
+
         direction = (x2 - x1)/np.linalg.norm(x1-x2)
 
         # damp constraints at the very start of a trajectory
@@ -199,6 +210,11 @@ def build_constraints(settings):
         if "fadein" in row:
             assert isinstance(row["fadein"], int) and row["fadein"] > 0, "``fadein`` must be positive integer"
             args["fadein"] = row["fadein"]
+
+        if "direction" in row:
+            assert isinstance(row["direction"], str), "``direction`` must be a string"
+            assert row["direction"] == "left" or row["direction"] == "right", "``direction`` must be 'left' or 'right'"
+            args["direction"] = row["direction"]
 
         constraints.append(PairwisePolynomialConstraint(**args))
     return constraints
