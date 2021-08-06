@@ -288,6 +288,10 @@ class GaussianCalculator(Calculator):
 
                     # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
                     gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
+                    random_number = randrange(1000000)
+                    print(f"dumping gaussian files with label {random_number:06d}")
+                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-debug-input.gjf")
+                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-debug-output.out")
                 except Exception as e:
                     random_number = randrange(1000000)
                     print(f"dumping gaussian files with label {random_number:06d}")
