@@ -2,6 +2,7 @@ import presto, cctk, logging, time
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, Series
+import sys, traceback
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,8 @@ class Controller():
                 # send an error message
                 logger.info(f"Error at time {current_time} - run terminated and debugging files written")
                 '''
-                raise ValueError(f"Controller failed: {e}")
+                traceback.print_exception(*sys.exc_info())
+                raise ValueError(f"controller failed: {e}")
             assert new_frame.time == current_time, f"frame time {new_frame.time} does not match loop time {current_time}"
             self.trajectory.frames.append(new_frame)
 
