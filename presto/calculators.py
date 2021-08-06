@@ -144,6 +144,12 @@ class XTBCalculator(Calculator):
             molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
             cctk.XYZFile.write_molecule_to_file(f"{tmpdir}/xtb-in.xyz", molecule)
 
+            # if overall charges are available, copy them into the xtb temp folder
+            # overall_charges should be a single-column text file containing charges in atomic number order
+            # enabled only for gfnff
+            if self.topology and os.path.isfile(f"{old_working_directory}/overall_charges"):
+                shutil.copyfile(f"{old_working_directory}/overall_charges", f"{tmpdir}/charges")
+
             # run xtb
             try:
                 start = timelib.time()
