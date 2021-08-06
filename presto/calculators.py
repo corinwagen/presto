@@ -349,24 +349,20 @@ class ONIOMCalculator(Calculator):
     """
     Composes two other calculators, and computes forces according to the ONIOM embedding scheme.
     """
-    def __init__(self, high_calculator, low_calculator, constraints=list()):
+    def __init__(self, high_calculator, full_calculator, low_calculator, constraints=list()):
         assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
+        assert isinstance(full_calculator, Calculator), "full calculator isn't a proper Calculator!"
         assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
         self.high_calculator = high_calculator
+        self.full_calculator = full_calculator
         self.low_calculator = low_calculator
 
-        # prevent namespace collisions
-        self.full_calculator = copy.deepcopy(self.low_calculator)
-        if isinstance(self.full_calculator, XTBCalculator):
-            if self.full_calculator.gfn == "ff":
-                self.full_calculator.topology = self.full_calculator.topology.replace(".low", ".full")
-
         # atom numbering gets messed up if you don't give full_calculator the constraints
+        # assumes there won't be any constraints in the high or low layers?
         for c in constraints:
             assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
         self.full_calculator.constraints = constraints
         self.constraints = constraints
-
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None):
         """
@@ -437,9 +433,11 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
 
     if settings["type"].lower() == "oniom":
         assert "high_calculator" in settings, "Need `high_calculator` settings dictionary for ONIOM!"
+        assert "full_calculator" in settings, "Need `full_calculator` settings dictionary for ONIOM!"
         assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
         return ONIOMCalculator(
             high_calculator=build_calculator(settings["high_calculator"], checkpoint_filename + ".high"),
+            full_calculator=build_calculator(settings["full_calculator"], checkpoint_fulname + ".full"),
             low_calculator=build_calculator(settings["low_calculator"], checkpoint_filename + ".low"),
             constraints=constraints,
         )
