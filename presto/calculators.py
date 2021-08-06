@@ -252,6 +252,7 @@ class GaussianCalculator(Calculator):
         energy, forces = None, None
         elapsed = []
         for retries in range(max_retries):
+            energy, forces = None, None
             with tempfile.TemporaryDirectory() as tmpdir:
                 link0 = copy.deepcopy(self.link0)
 
@@ -319,7 +320,7 @@ class GaussianCalculator(Calculator):
                 break
 
         # if Gaussian failed after all these attempts, die
-        if energy is not None and forces is not None:
+        if energy is not None or forces is not None:
             print(f"g16 failed after {max_retries} attempts")
             sys.exit(1)
 
