@@ -320,9 +320,7 @@ class GaussianCalculator(Calculator):
                 break
 
         # if Gaussian failed after all these attempts, die
-        if energy is None or forces is None:
-            print(f"g16 failed after {max_retries} attempts")
-            sys.exit(1)
+        assert energy is not None and forces is not None, f"g16 failed after {max_retries} attempts"
 
         # restore working directory
         os.chdir(old_working_directory)
