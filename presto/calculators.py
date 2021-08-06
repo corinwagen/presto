@@ -225,7 +225,7 @@ class GaussianCalculator(Calculator):
             assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
         self.gaussian_chk = gaussian_chk
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, max_retries=10):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -234,7 +234,8 @@ class GaussianCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
-            qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails
+            qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails (currently disabled)
+            max_retries (int): maximum number of times to retry a calculation
 
         Returns:
             energy (float): in Hartree
@@ -246,66 +247,76 @@ class GaussianCalculator(Calculator):
 
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
         route_card = self.route_card
-        if qc:
-            logger.warning(f"warning: initial DIIS convergence failed at {time} fs, trying quadratic convergence")
-            route_card = f"{self.route_card} scf=qc"
 
         energy, forces = None, None
-        elapsed = 0
-        with tempfile.TemporaryDirectory() as tmpdir:
-            link0 = copy.deepcopy(self.link0)
+        elapsed = []
+        for retries in range(max_retries):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # if we are using checkpoints, use guess=read to try and speed up the current run
+                # however, if we are onto several retries, start from scratch to see if that helps
+                if self.gaussian_chk:
+                    link0["chk"] = "chk.chk"
 
-            # we will try and use the previous checkpoint file to accelerate the current run.
-            if self.gaussian_chk:
-                link0["chk"] = "chk.chk"
+                    if os.path.exists(self.gaussian_chk) and retries < 3:
+                        shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
+                        link0["oldchk"] = "oldchk.chk"
+                        route_card = f"{route_card} guess=read"
 
-                if os.path.exists(self.gaussian_chk):
-                    shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
-                    link0["oldchk"] = "oldchk.chk"
-                    route_card = f"{route_card} guess=read"
+                # try to deal with quadrature grid errors
+                if retries > 2:
+                    route_card += " int=noxctest"
 
-            cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
-            command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
+                # setup run
+                cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
+                command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
-            # run g16
-            gaussian_file = None
-            try:
-                start = timelib.time()
-                result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
-                end = timelib.time()
-                elapsed = end - start
-
-                result.check_returncode()
-                assert os.path.isfile(f"{tmpdir}/g16-out.out"), "no energy file!"
-
-                # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
-                gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
-            except Exception as e:
-                random_number = randrange(1000000)
-                print(f"dumping gaussian files with label {random_number:06d}")
-                shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
-                shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
+                # run g16
+                gaussian_file = None
                 try:
-                    assert qc is False # retry with quadratic convergence
-                    self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
+                    start = timelib.time()
+                    result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
+                    end = timelib.time()
+                    elapsed.append(end - start)
+
+                    result.check_returncode()
+                    if not os.path.isfile(f"{tmpdir}/g16-out.out"):
+                        raise ValueError("no gaussian output file found")
+
+                    # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
+                    gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
                 except Exception as e:
-                   raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
+                    random_number = randrange(1000000)
+                    print(f"dumping gaussian files with label {random_number:06d}")
+                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
+                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
+                    #try:
+                    #    assert qc is False # retry with quadratic convergence
+                    #    self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
+                    #except Exception as e:
+                    #   raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
-            # check we read ok
-            assert gaussian_file is not None, f"g16 failure"
+                # check we read ok
+                if gaussian_file is None:
+                    # gaussian failed
+                    continue
 
-            # extract output
-            ensemble = gaussian_file.ensemble
-            molecule = ensemble.molecules[-1]
+                # extract output
+                ensemble = gaussian_file.ensemble
+                molecule = ensemble.molecules[-1]
 
-            properties_dict = ensemble.get_properties_dict(molecule)
-            energy = properties_dict["energy"]
-            forces = properties_dict["forces"]
-            forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
+                properties_dict = ensemble.get_properties_dict(molecule)
+                energy = properties_dict["energy"]
+                forces = properties_dict["forces"]
+                forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
 
-            # save new checkpoint file
-            if self.gaussian_chk and os.path.exists(f"{tmpdir}/chk.chk"):
-                shutil.copyfile(f"{tmpdir}/chk.chk", self.gaussian_chk)
+                # save new checkpoint file
+                if self.gaussian_chk and os.path.exists(f"{tmpdir}/chk.chk"):
+                    shutil.copyfile(f"{tmpdir}/chk.chk", self.gaussian_chk)
+
+                break
+
+        # if Gaussian failed after all these attempts, die
+        assert energy is not None and forces is not None, f"g16 failed after {max_retries} attempts"
 
         # restore working directory
         os.chdir(old_working_directory)
