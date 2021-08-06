@@ -147,11 +147,7 @@ class XTBCalculator(Calculator):
             # if overall charges are available, copy them into the xtb temp folder
             # overall_charges should be a single-column text file containing charges in atomic number order
             # enabled only for gfnff
-            print(self.gfn)
-            print(f"{old_working_directory}/overall_charges")
-            print(os.path.isfile(f"{old_working_directory}/overall_charges"))
             if self.gfn and os.path.isfile(f"{old_working_directory}/overall_charges"):
-                print("copied")
                 shutil.copyfile(f"{old_working_directory}/overall_charges", f"{tmpdir}/charges")
 
             # run xtb
@@ -165,6 +161,7 @@ class XTBCalculator(Calculator):
                 assert os.path.isfile(f"{tmpdir}/energy"), "no energy file!"
                 assert os.path.isfile(f"{tmpdir}/gradient"), "no gradient file!"
 
+                shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb.xyz")
                 shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb.out")
             except Exception as e:
                 shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb-failed-input.xyz")
