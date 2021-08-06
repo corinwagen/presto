@@ -266,10 +266,6 @@ class GaussianCalculator(Calculator):
                         link0["oldchk"] = "oldchk.chk"
                         route_card = f"{route_card} guess=read"
 
-                # try to deal with quadrature grid errors
-                if retries > 2:
-                    route_card += " int=noxctest"
-
                 # setup run
                 cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
                 command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
