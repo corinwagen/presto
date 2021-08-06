@@ -31,7 +31,9 @@ class PairwisePolynomialConstraint(Constraint):
         min (bool): whether the largest or smallest distance should be taken.
         fadein (int): the constraint will linearly begin to be applied over this many frames.
             If ``fadein`` is 100, then at 0 fs there will be no constraint, at 50 fs there will be a constraint with 1/2 force constant, and from 100 fs onwards the full constraint will be active.
-        direction (str): None = regular harmonic constraint, "left" = apply constraint only if distance < equilibrium, "right" = apply constraint only if distance > equilibrium
+        direction (str): None = regular harmonic constraint
+                         "left_only" = apply constraint only if distance < equilibrium
+                         "right_only" = apply constraint only if distance > equilibrium
     """
 
     def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
@@ -109,11 +111,11 @@ class PairwisePolynomialConstraint(Constraint):
 
         # compute distance and apply one-sided potential if requested
         delta = np.linalg.norm(x1-x2) - self.equilibrium
-        if direction == "left" and delta > 0:
+        if direction == "left_only" and delta > 0:
             # when delta is positive, the actual distance is larger than the equilibrium distance
             # so we are on the right side and we should not apply the constraint
             delta = 0
-        if direction == "right" and delta < 0:
+        if direction == "right_only" and delta < 0:
             # when delta is negative, the actual distance is smaller than the equilibrium distance
             # so we are on the left side and should not apply the constraint
             delta = 0
@@ -213,7 +215,7 @@ def build_constraints(settings):
 
         if "direction" in row:
             assert isinstance(row["direction"], str), "``direction`` must be a string"
-            assert row["direction"] == "left" or row["direction"] == "right", "``direction`` must be 'left' or 'right'"
+            assert row["direction"] == "left_only" or row["direction"] == "right_only", "``direction`` must be 'left_only' or 'right_only'"
             args["direction"] = row["direction"]
 
         constraints.append(PairwisePolynomialConstraint(**args))
