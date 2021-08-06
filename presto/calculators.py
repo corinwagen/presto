@@ -160,6 +160,8 @@ class XTBCalculator(Calculator):
                 result.check_returncode()
                 assert os.path.isfile(f"{tmpdir}/energy"), "no energy file!"
                 assert os.path.isfile(f"{tmpdir}/gradient"), "no gradient file!"
+
+                shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb.out")
             except Exception as e:
                 shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb-failed-input.xyz")
                 shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb-failed-output.out")
