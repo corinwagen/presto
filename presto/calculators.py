@@ -437,7 +437,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
         assert "low_calculator" in settings, "Need `low_calculator` settings dictionary for ONIOM!"
         return ONIOMCalculator(
             high_calculator=build_calculator(settings["high_calculator"], checkpoint_filename + ".high"),
-            full_calculator=build_calculator(settings["full_calculator"], checkpoint_fulname + ".full"),
+            full_calculator=build_calculator(settings["full_calculator"], checkpoint_filename + ".full"),
             low_calculator=build_calculator(settings["low_calculator"], checkpoint_filename + ".low"),
             constraints=constraints,
         )
