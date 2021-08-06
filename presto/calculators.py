@@ -147,6 +147,9 @@ class XTBCalculator(Calculator):
             # if overall charges are available, copy them into the xtb temp folder
             # overall_charges should be a single-column text file containing charges in atomic number order
             # enabled only for gfnff
+            print(self.gfn)
+            print(f"{old_working_directory}/overall_charges")
+            print(os.path.isfile(f"{old_working_directory}/overall_charges"))
             if self.gfn and os.path.isfile(f"{old_working_directory}/overall_charges"):
                 print("copied")
                 shutil.copyfile(f"{old_working_directory}/overall_charges", f"{tmpdir}/charges")
