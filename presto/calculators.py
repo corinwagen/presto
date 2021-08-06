@@ -5,6 +5,7 @@ import subprocess as sp
 import multiprocessing as mp
 import presto
 from random import randrange
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +319,9 @@ class GaussianCalculator(Calculator):
                 break
 
         # if Gaussian failed after all these attempts, die
-        assert energy is not None and forces is not None, f"g16 failed after {max_retries} attempts"
+        if energy is not None and forces is not None:
+            print(f"g16 failed after {max_retries} attempts")
+            sys.exit(1)
 
         # restore working directory
         os.chdir(old_working_directory)
