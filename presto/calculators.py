@@ -320,7 +320,7 @@ class GaussianCalculator(Calculator):
                 break
 
         # if Gaussian failed after all these attempts, die
-        if energy is not None or forces is not None:
+        if energy is None or forces is None:
             raise ValueError(f"g16 failed after {max_retries} attempts")
 
         # restore working directory
