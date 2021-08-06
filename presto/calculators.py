@@ -252,6 +252,8 @@ class GaussianCalculator(Calculator):
         elapsed = []
         for retries in range(max_retries):
             with tempfile.TemporaryDirectory() as tmpdir:
+                link0 = copy.deepcopy(self.link0)
+
                 # if we are using checkpoints, use guess=read to try and speed up the current run
                 # however, if we are onto several retries, start from scratch to see if that helps
                 if self.gaussian_chk:
