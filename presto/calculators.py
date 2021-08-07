@@ -162,8 +162,8 @@ class XTBCalculator(Calculator):
                 assert os.path.isfile(f"{tmpdir}/gradient"), "no gradient file!"
 
             except Exception as e:
-                print(f"dumping xtb files with label {random_number:06d}")
                 random_number = randrange(1000000)
+                print(f"dumping xtb files with label {random_number:06d}")
                 shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb-{random_number:06d}.xyz")
                 shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb-{random_number:06d}.out")
                 raise ValueError(f"xtb failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
