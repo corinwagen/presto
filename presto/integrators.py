@@ -44,7 +44,7 @@ class VelocityVerletIntegrator(Integrator):
             pe, pf = self.potential.evaluate(x_full)
             forces += pf
             energy += pe
-i        forces[frame.inactive_mask()] = 0
+        forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
 
