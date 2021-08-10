@@ -235,7 +235,7 @@ class GaussianCalculator(Calculator):
             assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
         self.gaussian_chk = gaussian_chk
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, max_retries=10):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, max_retries=5):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 

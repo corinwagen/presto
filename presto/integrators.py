@@ -27,25 +27,27 @@ class VelocityVerletIntegrator(Integrator):
         if forwards == False:
             timestep = timestep * -1
 
-        try:
-            x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
+        atomic_numbers = frame.trajectory.atomic_numbers
+        high_atoms = frame.trajectory.high_atoms
 
-            energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
-            if self.potential is not None:
-                pe, pf = self.potential.evaluate(x_full)
-                forces += pf
-                energy += pe
-            forces[frame.inactive_mask()] = 0
+        x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
+        molecule = cctk.Molecule(atomic_numbers, positions)
+        clashes = molecule.check_for_conflicts(min_buffer=0.5)
+        if clashes:
+            raise ValueError("atoms too close")
 
-            a_full = forces / frame.masses()
+        energy, forces = calculator.evaluate(atomic_numbers, x_full, high_atoms, time=time)
+        if self.potential is not None:
+            pe, pf = self.potential.evaluate(x_full)
+            forces += pf
+            energy += pe
+        forces[frame.inactive_mask()] = 0
 
-            v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
+        a_full = forces / frame.masses()
 
-            return energy, x_full, v_full, a_full
+        v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
 
-        except Exception as e:
-            raise ValueError(f"Error in integrator: {e}")
-
+        return energy, x_full, v_full, a_full
 
 class LangevinIntegrator(VelocityVerletIntegrator):
     """

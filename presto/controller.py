@@ -18,7 +18,9 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, end_time=None, runtime=None, **kwargs):
+    # max_attempts: how many times to try rewinding if a frame doesn't work
+    # backwards_stride: how many frames to go backwards by every rewind attempt
+    def run(self, end_time=None, runtime=None, max_attempts=10, backwards_stride=5, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
         interval = self.trajectory.save_interval
@@ -44,6 +46,7 @@ class Controller():
         else:
             logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames backwards in time (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
 
+        attempt = 0
         while current_time < end_time:
             current_time += dt
             current_frame = self.trajectory.frames[-1]
@@ -56,56 +59,28 @@ class Controller():
             try:
                 new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
             except Exception as e:
-                '''
-                ### DEBUGGING ###
-                n_debug_frames = 50
-                num_solvents = 12
-
-                # recompute the positions of the bad frame
-                debug_timestep = self.trajectory.timestep
-                if self.trajectory.forwards == False:
-                    debug_timestep = debug_timestep * -1
-                debug_x = current_frame.positions + current_frame.velocities * debug_timestep + 0.5 * current_frame.accelerations * (debug_timestep ** 2)
-
-                # select atom indices
-                molecule = self.trajectory.frames[0].molecule().assign_connectivity()
-                idxs = molecule.limit_solvent_shell(num_solvents=num_solvents, return_idxs=True)
-
-                # create a movie of the last n frames
-                ensemble = cctk.ConformationalEnsemble()
-                for frame in self.trajectory.frames[-n_debug_frames:]:
-                    ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
-                movie_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug.pdb"
-                cctk.PDBFile.write_ensemble_to_trajectory(movie_filename, ensemble)
-
-                # write out the velocities and accelerations of the last n frames
-                velocities, accelerations = [], []
-                for frame in self.trajectory.frames[-n_debug_frames:]:
-                    v, a = frame.velocities, frame.accelerations
-                    if len(velocities) == 0:
-                        logger.info(f"velocities {v.shape}")
-                        logger.info(f"accelerations {a.shape}")
-                    velocities.append(v)
-                    accelerations.append(a)
-                velocities = np.array(velocities)
-                accelerations = np.array(accelerations)
-                molecule_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug.gjf"
-                cctk.GaussianFile.write_ensemble_to_file(molecule_filename, ensemble, route_card="#p")
-                atomic_symbols = molecule.get_atomic_symbols()
-                n_frames = len(velocities)
-                n_atoms = len(atomic_symbols)
-                velocities = velocities.reshape(n_frames,n_atoms*3)
-                velocities_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_velocities.csv"
-                np.savetxt(velocities_filename, velocities, delimiter=",")
-                accelerations_filename = f"{self.trajectory.checkpoint_filename[:-4]}-debug_accelerations.csv"
-                accelerations = velocities.reshape(n_frames,n_atoms*3)
-                np.savetxt(accelerations_filename, accelerations, delimiter=",")
-
-                # send an error message
-                logger.info(f"Error at time {current_time} - run terminated and debugging files written")
-                '''
                 traceback.print_exception(*sys.exc_info())
-                raise ValueError(f"controller failed: {e}")
+                if attempt < max_attempts:
+                    attempt += 1
+
+                    # try to rewind
+                    trajectory_length = len(self.trajectory.frames)
+                    new_frame_index = trajectory_length - backwards_stride
+                    if new_frame_index <= 0:
+                        # if we have very few frames, go to a backwards_stride of 1
+                        new_frame_index = trajectory_length - 1
+                    if new_frame_index <= 0:
+                        raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
+
+                    # snip off some frames and try again
+                    n_removed_frames = trajectory_length - new_frame_index
+                    current_time -= dt * n_removed_frames
+                    self.trajectory.frames = self.trajectory_frames[:new_frame_index]
+                    logger.warn(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames.")
+                    continue
+                else:
+                    raise ValueError(f"max retry attempts exceeded and controller failed: {e}")
+
             assert new_frame.time == current_time, f"frame time {new_frame.time} does not match loop time {current_time}"
             self.trajectory.frames.append(new_frame)
 
