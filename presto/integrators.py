@@ -38,7 +38,7 @@ class VelocityVerletIntegrator(Integrator):
         if frame.time == 0.0:
             molecule.assign_connectivity()
         else:
-            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0]
+            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
             first_molecule.assign_connectivity(cutoff=0.5)
             molecule.bonds = first_molecule.bonds
 
@@ -115,7 +115,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         if frame.time == 0.0:
             molecule.assign_connectivity()
         else:
-            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0]
+            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
             first_molecule.assign_connectivity(cutoff=0.5)
             molecule.bonds = first_molecule.bonds
         clashes = molecule.check_for_conflicts(min_buffer=0.5)
