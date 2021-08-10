@@ -33,7 +33,15 @@ class VelocityVerletIntegrator(Integrator):
         high_atoms = frame.trajectory.high_atoms
 
         x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
+
         molecule = cctk.Molecule(atomic_numbers, positions)
+        if frame.time == 0.0:
+            molecule.assign_connectivity()
+        else:
+            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0]
+            first_molecule.assign_connectivity(cutoff=0.5)
+            molecule.bonds = first_molecule.bonds
+
         clashes = molecule.check_for_conflicts(min_buffer=0.5)
         if clashes:
             logger.info(f"Atoms too close in velocity verlet integrator at {frame.time:.1f} fs!")
@@ -104,6 +112,12 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
+        if frame.time == 0.0:
+            molecule.assign_connectivity()
+        else:
+            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0]
+            first_molecule.assign_connectivity(cutoff=0.5)
+            molecule.bonds = first_molecule.bonds
         clashes = molecule.check_for_conflicts(min_buffer=0.5)
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
