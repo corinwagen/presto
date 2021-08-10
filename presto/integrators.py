@@ -103,7 +103,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full = frame.positions + timestep * frame.velocities + C
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
-		molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
+        molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
         clashes = molecule.check_for_conflicts(min_buffer=0.5)
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
