@@ -1,8 +1,10 @@
 import numpy as np
-import math, copy, cctk
+import math, copy, cctk, logging
 from scipy import constants
 
 import presto
+
+logger = logging.getLogger(__name__)
 
 class Integrator():
     def next(self, frame, forwards=True):
@@ -34,6 +36,7 @@ class VelocityVerletIntegrator(Integrator):
         molecule = cctk.Molecule(atomic_numbers, positions)
         clashes = molecule.check_for_conflicts(min_buffer=0.5)
         if clashes:
+            logger.info(f"Atoms too close in velocity verlet integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
 
         energy, forces = calculator.evaluate(atomic_numbers, x_full, high_atoms, time=time)
@@ -41,7 +44,7 @@ class VelocityVerletIntegrator(Integrator):
             pe, pf = self.potential.evaluate(x_full)
             forces += pf
             energy += pe
-        forces[frame.inactive_mask()] = 0
+i        forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
 
@@ -99,6 +102,12 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         x_full = frame.positions + timestep * frame.velocities + C
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
+
+		molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
+        clashes = molecule.check_for_conflicts(min_buffer=0.5)
+        if clashes:
+            logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
+            raise ValueError("atoms too close")
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
         if self.potential is not None:

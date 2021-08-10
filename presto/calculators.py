@@ -295,7 +295,7 @@ class GaussianCalculator(Calculator):
                     gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
                 except Exception as e:
                     random_number = randrange(1000000)
-                    print(f"dumping gaussian files with label {random_number:06d}")
+                    logger.info(f"dumping gaussian files with label {random_number:06d}")
                     shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
                     shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
                     #try:
@@ -307,6 +307,7 @@ class GaussianCalculator(Calculator):
                 # check we read ok
                 if gaussian_file is None:
                     # gaussian failed
+                    logger.info(f"gaussian failed (attempt {retries+1} of {max_retries})")
                     continue
 
                 # extract output
