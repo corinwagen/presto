@@ -113,7 +113,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
-        exploded = exploded(first_molecule, molecule)
+        exploded = is_exploded(first_molecule, molecule)
         if exploded:
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too far apart")
@@ -175,7 +175,7 @@ def is_clashing(molecule, min_buffer=0.5):
     return False
 
 # if any bond lengths increase by more than threshold, the molecule is assumed to have blown up
-def exploded(ref_molecule, new_molecule, threshold=0.3):
+def is_exploded(ref_molecule, new_molecule, threshold=0.3):
     bonds = ref_molecule.bonds
     for i,j in bonds.edges:
         ref_dist = ref_molecule.get_distance(i,j, check=False)
