@@ -309,6 +309,8 @@ class GaussianCalculator(Calculator):
                     # gaussian failed
                     logger.info(f"gaussian failed (attempt {retries+1} of {max_retries})")
                     continue
+                if retries > 0:
+                    logger.info("gaussian ran ok")
 
                 # extract output
                 ensemble = gaussian_file.ensemble

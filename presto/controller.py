@@ -65,18 +65,18 @@ class Controller():
 
                     # try to rewind
                     trajectory_length = len(self.trajectory.frames)
-                    new_frame_index = trajectory_length - backwards_stride
+                    new_frame_index = trajectory_length - 1 - backwards_stride
                     if new_frame_index <= 0:
                         # if we have very few frames, go to a backwards_stride of 1
-                        new_frame_index = trajectory_length - 1
+                        new_frame_index = trajectory_length - 2
                     if new_frame_index <= 0:
                         raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
 
                     # snip off some frames and try again
-                    n_removed_frames = trajectory_length - new_frame_index
+                    n_removed_frames = trajectory_length - new_frame_index - 1
                     current_time -= dt * n_removed_frames
                     self.trajectory.frames = self.trajectory.frames[:new_frame_index]
-                    logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f}).")
+                    logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f} fs).")
                     continue
                 else:
                     raise ValueError(f"max retry attempts exceeded and controller failed: {e}")
