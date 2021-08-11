@@ -60,6 +60,7 @@ class Controller():
             new_frame = None
             try:
                 new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
+                attempt = 0
             except Exception as e:
                 traceback.print_exception(*sys.exc_info())
                 if attempt < max_attempts:
@@ -69,15 +70,15 @@ class Controller():
                     logger.info(f"rewinding: current time is {current_time}")
                     trajectory_length = len(self.trajectory.frames)
                     logger.info(f"there are currently {trajectory_length} frames")
-                    new_frame_index = trajectory_length - backwards_stride
+                    new_frame_index = trajectory_length - backwards_stride*attempt
                     logger.info(f"trying to set frame index to {new_frame_index}")
                     if new_frame_index < 0:
                         # if we have very few frames, go to a backwards_stride of 1
-                        new_frame_index = trajectory_length - 1
-                        logger.info(f"that's no good, trying to set frame index to {new_frame_index}")
-                    #if new_frame_index <= 0:
-                    #    logger.info("can't find a reasonable frame index to rewind to")
-                    #    raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
+                        new_frame_index = trajectory_length - 1*attempt
+                        logger.info(f"that's no good, setting frame index to {new_frame_index}")
+                    if new_frame_index < 0:
+                        logger.info("can't find a reasonable frame index to rewind to")
+                        raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
 
                     # snip off some frames and try again
                     n_removed_frames = trajectory_length - new_frame_index

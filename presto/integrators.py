@@ -35,18 +35,7 @@ class VelocityVerletIntegrator(Integrator):
 
         x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
-        molecule = cctk.Molecule(atomic_numbers, positions)
-        if frame.time == 0.0:
-            molecule.assign_connectivity()
-        else:
-            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
-            first_molecule.assign_connectivity(cutoff=0.7)
-            molecule.bonds = first_molecule.bonds
-
-        clashes = is_clashing(molecule, min_buffer=0.5)
-        if clashes:
-            logger.info(f"Atoms too close in velocity verlet integrator at {frame.time:.1f} fs!")
-            raise ValueError("atoms too close")
+        # no checks are being done here
 
         energy, forces = calculator.evaluate(atomic_numbers, x_full, high_atoms, time=time)
         if self.potential is not None:
@@ -112,17 +101,22 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full = frame.positions + timestep * frame.velocities + C
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
+        first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
+        first_molecule.assign_connectivity(cutoff=0.7)
+
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
         if frame.time == 0.0:
             molecule.assign_connectivity()
         else:
-            first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
-            first_molecule.assign_connectivity(cutoff=0.7)
-            molecule.bonds = first_molecule.bonds
+           molecule.bonds = first_molecule.bonds
         clashes = is_clashing(molecule)
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
+        exploded = exploded(first_molecule, molecule)
+        if exploded:
+            logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
+            raise ValueError("atoms too far apart")
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
         if self.potential is not None:
@@ -178,4 +172,15 @@ def is_clashing(molecule, min_buffer=0.5):
 
             if distance < (r_i + r_j - min_buffer):
                 return True
+    return False
+
+# if any bond lengths increase by more than threshold, the molecule is assumed to have blown up
+def exploded(ref_molecule, new_molecule, threshold=0.3):
+    bonds = ref_molecule.bonds
+    for i,j in bonds.edges:
+        ref_dist = ref_molecule.get_distance(i,j, check=False)
+        new_dist = new_molecule.get_distance(i,j, check=False)
+        delta = new_dist - ref_dist
+        if delta > threshold:
+            return True
     return False
