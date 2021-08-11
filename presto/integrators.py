@@ -174,13 +174,15 @@ def is_clashing(molecule, min_buffer=0.5):
                 return True
     return False
 
-# if any bond lengths increase by more than threshold, the molecule is assumed to have blown up
-def is_exploded(ref_molecule, new_molecule, threshold=0.3):
+# if any covalent bond lengths increase by more than alarm_threshold, the molecule is assumed to have blown up
+def is_exploded(ref_molecule, new_molecule, alarm_threshold=0.5, covalent_threshold=2.0):
     bonds = ref_molecule.bonds
     for i,j in bonds.edges:
         ref_dist = ref_molecule.get_distance(i,j, check=False)
+        if ref_dist > covalent_threshold:
+            continue
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
-        if delta > threshold:
+        if delta > alarm_threshold:
             return True
     return False
