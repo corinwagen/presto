@@ -113,7 +113,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
-        exploded = is_exploded(first_molecule, molecule)
+        exploded = is_exploded(first_molecule, molecule, frame.trajectory.high_atoms)
         if exploded:
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too far apart")
@@ -174,16 +174,16 @@ def is_clashing(molecule, min_buffer=0.5):
                 return True
     return False
 
-# if any covalent bond lengths increase by more than alarm_threshold, the molecule is assumed to have blown up
-def is_exploded(ref_molecule, new_molecule, alarm_threshold=1.0, covalent_threshold=2.0):
+# if the atoms in the high layer get too close, raise the alarm
+def is_exploded(ref_molecule, new_molecule, high_atoms, threshold=0.7):
     bonds = ref_molecule.bonds
     for i,j in bonds.edges:
-        ref_dist = ref_molecule.get_distance(i,j, check=False)
-        if ref_dist > covalent_threshold:
+        if i not in high_atoms or j not in high_atoms:
             continue
+        ref_dist = ref_molecule.get_distance(i,j, check=False)
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
-        if delta > alarm_threshold:
+        if delta > threshold:
             logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist} but was previously {ref_dist}")
             return True
     return False
