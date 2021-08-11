@@ -20,7 +20,7 @@ class Controller():
 
     # max_attempts: how many times to try rewinding if a frame doesn't work
     # backwards_stride: how many frames to go backwards by every rewind attempt
-    def run(self, end_time=None, runtime=None, max_attempts=10, backwards_stride=5, **kwargs):
+    def run(self, end_time=None, runtime=None, max_attempts=10, backwards_stride=2, **kwargs):
         current_time = self.trajectory.frames[-1].time
         dt = self.trajectory.timestep
         interval = self.trajectory.save_interval
