@@ -327,7 +327,8 @@ class GaussianCalculator(Calculator):
 
         # if Gaussian failed after all these attempts, die
         if energy is None or forces is None:
-            raise ValueError(f"g16 failed after {max_retries} attempts")
+            logger.info(f"g16 failed after {max_retries} attempts")
+            os._exit(1)
 
         # restore working directory
         os.chdir(old_working_directory)
