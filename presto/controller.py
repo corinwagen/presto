@@ -69,20 +69,20 @@ class Controller():
                     logger.info(f"rewinding: current time is {current_time}")
                     trajectory_length = len(self.trajectory.frames)
                     logger.info(f"there are currently {trajectory_length} frames")
-                    new_frame_index = trajectory_length - 1 - backwards_stride
+                    new_frame_index = trajectory_length - backwards_stride
                     logger.info(f"trying to set frame index to {new_frame_index}")
                     if new_frame_index <= 0:
                         # if we have very few frames, go to a backwards_stride of 1
-                        new_frame_index = trajectory_length - 2
+                        new_frame_index = trajectory_length - 1
                         logger.info(f"that's no good, trying to set frame index to {new_frame_index}")
                     if new_frame_index <= 0:
                         logger.info("can't find a reasonable frame index to rewind to")
                         raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
 
                     # snip off some frames and try again
-                    n_removed_frames = trajectory_length - new_frame_index + 1
+                    n_removed_frames = trajectory_length - new_frame_index
                     logger.info(f"we are removing {n_removed_frames}")
-                    current_time -= dt * n_removed_frames
+                    current_time -= dt * (trajectory_length - new_frame_index + 1)
                     logger.info(f"new current_time is {current_time} fs")
                     self.trajectory.frames = self.trajectory.frames[:new_frame_index]
                     logger.info(f"we now have {len(self.trajectory.frames)} frames")
@@ -116,7 +116,7 @@ class Controller():
 
             count += 1
             if count < 100:
-                logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
+                logger.info(f"Run initiated ok - frame for {new_frame.time} fs completed in {new_frame.elapsed:.2f} s.")
 
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
