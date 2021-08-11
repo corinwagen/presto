@@ -39,10 +39,10 @@ class VelocityVerletIntegrator(Integrator):
             molecule.assign_connectivity()
         else:
             first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
-            first_molecule.assign_connectivity(cutoff=0.5)
+            first_molecule.assign_connectivity(cutoff=0.7)
             molecule.bonds = first_molecule.bonds
 
-        clashes = molecule.check_for_conflicts(min_buffer=0.5)
+        clashes = is_clashing(molecule, min_buffer=0.5)
         if clashes:
             logger.info(f"Atoms too close in velocity verlet integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
@@ -116,9 +116,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
             molecule.assign_connectivity()
         else:
             first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
-            first_molecule.assign_connectivity(cutoff=0.5)
+            first_molecule.assign_connectivity(cutoff=0.7)
             molecule.bonds = first_molecule.bonds
-        clashes = molecule.check_for_conflicts(min_buffer=0.5)
+        clashes = is_clashing(molecule)
         if clashes:
             logger.info(f"Atoms too close in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too close")
@@ -160,3 +160,22 @@ def build_integrator(settings, potential=None):
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
+# checks if there are clashes in the given molecule, ignoring directly bonded atoms
+def is_clashing(molecule, min_buffer=0.5):
+    bonds = molecule.bonds
+    n_bonds = len(bonds.edges)
+    assert n_bonds > 0, "must assign connectivity first"
+    n_atoms = len(molecule.geometry)
+    for i in range(1,n_atoms+1):
+        for j in range(i+1,n_atoms+1):
+            are_bonded = bonds.has_edge(i,j)
+            if are_bonded:
+                continue
+			distance = molecule.get_distance(i, j, check=False)
+			r_i = get_covalent_radius(molecule.get_atomic_number(i))
+			r_j = get_covalent_radius(molecule.get_atomic_number(j))
+
+			# 0.5 A distance is used by RasMol and Chime (documentation available online) and works well, empirically
+			if distance < (r_i + r_j - min_buffer):
+				return True
+	return False
