@@ -75,7 +75,7 @@ class Controller():
                     # snip off some frames and try again
                     n_removed_frames = trajectory_length - new_frame_index
                     current_time -= dt * n_removed_frames
-                    self.trajectory.frames = self.trajectory_frames[:new_frame_index]
+                    self.trajectory.frames = self.trajectory.frames[:new_frame_index]
                     logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f}).")
                     continue
                 else:
