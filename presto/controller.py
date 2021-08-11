@@ -47,6 +47,7 @@ class Controller():
             logger.info(f"Trajectory will run {int((end_time-current_time)/self.trajectory.timestep)} frames backwards in time (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
 
         attempt = 0
+        bad_time = None
         while current_time < end_time:
             current_time += dt
             logger.info(f"current time is {current_time} fs")
@@ -60,11 +61,14 @@ class Controller():
             new_frame = None
             try:
                 new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
-                attempt = 0
+                if bad_time is not None and new_frame.time >= bad_time:
+                    attempt = 0
+                    bad_time = None
             except Exception as e:
                 traceback.print_exception(*sys.exc_info())
                 if attempt < max_attempts:
                     attempt += 1
+                    bad_time = current_time
 
                     # try to rewind
                     logger.info(f"rewinding: current time is {current_time}")
@@ -89,6 +93,7 @@ class Controller():
                     logger.info(f"we now have {len(self.trajectory.frames)} frames")
                     logger.info(f"last existing frame has a time of {self.trajectory.frames[-1].time}")
                     logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f} fs).")
+                    logger.info(f"That was attempt {attempt}")
                     continue
                 else:
                     raise ValueError(f"max retry attempts exceeded and controller failed: {e}")

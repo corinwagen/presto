@@ -171,6 +171,8 @@ def is_clashing(molecule, min_buffer=0.5):
             r_j = get_covalent_radius(molecule.get_atomic_number(j))
 
             if distance < (r_i + r_j - min_buffer):
+                logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is {distance:.3f}, which is too close")
+                logger.info(f"high atoms were: {str(high_atoms)}")
                 return True
     return False
 
@@ -184,6 +186,7 @@ def is_exploded(ref_molecule, new_molecule, high_atoms, threshold=0.7):
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
         if delta > threshold:
-            logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist} but was previously {ref_dist}")
+            logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
+            logger.info(f"high atoms were: {str(high_atoms)}")
             return True
     return False
