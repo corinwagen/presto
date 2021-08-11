@@ -171,11 +171,10 @@ def is_clashing(molecule, min_buffer=0.5):
             are_bonded = bonds.has_edge(i,j)
             if are_bonded:
                 continue
-			distance = molecule.get_distance(i, j, check=False)
-			r_i = get_covalent_radius(molecule.get_atomic_number(i))
-			r_j = get_covalent_radius(molecule.get_atomic_number(j))
+            distance = molecule.get_distance(i, j, check=False)
+            r_i = get_covalent_radius(molecule.get_atomic_number(i))
+            r_j = get_covalent_radius(molecule.get_atomic_number(j))
 
-			# 0.5 A distance is used by RasMol and Chime (documentation available online) and works well, empirically
-			if distance < (r_i + r_j - min_buffer):
-				return True
-	return False
+            if distance < (r_i + r_j - min_buffer):
+                return True
+    return False
