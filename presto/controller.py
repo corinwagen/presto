@@ -49,7 +49,9 @@ class Controller():
         attempt = 0
         while current_time < end_time:
             current_time += dt
+            logger.info(f"current time is {current_time} fs")
             current_frame = self.trajectory.frames[-1]
+            logger.info(f"current_frame has a time of {current_frame.time}")
 
             bath_temperature = current_frame.bath_temperature
             if isinstance(self.trajectory, presto.trajectory.EquilibrationTrajectory):
@@ -64,18 +66,27 @@ class Controller():
                     attempt += 1
 
                     # try to rewind
+                    logger.info(f"rewinding: current time is {current_time}")
                     trajectory_length = len(self.trajectory.frames)
+                    logger.info(f"there are currently {trajectory_length} frames")
                     new_frame_index = trajectory_length - 1 - backwards_stride
+                    logger.info(f"trying to set frame index to {new_frame_index}")
                     if new_frame_index <= 0:
                         # if we have very few frames, go to a backwards_stride of 1
                         new_frame_index = trajectory_length - 2
+                        logger.info(f"that's no good, trying to set frame index to {new_frame_index}")
                     if new_frame_index <= 0:
+                        logger.info("can't find a reasonable frame index to rewind to")
                         raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
 
                     # snip off some frames and try again
-                    n_removed_frames = trajectory_length - new_frame_index - 1
+                    n_removed_frames = trajectory_length - new_frame_index + 1
+                    logger.info(f"we are removing {n_removed_frames}")
                     current_time -= dt * n_removed_frames
+                    logger.info(f"new current_time is {current_time} fs")
                     self.trajectory.frames = self.trajectory.frames[:new_frame_index]
+                    logger.info(f"we now have {len(self.trajectory.frames)} frames")
+                    logger.info(f"last existing frame has a time of {self.trajectory.frames[-1].time}")
                     logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f} fs).")
                     continue
                 else:
