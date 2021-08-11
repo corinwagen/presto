@@ -1,5 +1,6 @@
 import numpy as np
 import math, copy, cctk, logging
+from cctk.helper_functions import get_covalent_radius
 from scipy import constants
 
 import presto
