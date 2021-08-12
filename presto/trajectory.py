@@ -149,7 +149,7 @@ class Trajectory():
         inactive_atoms (None or np.ndarray)
         """
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
-        if inactive_atoms:
+        if inactive_atoms is not None:
             assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
             for atom in inactive_atoms:
                 active_atoms.remove(atom)
