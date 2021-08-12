@@ -70,32 +70,32 @@ class Controller():
                 logger.info(f"exception: {e}")
                 if attempt < max_attempts:
                     attempt += 1
-                    bad_time = current_time
+                    if bad_time is None:
+                        bad_time = current_time
 
                     # try to rewind
-                    logger.info(f"rewinding: current time is {current_time}")
+                    #logger.info(f"rewinding: current time is {current_time}")
                     trajectory_length = len(self.trajectory.frames)
-                    logger.info(f"there are currently {trajectory_length} frames")
+                    #logger.info(f"there are currently {trajectory_length} frames")
                     new_frame_index = trajectory_length - backwards_stride*attempt
-                    logger.info(f"trying to set frame index to {new_frame_index}")
+                    #logger.info(f"trying to set frame index to {new_frame_index}")
                     if new_frame_index < 0:
                         # if we have very few frames, go to a backwards_stride of 1
                         new_frame_index = trajectory_length - 1*attempt
-                        logger.info(f"that's no good, setting frame index to {new_frame_index}")
+                        #logger.info(f"that's no good, setting frame index to {new_frame_index}")
                     if new_frame_index < 0:
                         logger.info("can't find a reasonable frame index to rewind to")
                         raise ValueError("tried to rewind, but there aren't enough frames to go backwards by")
 
                     # snip off some frames and try again
                     n_removed_frames = trajectory_length - new_frame_index
-                    logger.info(f"we are removing {n_removed_frames} frames")
+                    #logger.info(f"we are removing {n_removed_frames} frames")
                     current_time -= dt * (trajectory_length - new_frame_index + 1)
-                    logger.info(f"new current_time is {current_time} fs")
+                    #logger.info(f"new current_time is {current_time} fs")
                     self.trajectory.frames = self.trajectory.frames[:new_frame_index]
-                    logger.info(f"we now have {len(self.trajectory.frames)} frames")
-                    logger.info(f"last existing frame has a time of {self.trajectory.frames[-1].time}")
-                    logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f} fs).")
-                    logger.info(f"That was attempt {attempt}")
+                    #logger.info(f"we now have {len(self.trajectory.frames)} frames")
+                    #logger.info(f"last existing frame has a time of {self.trajectory.frames[-1].time}")
+                    logger.info(f"Encountered a problem, so rewound the trajectory by {n_removed_frames} frames (current time is now {current_time:.1f} fs, attempt {attempt}).")
                     continue
                 else:
                     raise ValueError(f"max retry attempts exceeded and controller failed: {e}")
@@ -123,8 +123,9 @@ class Controller():
                 self.trajectory.save()
 
             count += 1
-            if count < 100:
-                logger.info(f"Run initiated ok - frame for {new_frame.time} fs completed in {new_frame.elapsed:.2f} s.")
+            #if count < 100:
+            #logger.info(f"Run initiated ok - frame for {new_frame.time} fs completed in {new_frame.elapsed:.2f} s.")
+            logger.info(f"Frame completed (t={new_frame.time:.1f} fs, {new_frame.elapsed:.1f} s).")
 
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True

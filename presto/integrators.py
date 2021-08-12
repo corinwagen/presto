@@ -105,7 +105,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers, frame.trajectory.frames[0].positions)
         first_molecule.assign_connectivity(cutoff=0.5)
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers, x_full)
-        if frame.time == 0.0:
+        if len(frame.trajectory.frames) == 0:
             molecule.assign_connectivity()
         else:
            molecule.bonds = first_molecule.bonds
@@ -121,8 +121,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         first_molecule.assign_connectivity(cutoff=0.1)
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], x_full[high_atoms])
 
+        # ignore the check until we've had some time to enforce the constraints
         exploded = is_exploded(first_molecule, molecule)
-        if exploded:
+        if frame.time > 100.0 and exploded:
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too far apart")
 
@@ -191,14 +192,20 @@ def is_clashing(molecule, min_buffer=0.5):
                 return True
     return False
 
-# if the atoms in the high layer get too close, raise the alarm
-def is_exploded(ref_molecule, new_molecule, threshold=0.5):
+# if many atoms in the high layer get too far apart, raise the alarm
+def is_exploded(ref_molecule, new_molecule, threshold=1.0, n_pairs_threshold=5):
     bonds = ref_molecule.bonds
+    n_pairs = 0
     for i,j in bonds.edges:
         ref_dist = ref_molecule.get_distance(i,j, check=False)
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
         if delta > threshold:
             logger.info(f"distance between atom {ref_molecule.get_atomic_symbol(i)}{i} and atom {ref_molecule.get_atomic_symbol(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
-            return True
+            n_pairs += 1
+    if n_pairs >= n_pairs_threshold:
+        logger.info(">>> {n_pairs} bonds are unusually long, so it's likely this structure exploded")
+        return True
+    if n_pairs > 0:
+        logger.info(f"> {n_pairs} bonds are unusually long")
     return False
