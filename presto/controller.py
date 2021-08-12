@@ -50,9 +50,9 @@ class Controller():
         bad_time = None
         while current_time < end_time:
             current_time += dt
-            logger.info(f"current time is {current_time} fs")
+            #logger.info(f"current time is {current_time} fs")
             current_frame = self.trajectory.frames[-1]
-            logger.info(f"current_frame has a time of {current_frame.time}")
+            #logger.info(f"current_frame has a time of {current_frame.time}")
 
             bath_temperature = current_frame.bath_temperature
             if isinstance(self.trajectory, presto.trajectory.EquilibrationTrajectory):
@@ -62,10 +62,12 @@ class Controller():
             try:
                 new_frame = current_frame.next(forwards=self.trajectory.forwards, temp=bath_temperature)
                 if bad_time is not None and new_frame.time >= bad_time:
+                    logger.info(f"*** overcame the previous problem on attempt {attempt} ***")
                     attempt = 0
                     bad_time = None
             except Exception as e:
                 traceback.print_exception(*sys.exc_info())
+                logger.info(f"exception: {e}")
                 if attempt < max_attempts:
                     attempt += 1
                     bad_time = current_time
@@ -86,7 +88,7 @@ class Controller():
 
                     # snip off some frames and try again
                     n_removed_frames = trajectory_length - new_frame_index
-                    logger.info(f"we are removing {n_removed_frames}")
+                    logger.info(f"we are removing {n_removed_frames} frames")
                     current_time -= dt * (trajectory_length - new_frame_index + 1)
                     logger.info(f"new current_time is {current_time} fs")
                     self.trajectory.frames = self.trajectory.frames[:new_frame_index]
