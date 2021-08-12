@@ -196,14 +196,17 @@ def is_clashing(molecule, min_buffer=0.5):
     return False
 
 # if the atoms in the high layer get too close, raise the alarm
-def is_exploded(ref_molecule, new_molecule, threshold=0.7):
+def is_exploded(ref_molecule, new_molecule, threshold=0.5):
     bonds = ref_molecule.bonds
     for i,j in bonds.edges:
         ref_dist = ref_molecule.get_distance(i,j, check=False)
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
-        logger.info(f"{i} {j} - {ref_dist:.3f} - {new_dist:.3f}")
         if delta > threshold:
+            logger.info(f"ref_molecule {ref_molecule.geometry.shape}")
+            logger.info(f"new_molecule {new_molecule.geometry.shape}")
+            for i,j in bonds.edges:
+                logger.info(f"{ref_molecule.get_atomic_number(i)}{i} - {ref_molecule.get_atomic_number(j)}{j}")
             logger.info(f"i {ref_molecule.get_atomic_number(i)}{i}")
             logger.info(f"j {ref_molecule.get_atomic_number(j)}{j}")
             logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
