@@ -118,12 +118,8 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         # check if the molecule in the high layer exploded
         high_atoms = frame.trajectory.high_atoms
         first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], frame.trajectory.frames[0].positions[high_atoms])
-        first_molecule.assign_connectivity(cutoff=0.5)
+        first_molecule.assign_connectivity(cutoff=0.1)
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], x_full[high_atoms])
-        if frame.time == 0.0:
-            molecule.assign_connectivity()
-        else:
-           molecule.bonds = first_molecule.bonds
 
         exploded = is_exploded(first_molecule, molecule)
         if exploded:
@@ -190,7 +186,7 @@ def is_clashing(molecule, min_buffer=0.5):
             r_j = get_covalent_radius(molecule.get_atomic_number(j))
 
             if distance < (r_i + r_j - min_buffer):
-                logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is {distance:.3f}, which is too close")
+                logger.info(f"distance between atom {ref_molecule.get_atomic_symbol(i)}{i} and atom {ref_molecule.get_atomic_symbol(j)}{j} is {distance:.3f}, which is too close")
                 logger.info(f"high atoms were: {str(high_atoms)}")
                 return True
     return False
@@ -203,12 +199,6 @@ def is_exploded(ref_molecule, new_molecule, threshold=0.5):
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
         if delta > threshold:
-            logger.info(f"ref_molecule {ref_molecule.geometry.shape}")
-            logger.info(f"new_molecule {new_molecule.geometry.shape}")
-            for i,j in bonds.edges:
-                logger.info(f"{ref_molecule.get_atomic_number(i)}{i} - {ref_molecule.get_atomic_number(j)}{j}")
-            logger.info(f"i {ref_molecule.get_atomic_number(i)}{i}")
-            logger.info(f"j {ref_molecule.get_atomic_number(j)}{j}")
-            logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
+            logger.info(f"distance between atom {ref_molecule.get_atomic_symbol(i)}{i} and atom {ref_molecule.get_atomic_symbol(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
             return True
     return False
