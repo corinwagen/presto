@@ -17,7 +17,7 @@ termination_function:
     constraint1: bond 2 48
     constraint2: bond 48 51
 
-quasiclassical:
+initialization:
     output_file: test/static/nazarov_elim.out
     temperature: 298
     tolerance: 0.01

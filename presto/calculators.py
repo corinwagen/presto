@@ -1,8 +1,10 @@
 import numpy as np
-import os, random, string, re, cctk, ctypes, copy, shutil, time, tempfile, logging
+import os, random, string, re, cctk, ctypes, copy, shutil, tempfile, logging
+import time as timelib
 import subprocess as sp
 import multiprocessing as mp
 import presto
+from random import randrange
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class Calculator():
     def __init__(self):
         pass
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe, time=None):
         """
         Return energy, forces
         """
@@ -41,12 +43,12 @@ class NullCalculator(Calculator):
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
         energy = 0
         forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
 
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -92,7 +94,7 @@ class XTBCalculator(Calculator):
             assert isinstance(topology, str), "need path for topology file!"
         self.topology = topology
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -143,9 +145,9 @@ class XTBCalculator(Calculator):
 
             # run xtb
             try:
-                start = time.time()
+                start = timelib.time()
                 result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
-                end = time.time()
+                end = timelib.time()
                 elapsed = end - start
 
                 result.check_returncode()
@@ -183,7 +185,7 @@ class XTBCalculator(Calculator):
 
         # apply constraints
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -204,6 +206,7 @@ class GaussianCalculator(Calculator):
             route_card="#p hf/3-21g force",
             footer=None,
             constraints=list(),
+            gaussian_chk=None,
         ):
         if not re.search("force", route_card):
             raise ValueError("need a force job to calculate forces")
@@ -215,10 +218,14 @@ class GaussianCalculator(Calculator):
         self.footer = footer
 
         for c in constraints:
-            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
+            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False):
+        if gaussian_chk is not None:
+            assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
+        self.gaussian_chk = gaussian_chk
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -240,35 +247,54 @@ class GaussianCalculator(Calculator):
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
         route_card = self.route_card
         if qc:
-            logger.warning("warning: initial DIIS convergence failed, trying quadradic convergence")
+            logger.warning(f"warning: initial DIIS convergence failed at {time} fs, trying quadratic convergence")
             route_card = f"{self.route_card} scf=qc"
 
         energy, forces = None, None
         elapsed = 0
         with tempfile.TemporaryDirectory() as tmpdir:
-            cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, self.link0, self.footer)
+            link0 = copy.deepcopy(self.link0)
+
+            # we will try and use the previous checkpoint file to accelerate the current run.
+            if self.gaussian_chk:
+                link0["chk"] = "chk.chk"
+
+                if os.path.exists(self.gaussian_chk):
+                    shutil.copyfile(self.gaussian_chk, f"{tmpdir}/oldchk.chk")
+                    link0["oldchk"] = "oldchk.chk"
+                    route_card = f"{route_card} guess=read"
+
+            cctk.GaussianFile.write_molecule_to_file(f"{tmpdir}/g16-in.gjf", molecule, route_card, link0, self.footer)
             command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
             # run g16
+            gaussian_file = None
             try:
-                start = time.time()
+                start = timelib.time()
                 result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
-                end = time.time()
+                end = timelib.time()
                 elapsed = end - start
 
                 result.check_returncode()
                 assert os.path.isfile(f"{tmpdir}/g16-out.out"), "no energy file!"
+
+                # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
+                gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
             except Exception as e:
+                random_number = randrange(1000000)
+                print(f"dumping gaussian files with label {random_number:06d}")
+                shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
+                shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
                 try:
-                    assert qc is False # retry with quadradic convergence
+                    assert qc is False # retry with quadratic convergence
                     self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
                 except Exception as e:
-                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-failed-input.gjf")
-                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-failed-output.out")
-                    raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
+                   raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
+
+            # check we read ok
+            assert gaussian_file is not None, f"g16 failure"
 
             # extract output
-            gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
             ensemble = gaussian_file.ensemble
             molecule = ensemble.molecules[-1]
 
@@ -277,12 +303,16 @@ class GaussianCalculator(Calculator):
             forces = properties_dict["forces"]
             forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
 
+            # save new checkpoint file
+            if self.gaussian_chk and os.path.exists(f"{tmpdir}/chk.chk"):
+                shutil.copyfile(f"{tmpdir}/chk.chk", self.gaussian_chk)
+
         # restore working directory
         os.chdir(old_working_directory)
 
         # apply constraints
         for c in self.constraints:
-            f, e = c.evaluate(positions)
+            f, e = c.evaluate(positions, time=time)
             energy += e
             forces += f
 
@@ -317,7 +347,7 @@ class ONIOMCalculator(Calculator):
         self.constraints = constraints
 
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
@@ -333,6 +363,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hh,
+            "time": time,
         })
         process_hh.start()
 
@@ -341,6 +372,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
+            "time": time,
         })
         process_hl.start()
 
@@ -349,6 +381,7 @@ class ONIOMCalculator(Calculator):
             "atomic_numbers": atomic_numbers,
             "positions": positions,
             "pipe": child_ll,
+            "time": time,
         })
         process_ll.start()
 
@@ -356,10 +389,17 @@ class ONIOMCalculator(Calculator):
         e_hl, f_hl = parent_hl.recv()
         e_ll, f_ll = parent_ll.recv()
 
-        process_hh.join()
-        process_hl.join()
-        process_ll.join()
+        # 1 hour is the limit, we're not waiting any longer than that!
+        process_hh.join(3600)
+        process_hl.join(3600)
+        process_ll.join(3600)
 
+        # check things actually finished okay
+        assert process_hh.exitcode == 0, f"process_hh exited not-ok with exit code {process_hh.exitcode}"
+        assert process_hl.exitcode == 0, f"process_hl exited not-ok with exit code {process_hl.exitcode}"
+        assert process_ll.exitcode == 0, f"process_ll exited not-ok with exit code {process_ll.exitcode}"
+
+        # do the ONIOM combination
         energy = e_hh + e_ll - e_hl
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
@@ -409,10 +449,19 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
             assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
             footer = settings["footer"]
 
+        gaussian_chk = None
+        if "gaussian_chk" in settings:
+            if isinstance(settings["gaussian_chk"], str):
+                gaussian_chk = settings["gaussian_chk"]
+            elif settings["gaussian_chk"] is True:
+                gaussian_chk = f"{checkpoint_filename}.gchk"
+            else:
+                raise ValueError("`gaussian_chk` must be string or True!")
+
         if link0 is not None:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
         else:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
 
     elif settings["type"].lower() == "xtb":
         charge = 0

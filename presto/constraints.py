@@ -8,7 +8,7 @@ class Constraint():
     def __init__(self):
         pass
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, time=None):
         """
         Returns forces and energy.
         """
@@ -29,9 +29,11 @@ class PairwisePolynomialConstraint(Constraint):
         force_constant (float): force constant
         equilibrium (float): desired distance in Å
         min (bool): whether the largest or smallest distance should be taken.
+        fadein (int): the constraint will linearly begin to be applied over this many frames.
+            If ``fadein`` is 100, then at 0 fs there will be no constraint, at 50 fs there will be a constraint with 1/2 force constant, and from 100 fs onwards the full constraint will be active.
     """
 
-    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True):
+    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0):
         assert isinstance(atom1, (list, int)), "atom number must be integer"
         assert isinstance(atom2, (list, int)), "atom number must be integer"
         assert isinstance(power, (int, float)), "power must be numeric"
@@ -57,13 +59,16 @@ class PairwisePolynomialConstraint(Constraint):
         else:
             self.min = False
 
+        assert isinstance(fadein, int) and fadein >= 0, "``fadein`` must be non-negative integer"
+        self.fadein = fadein
+
     def __str__(self):
         return f"PairwisePolynomialConstraint(atom1={self.atom1}, atom2={self.atom2}, equilibrium={self.equilibrium:.3f}, power={self.power}, force_constant={self.force_constant:.5f})"
 
     def __repr__(self):
         return f"PairwisePolynomialConstraint(atom1={self.atom1}, atom2={self.atom2}, equilibrium={self.equilibrium:.3f}, power={self.power}, force_constant={self.force_constant:.5f})"
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, time=None):
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be one-indexed array"
         x1, x2 = None, None
 
@@ -74,6 +79,9 @@ class PairwisePolynomialConstraint(Constraint):
         if isinstance(atoms2, int):
             atoms2 = [atoms2]
 
+        which_atom1 = 0
+        which_atom2 = 0
+
         # this is where we find the right pair of atoms
         if self.min == True:
             min_d = 100
@@ -82,6 +90,8 @@ class PairwisePolynomialConstraint(Constraint):
                     d = np.linalg.norm(positions[x] - positions[y])
                     if d < min_d:
                         min_d = d
+                        which_atom1 = x
+                        which_atom2 = y
                         x1 = positions[x]
                         x2 = positions[y]
         else:
@@ -91,17 +101,26 @@ class PairwisePolynomialConstraint(Constraint):
                     d = np.linalg.norm(positions[x] - positions[y])
                     if d > max_d:
                         max_d = d
+                        which_atom1 = x
+                        which_atom2 = y
                         x1 = positions[x]
                         x2 = positions[y]
 
         delta = np.linalg.norm(x1-x2) - self.equilibrium
         direction = (x2 - x1)/np.linalg.norm(x1-x2)
 
-        forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
-        forces[self.atom1] = delta ** (self.power - 1) * self.force_constant * 1 * direction
-        forces[self.atom2] = delta ** (self.power - 1) * self.force_constant * -1 * direction
+        # damp constraints at the very start of a trajectory
+        force_constant = self.force_constant
+        if time is not None:
+            if time < self.fadein:
+                force_constant *= time / self.fadein
+                assert force_constant >= 0, f"force constant should not be negative, but somehow it's {force_constant} (default is {self.force_constant})"
 
-        energy = self.force_constant / self.power * delta ** self.power
+        forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
+        forces[which_atom1] = delta ** (self.power - 1) * force_constant * 1 * direction
+        forces[which_atom2] = delta ** (self.power - 1) * force_constant * -1 * direction
+
+        energy = force_constant / self.power * delta ** self.power
 
         return forces, energy
 
@@ -132,7 +151,7 @@ class Anchor(Constraint):
         self.power = power
         self.force_constant = force_constant
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, time=None):
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be one-indexed array"
         x = positions[self.atom]
 
@@ -176,6 +195,10 @@ def build_constraints(settings):
                 args["min"] = True
             else:
                 args["min"] = False
+
+        if "fadein" in row:
+            assert isinstance(row["fadein"], int) and row["fadein"] > 0, "``fadein`` must be positive integer"
+            args["fadein"] = row["fadein"]
 
         constraints.append(PairwisePolynomialConstraint(**args))
     return constraints

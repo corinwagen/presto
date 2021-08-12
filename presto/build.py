@@ -84,7 +84,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
             if geometry is not None:
                 assert isinstance(geometry, str), "``geometry``must be a string!"
                 assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
-                mol = cctk.XYZFile.read_file(geometry).molecule
+                mol = cctk.XYZFile.read_file(geometry).get_molecule()
                 args["atomic_numbers"] = mol.atomic_numbers
                 x = mol.geometry
 
@@ -125,16 +125,19 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
                     a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
                     temp = h5.get("bath_temperatures")[oldchk_idx]
                     args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
-            elif "quasiclassical" in settings:
+            elif "quasiclassical" in settings or "initialization" in settings:
                 try:
-                    # moved to its own file - ccw 6.30.21 
-                    atomic_numbers, x, v, a = presto.quasiclassical.initialize(c, **settings["quasiclassical"], high_atoms=args["high_atoms"])
+                    # changed nomenclature 8.2.21 - ccw
+                    if "quasiclassical" in settings:
+                        settings["initialization"] = copy.deepcopy(settings["quasiclassical"])
+
+                    atomic_numbers, x, v, a = presto.initialization.initialize(c, **settings["initialization"], high_atoms=args["high_atoms"])
                     args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
-                    temp = settings["quasiclassical"]["temperature"]
+                    temp = settings["initialization"]["temperature"]
                 except Exception as e:
-                    raise ValueError(f"Quasiclassical initialization failed: {e}")
+                    raise ValueError(f"Initialization failed: {e}")
             else:
-                raise ValueError("no old checkpoint file, no current checkpoint file, and no QC init - can't create trajectory")
+                raise ValueError("no old checkpoint file, no current checkpoint file, and no init - can't create trajectory")
 
         assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
         f = build_termination_function(settings["termination_function"])
