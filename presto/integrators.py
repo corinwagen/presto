@@ -173,7 +173,7 @@ def build_integrator(settings, potential=None):
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
 # checks if there are clashes in the given molecule, ignoring directly bonded atoms
-def is_clashing(molecule, threshold=0.7) #min_buffer=0.5):
+def is_clashing(molecule, threshold=0.7): #min_buffer=0.5):
     bonds = molecule.bonds
     n_bonds = len(bonds.edges)
     assert n_bonds > 0, "must assign connectivity first"
