@@ -120,10 +120,15 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], frame.trajectory.frames[0].positions[high_atoms])
         first_molecule.assign_connectivity(cutoff=0.5)
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], x_full[high_atoms])
+        if frame.time == 0.0:
+            molecule.assign_connectivity()
+        else:
+           molecule.bonds = first_molecule.bonds
 
         exploded = is_exploded(first_molecule, molecule)
         if exploded:
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
+            logger.info(molecule.geometry.shape)
             raise ValueError("atoms too far apart")
 
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
@@ -199,6 +204,8 @@ def is_exploded(ref_molecule, new_molecule, threshold=0.7):
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
         if delta > threshold:
+            logger.info("i {ref_molecule.get_atomic_number(i)}{i}")
+            logger.info("j {ref_molecule.get_atomic_number(j)}{j}")
             logger.info(f"distance between atom {ref_molecule.get_atomic_number(i)}{i} and atom {ref_molecule.get_atomic_number(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
             return True
     return False
