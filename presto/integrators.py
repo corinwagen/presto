@@ -118,16 +118,12 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         # check if the molecule in the high layer exploded
         high_atoms = frame.trajectory.high_atoms
         first_molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], frame.trajectory.frames[0].positions[high_atoms])
-        logger.info(f"first_molecule {first_molecule.atomic_numbers}")
-        logger.info(f"first_molecule {first_molecule.geometry.shape}")
         first_molecule.assign_connectivity(cutoff=0.5)
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], x_full[high_atoms])
         if frame.time == 0.0:
             molecule.assign_connectivity()
         else:
            molecule.bonds = first_molecule.bonds
-        logger.info(f"molecule {molecule.atomic_numbers}")
-        logger.info(f"molecule {molecule.geometry.shape}")
 
         exploded = is_exploded(first_molecule, molecule)
         if exploded:
@@ -206,6 +202,7 @@ def is_exploded(ref_molecule, new_molecule, threshold=0.7):
         ref_dist = ref_molecule.get_distance(i,j, check=False)
         new_dist = new_molecule.get_distance(i,j, check=False)
         delta = new_dist - ref_dist
+        logger.info(f"{i} {j} - {ref_dist:.3f} - {new_dist:.3f}")
         if delta > threshold:
             logger.info(f"i {ref_molecule.get_atomic_number(i)}{i}")
             logger.info(f"j {ref_molecule.get_atomic_number(j)}{j}")
