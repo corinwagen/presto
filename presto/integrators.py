@@ -1,5 +1,6 @@
 import numpy as np
 import math, copy, cctk, logging
+from random import randrange
 from cctk.helper_functions import get_covalent_radius
 from scipy import constants
 
@@ -187,8 +188,9 @@ def is_clashing(molecule, min_buffer=0.5):
             r_j = get_covalent_radius(molecule.get_atomic_number(j))
 
             if distance < (r_i + r_j - min_buffer):
-                logger.info(f"distance between atom {ref_molecule.get_atomic_symbol(i)}{i} and atom {ref_molecule.get_atomic_symbol(j)}{j} is {distance:.3f}, which is too close")
+                logger.info(f"distance between atom {molecule.get_atomic_symbol(i)}{i} and atom {molecule.get_atomic_symbol(j)}{j} is {distance:.3f}, which is too close")
                 logger.info(f"high atoms were: {str(high_atoms)}")
+                dump(molecule)
                 return True
     return False
 
@@ -203,9 +205,18 @@ def is_exploded(ref_molecule, new_molecule, threshold=1.0, n_pairs_threshold=5):
         if delta > threshold:
             logger.info(f"distance between atom {ref_molecule.get_atomic_symbol(i)}{i} and atom {ref_molecule.get_atomic_symbol(j)}{j} is now {new_dist:.3f} but was previously {ref_dist:.3f}")
             n_pairs += 1
+    if n_pairs > 0:
+        dump(new_molecule)
     if n_pairs >= n_pairs_threshold:
         logger.info(">>> {n_pairs} bonds are unusually long, so it's likely this structure exploded")
         return True
     if n_pairs > 0:
         logger.info(f"> {n_pairs} bonds are unusually long")
     return False
+
+# dump a gjf of the given molecule
+def dump(molecule):
+    random_number = randrange(1000000)
+    logger.info(f"dumping clash/explosion check file with label {random_number:06d}")
+    filename = f"check-{random_number:06d}.gjf"
+    cctk.GaussianFile.write_molecule_to_file(filename, molecule, "#p")
