@@ -282,6 +282,8 @@ class GaussianCalculator(Calculator):
                 # run g16
                 gaussian_file = None
                 try:
+                    if retries > 0:
+                        logger.info(f"retrying gaussian (attempt {retries}")
                     start = timelib.time()
                     result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
                     end = timelib.time()
@@ -298,6 +300,14 @@ class GaussianCalculator(Calculator):
                     logger.info(f"dumping gaussian files with label {random_number:06d}")
                     shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
                     shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
+                    # dump the end of the file
+                    try:
+                        with open(f"{tmpdir}/g16-out.out", "r") as filehandle:
+                            lines = filehandle.read().splitlines()
+                            for line in lines[-5:]:
+                                logger.info(f"> {line[:120]}")
+                    except:
+                        pass
                     #try:
                     #    assert qc is False # retry with quadratic convergence
                     #    self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)

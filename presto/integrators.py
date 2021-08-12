@@ -124,7 +124,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         # ignore the check until we've had some time to enforce the constraints
         exploded = is_exploded(first_molecule, molecule)
-        if frame.time > 100.0 and exploded:
+        if frame.time > 110.0 and exploded:
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too far apart")
 
@@ -173,7 +173,7 @@ def build_integrator(settings, potential=None):
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
 # checks if there are clashes in the given molecule, ignoring directly bonded atoms
-def is_clashing(molecule, min_buffer=0.5):
+def is_clashing(molecule, threshold=0.7) #min_buffer=0.5):
     bonds = molecule.bonds
     n_bonds = len(bonds.edges)
     assert n_bonds > 0, "must assign connectivity first"
@@ -184,18 +184,18 @@ def is_clashing(molecule, min_buffer=0.5):
             if are_bonded:
                 continue
             distance = molecule.get_distance(i, j, check=False)
-            r_i = get_covalent_radius(molecule.get_atomic_number(i))
-            r_j = get_covalent_radius(molecule.get_atomic_number(j))
+            #r_i = get_covalent_radius(molecule.get_atomic_number(i))
+            #r_j = get_covalent_radius(molecule.get_atomic_number(j))
 
-            if distance < (r_i + r_j - min_buffer):
+            #if distance < (r_i + r_j - min_buffer):
+            if distance < threshold:
                 logger.info(f"distance between atom {molecule.get_atomic_symbol(i)}{i} and atom {molecule.get_atomic_symbol(j)}{j} is {distance:.3f}, which is too close")
-                logger.info(f"high atoms were: {str(high_atoms)}")
                 dump(molecule)
                 return True
     return False
 
 # if many atoms in the high layer get too far apart, raise the alarm
-def is_exploded(ref_molecule, new_molecule, threshold=1.0, n_pairs_threshold=5):
+def is_exploded(ref_molecule, new_molecule, threshold=0.5, n_pairs_threshold=5):
     bonds = ref_molecule.bonds
     n_pairs = 0
     for i,j in bonds.edges:
@@ -208,7 +208,7 @@ def is_exploded(ref_molecule, new_molecule, threshold=1.0, n_pairs_threshold=5):
     if n_pairs > 0:
         dump(new_molecule)
     if n_pairs >= n_pairs_threshold:
-        logger.info(">>> {n_pairs} bonds are unusually long, so it's likely this structure exploded")
+        logger.info(f">>> {n_pairs} bonds are unusually long, so it's likely this structure exploded")
         return True
     if n_pairs > 0:
         logger.info(f"> {n_pairs} bonds are unusually long")
