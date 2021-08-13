@@ -123,8 +123,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         molecule = cctk.Molecule(frame.trajectory.atomic_numbers[high_atoms], x_full[high_atoms])
 
         # ignore the check until we've had some time to enforce the constraints
-        exploded = is_exploded(first_molecule, molecule)
-        if frame.time > 110.0 and exploded:
+        if frame.time > 110.0 and is_exploded(first_molecule, molecule):
             logger.info(f"Atoms too far apart in Langevin integrator at {frame.time:.1f} fs!")
             raise ValueError("atoms too far apart")
 
@@ -178,6 +177,7 @@ def is_clashing(molecule, threshold=0.7): #min_buffer=0.5):
     n_bonds = len(bonds.edges)
     assert n_bonds > 0, "must assign connectivity first"
     n_atoms = len(molecule.geometry)
+    n_pairs = 0
     for i in range(1,n_atoms+1):
         for j in range(i+1,n_atoms+1):
             are_bonded = bonds.has_edge(i,j)
@@ -190,9 +190,12 @@ def is_clashing(molecule, threshold=0.7): #min_buffer=0.5):
             #if distance < (r_i + r_j - min_buffer):
             if distance < threshold:
                 logger.info(f"distance between atom {molecule.get_atomic_symbol(i)}{i} and atom {molecule.get_atomic_symbol(j)}{j} is {distance:.3f}, which is too close")
-                dump(molecule)
-                return True
-    return False
+                n_pairs += 1
+    if n_pairs > 0:
+        logger.info(f"> {n_pairs} bonds were too short!")
+        dump(molecule)
+    else:
+        return False
 
 # if many atoms in the high layer get too far apart, raise the alarm
 def is_exploded(ref_molecule, new_molecule, threshold=0.5, n_pairs_threshold=5):
@@ -216,7 +219,7 @@ def is_exploded(ref_molecule, new_molecule, threshold=0.5, n_pairs_threshold=5):
 
 # dump a gjf of the given molecule
 def dump(molecule):
-    random_number = randrange(1000000)
+    random_number = randrange(1000)
     logger.info(f"dumping clash/explosion check file with label {random_number:06d}")
     filename = f"check-{random_number:06d}.gjf"
     cctk.GaussianFile.write_molecule_to_file(filename, molecule, "#p")
