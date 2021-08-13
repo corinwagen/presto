@@ -16,20 +16,22 @@ class Constraint():
 
 class PairwisePolynomialConstraint(Constraint):
     """
-    Represents a pairwise constraint of the form: – energy = ``constant`` / ``power`` * (distance - ``equilibrium``) ** ``power``.
+    Represents a pairwise distance constraint of the form: – energy = ``constant`` / ``power`` * (distance - ``equilibrium``) ** ``power``.
 
     This will lead to a force of the form ``constant`` * (distance - ``equilibrium``) ** (``power`` - 1).
 
     If ``atom1`` or ``atom2`` is a list, then the closest/farthest distance will be taken. This corresponds to Singleton's "interlocking sphere biasing potential".
 
-    Update: if fadein
+    Update: if ``fadein`` is turned on, then optionally, we can set ``equilibrium_initial`` as the initial equilibrium distance for the constraint.  The
+            equilibrium distance will be linearly interpolated to ``equilibrium`` as the fadein period completes.
 
     Attributes:
         atom1 (int): number of 1st atom
         atom2 (int): number of 2nd atom
         power (float): dependence on distance
         force_constant (float): force constant
-        equilibrium (float): desired distance in Å
+        equilibrium (float): desired distance in Å after fadein
+        equilibrium_initial (float): desired initial equilibrium distance at the start of the fadein
         min (bool): whether the largest or smallest distance should be taken.
         fadein (int): the constraint will linearly begin to be applied over this many frames.
             If ``fadein`` is 100, then at 0 fs there will be no constraint, at 50 fs there will be a constraint with 1/2 force constant, and from 100 fs onwards the full constraint will be active.
@@ -38,12 +40,18 @@ class PairwisePolynomialConstraint(Constraint):
                          "right_only" = apply constraint only if distance > equilibrium
     """
 
-    def __init__(self, atom1, atom2, equilibrium, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
+    def __init__(self, atom1, atom2, equilibrium, equilibrium_initial=None, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
         assert isinstance(atom1, (list, int)), "atom number must be integer"
         assert isinstance(atom2, (list, int)), "atom number must be integer"
         assert isinstance(power, (int, float)), "power must be numeric"
         assert isinstance(force_constant, (int, float)), "force_constant must be numeric"
         assert isinstance(equilibrium, (int, float)), "equilibrium must be numeric"
+        assert equilibrium > 0.5, "check equilibrium distance"
+
+        if equilibrium_initial is None:
+            equilibrium_initial = equilibrium
+        else:
+            assert isinstance(equilibrium_initial, (int,float)) and equilibrium_initial > 0.5, "check equilibrium_initial"
 
         if isinstance(atom1, list):
             assert all(isinstance(x, int) for x in atom1)
@@ -58,6 +66,7 @@ class PairwisePolynomialConstraint(Constraint):
         self.power = power
         self.force_constant = force_constant
         self.equilibrium = equilibrium
+        self.equilibrium_initial = equilibrium_initial
         self.direction = direction
 
         if min:
@@ -113,7 +122,10 @@ class PairwisePolynomialConstraint(Constraint):
                         x2 = positions[y]
 
         # compute distance and apply one-sided potential if requested
-        delta = np.linalg.norm(x1-x2) - self.equilibrium
+        current_equilibrium = self.equilibrium
+        if time is not None and self.fadein > 0 and time < self.fadein:
+            current_equilibrium += (self.equilibrium_initial-self.equilibrium)*(1.0 - time / self.fadein)
+        delta = np.linalg.norm(x1-x2) - current_equilibrium
         if self.direction == "left_only" and delta > 0:
             # when delta is positive, the actual distance is larger than the equilibrium distance
             # so we are on the right side and we should not apply the constraint
@@ -128,7 +140,7 @@ class PairwisePolynomialConstraint(Constraint):
         # damp constraints at the very start of a trajectory
         force_constant = self.force_constant
         if time is not None:
-            if time < self.fadein:
+            if self.fadein > 0 and time < self.fadein:
                 force_constant *= time / self.fadein
                 assert force_constant >= 0, f"force constant should not be negative, but somehow it's {force_constant} (default is {self.force_constant})"
 
@@ -197,9 +209,12 @@ def build_constraints(settings):
 
         args = {"atom1": row["atom1"], "atom2": row["atom2"], "equilibrium": row["equilibrium"]}
 
+        if "equilibrium_initial" in row:
+            args["equilibrium_initial"] = row["equilibrium_initial"]
+
         if "power" in row:
             assert isinstance(row["power"], int), "``power`` must be integer!"
-            args["power" ] = row["power"]
+            args["power"] = row["power"]
 
         if "force_constant" in row:
             assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
