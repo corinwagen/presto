@@ -1,5 +1,5 @@
 import numpy as np
-import math, copy, cctk, os, re, logging, time
+import math, copy, cctk, os, re, logging, time, traceback
 import fasteners
 
 import h5py
@@ -177,6 +177,10 @@ class Trajectory():
             try:
                 controller.run(runtime=time)
             except Exception as e:
+                logger.info("*** trajectory error ***")
+                stacktrace = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+                for s in stacktrace:
+                    logger.info(s)
                 raise ValueError(f"Trajectory run terminated prematurely due to error: {e}")
 
         if keep_all:

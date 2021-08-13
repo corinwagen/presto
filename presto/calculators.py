@@ -162,10 +162,10 @@ class XTBCalculator(Calculator):
                 assert os.path.isfile(f"{tmpdir}/gradient"), "no gradient file!"
 
             except Exception as e:
-                random_number = randrange(100)
-                print(f"dumping xtb files with label {random_number:06d}")
-                shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb-{random_number:06d}.xyz")
-                shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb-{random_number:06d}.out")
+                #random_number = randrange(100)
+                #print(f"dumping xtb files with label {random_number:06d}")
+                #shutil.copyfile(f"{tmpdir}/xtb-in.xyz", f"{old_working_directory}/xtb-{random_number:06d}.xyz")
+                #shutil.copyfile(f"{tmpdir}/xtb-out.out", f"{old_working_directory}/xtb-{random_number:06d}.out")
                 raise ValueError(f"xtb failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
             # parse energy
@@ -283,7 +283,7 @@ class GaussianCalculator(Calculator):
                 gaussian_file = None
                 try:
                     if retries > 0:
-                        logger.info(f"retrying gaussian (attempt {retries}")
+                        logger.info(f"retrying gaussian (attempt {retries+1} of {max_retries})")
                     start = timelib.time()
                     result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
                     end = timelib.time()
@@ -296,10 +296,10 @@ class GaussianCalculator(Calculator):
                     # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
                     gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
                 except Exception as e:
-                    random_number = randrange(100)
-                    logger.info(f"dumping gaussian files with label {random_number:06d}")
-                    shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
-                    shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
+                    #random_number = randrange(100)
+                    #logger.info(f"dumping gaussian files with label {random_number:06d}")
+                    #shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
+                    #shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
                     # dump the end of the file
                     try:
                         with open(f"{tmpdir}/g16-out.out", "r") as filehandle:

@@ -22,6 +22,8 @@ class PairwisePolynomialConstraint(Constraint):
 
     If ``atom1`` or ``atom2`` is a list, then the closest/farthest distance will be taken. This corresponds to Singleton's "interlocking sphere biasing potential".
 
+    Update: if fadein
+
     Attributes:
         atom1 (int): number of 1st atom
         atom2 (int): number of 2nd atom
