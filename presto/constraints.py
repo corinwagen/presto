@@ -30,8 +30,9 @@ class PairwisePolynomialConstraint(Constraint):
         atom2 (int): number of 2nd atom
         power (float): dependence on distance
         force_constant (float): force constant
+        force_constant_initial (float): desired force constant at the start of the fadein period (use None to stick with a constant force constant)
         equilibrium (float): desired distance in Å after fadein
-        equilibrium_initial (float): desired initial equilibrium distance at the start of the fadein
+        equilibrium_initial (float): desired initial equilibrium distance at the start of the fadein (use None to stick with a constant equilibrium distance)
         min (bool): whether the largest or smallest distance should be taken.
         fadein (int): the constraint will linearly begin to be applied over this many frames.
             If ``fadein`` is 100, then at 0 fs there will be no constraint, at 50 fs there will be a constraint with 1/2 force constant, and from 100 fs onwards the full constraint will be active.
@@ -40,7 +41,8 @@ class PairwisePolynomialConstraint(Constraint):
                          "right_only" = apply constraint only if distance > equilibrium
     """
 
-    def __init__(self, atom1, atom2, equilibrium, equilibrium_initial=None, power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
+    def __init__(self, atom1, atom2, equilibrium, force_constant_initial=None, equilibrium_initial=None,
+                 power=2, force_constant=10, convert_from_kcal=True, min=True, fadein=0, direction=None):
         assert isinstance(atom1, (list, int)), "atom number must be integer"
         assert isinstance(atom2, (list, int)), "atom number must be integer"
         assert isinstance(power, (int, float)), "power must be numeric"
@@ -61,10 +63,16 @@ class PairwisePolynomialConstraint(Constraint):
         if convert_from_kcal:
             force_constant *= 0.0004184
 
+        if force_constant_initial is None:
+            force_constant_initial = force_constant
+        elif convert_from_kcal:
+            force_constant_initial *= 0.0004184
+
         self.atom1 = atom1
         self.atom2 = atom2
         self.power = power
         self.force_constant = force_constant
+        self.force_constant_initial = force_constant_initial
         self.equilibrium = equilibrium
         self.equilibrium_initial = equilibrium_initial
         self.direction = direction
@@ -141,7 +149,7 @@ class PairwisePolynomialConstraint(Constraint):
         force_constant = self.force_constant
         if time is not None:
             if self.fadein > 0 and time < self.fadein:
-                force_constant *= time / self.fadein
+                force_constant += (self.force_constant_initial - self.force_constant)*(1.0 - time / self.fadein)
                 assert force_constant >= 0, f"force constant should not be negative, but somehow it's {force_constant} (default is {self.force_constant})"
 
         forces = np.zeros_like(positions.view(np.ndarray)).view(cctk.OneIndexedArray)
@@ -219,6 +227,10 @@ def build_constraints(settings):
         if "force_constant" in row:
             assert isinstance(row["force_constant"], (int, float)), "``force_constant`` must be numeric"
             args["force_constant"] = row["force_constant"]
+
+        if "force_constant_initial" in row:
+            assert isinstance(row["force_constant_initial"], (int, float)), "``force_constant_initial`` must be numeric"
+            args["force_constant_initial"] = row["force_constant_initial"]
 
         if "which" in row:
             assert row["which"] in ["min", "max"], "`which` must be `min` or `max`"
