@@ -21,7 +21,7 @@ class TestConstraint(unittest.TestCase):
             atomic_numbers=zs,
             high_atoms=np.array([]),
             active_atoms=np.array([1, 2]),
-            calculator=presto.calculators.NullCalculator([c]),
+            calculator=presto.calculators.Calculator([c]),
             integrator=presto.integrators.VelocityVerletIntegrator(),
             stop_time=250,
             checkpoint_filename="test/static/constraint-test.chk",

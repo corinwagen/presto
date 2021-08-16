@@ -22,35 +22,30 @@ XTB_PATH = presto.config.XTB_PATH
 
 class Calculator():
     """
-    Generic calculator class.
-    """
+    Does nothing except evaluate constraints and potential. Mostly for testing purposes, but I guess you could also model something insanely boring this way.
 
-    def __init__(self):
-        pass
-
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe, time=None):
-        """
-        Return energy, forces
-        """
-        pass
-
-class NullCalculator(Calculator):
+    Attributes:
+        constraints (presto.constraints.Constraint): constraints
+        potential (presto.potentials.Potential): confining potential
     """
-    Does nothing except evaluate constraints. Mostly for testing purposes, but I guess you could also model something insanely boring this way.
-    """
-    def __init__(self, constraints=list()):
+    def __init__(self, constraints=list(), potential=None):
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
+        self.potential = potential
+
         for c in constraints:
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
-        energy = 0
-        forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
+        """
+        Ordinarily there would be a call to an external program here.
 
-        for c in self.constraints:
-            f, e = c.evaluate(positions, time=time)
-            energy += e
-            forces += f
+        Returns:
+            energy
+            forces
+        """
+        energy, forces = self.apply_constraints_and_potential(positions, time)
 
         if pipe is not None:
             assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
@@ -58,6 +53,36 @@ class NullCalculator(Calculator):
             pipe.close()
         else:
             return energy, forces
+
+    def apply_constraints_and_potential(self, positions, time):
+        """
+        Applies constraints and potential.
+
+        Arguments:
+            positions (cctk.OneIndexedArray):
+            time (float):
+
+        Returns:
+            energy
+            forces
+        """
+
+        assert isinstance(positions, cctk.OneIndexedArray), "positions must be cctk.OneIndexedArray"
+
+        energy = 0
+        forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
+
+        if self.potential is not None:
+            pe, pf = self.potential.evaluate(positions)
+            energy += pe
+            forces += pf
+
+        for c in self.constraints:
+            f, e = c.evaluate(positions, time=time)
+            energy += e
+            forces += f
+
+        return energy, forces
 
 
 class XTBCalculator(Calculator):
@@ -71,7 +96,7 @@ class XTBCalculator(Calculator):
         topology (str): path to gfn-ff topology file, if gfn is ``ff``.
     """
 
-    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), xcontrol_path=None, topology=None):
+    def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), potential=None, xcontrol_path=None, topology=None):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)
         assert isinstance(gfn, (int, str))
@@ -81,6 +106,10 @@ class XTBCalculator(Calculator):
         self.multiplicity = multiplicity
         self.gfn = gfn
         self.parallel = parallel
+
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
+        self.potential = potential
 
         for c in constraints:
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
@@ -183,11 +212,10 @@ class XTBCalculator(Calculator):
             # restore working directory
             os.chdir(old_working_directory)
 
-        # apply constraints
-        for c in self.constraints:
-            f, e = c.evaluate(positions, time=time)
-            energy += e
-            forces += f
+        # apply constraints and potential
+        constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time)
+        energy += constraint_e
+        forces += constraint_f
 
         # return result
         if pipe is not None:
@@ -206,6 +234,7 @@ class GaussianCalculator(Calculator):
             route_card="#p hf/3-21g force",
             footer=None,
             constraints=list(),
+            potential=None,
             gaussian_chk=None,
         ):
         if not re.search("force", route_card):
@@ -216,6 +245,10 @@ class GaussianCalculator(Calculator):
         self.link0 = link0
         self.route_card = route_card
         self.footer = footer
+
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
+        self.potential = potential
 
         for c in constraints:
             assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
@@ -281,15 +314,7 @@ class GaussianCalculator(Calculator):
                 # moved this inside the try/except because sometimes gaussian dies "silently" e.g. without a non-zero returncode
                 gaussian_file = cctk.GaussianFile.read_file(f"{tmpdir}/g16-out.out")
             except Exception as e:
-                random_number = randrange(1000000)
-                print(f"dumping gaussian files with label {random_number:06d}")
-                shutil.copyfile(f"{tmpdir}/g16-in.gjf", f"{old_working_directory}/g16-{random_number:06d}-failed-input.gjf")
-                shutil.copyfile(f"{tmpdir}/g16-out.out", f"{old_working_directory}/g16-{random_number:06d}-failed-output.out")
-                try:
-                    assert qc is False # retry with quadratic convergence
-                    self.evaluate(atomic_numbers, positions, high_atoms, pipe, qc=True)
-                except Exception as e:
-                   raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
+                raise ValueError(f"g16 failed:\n{e}\nfiles:{os.listdir(tmpdir)}")
 
             # check we read ok
             assert gaussian_file is not None, f"g16 failure"
@@ -310,11 +335,10 @@ class GaussianCalculator(Calculator):
         # restore working directory
         os.chdir(old_working_directory)
 
-        # apply constraints
-        for c in self.constraints:
-            f, e = c.evaluate(positions, time=time)
-            energy += e
-            forces += f
+        # apply constraints and potential
+        constraint_e, constraint, f = self.apply_constraints_and_potential(positions, time=time)
+        energy += constraint_e
+        forces += constraint_f
 
         # return result
         if pipe is not None:
@@ -328,7 +352,7 @@ class ONIOMCalculator(Calculator):
     """
     Composes two other calculators, and computes forces according to the ONIOM embedding scheme.
     """
-    def __init__(self, high_calculator, low_calculator, constraints=list()):
+    def __init__(self, high_calculator, low_calculator, constraints=list(), potential=None):
         assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
         assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
         self.high_calculator = high_calculator
@@ -340,12 +364,16 @@ class ONIOMCalculator(Calculator):
             if self.full_calculator.gfn == "ff":
                 self.full_calculator.topology = self.full_calculator.topology.replace(".low", ".full")
 
+        # full_calculator gets the potential
+        if potential is not None:
+            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
+        self.full_calculator.potential = potential
+
         # atom numbering gets messed up if you don't give full_calculator the constraints
         for c in constraints:
             assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
         self.full_calculator.constraints = constraints
         self.constraints = constraints
-
 
     def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None):
         """
@@ -406,7 +434,7 @@ class ONIOMCalculator(Calculator):
 
         return energy, forces
 
-def build_calculator(settings, checkpoint_filename, constraints=list(), ):
+def build_calculator(settings, checkpoint_filename, constraints=list(), potential=None):
     """
     Build calculator from settings dict.
     """
@@ -421,6 +449,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
             high_calculator=build_calculator(settings["high_calculator"], checkpoint_filename + ".high"),
             low_calculator=build_calculator(settings["low_calculator"], checkpoint_filename + ".low"),
             constraints=constraints,
+            potential=potential,
         )
     elif settings["type"].lower() == "gaussian":
         charge = 0
@@ -459,9 +488,9 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
                 raise ValueError("`gaussian_chk` must be string or True!")
 
         if link0 is not None:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk, potential=potential)
         else:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk)
+            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk, potential=potential)
 
     elif settings["type"].lower() == "xtb":
         charge = 0
@@ -498,7 +527,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
         elif gfn == "ff":
             topology = f"{checkpoint_filename}.top"
 
-        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology)
+        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology, potential=potential)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")

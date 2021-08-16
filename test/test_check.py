@@ -15,8 +15,8 @@ class TestCheck(unittest.TestCase):
             atomic_numbers=cctk.OneIndexedArray([1,1]),
             high_atoms=np.array([]),
             active_atoms=np.array([1,2]),
-            calculator=presto.calculators.XTBCalculator(),
-            integrator=presto.integrators.VelocityVerletIntegrator(potential=presto.potentials.SphericalHarmonicPotential(radius=10)),
+            calculator=presto.calculators.XTBCalculator(potential=presto.potentials.SphericalHarmonicPotential(radius=10)),
+            integrator=presto.integrators.VelocityVerletIntegrator(),
             stop_time=10000,
         )
 

@@ -63,36 +63,6 @@ class Frame():
     def __repr__(self):
         return f"presto.frame.Frame({len(self.positions)} atoms, time={self.time:.1f})"
 
-    def next(self, temp=None, forwards=True):
-        """
-        Computes next frame using ``self.trajectory.integrator``.
-
-        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
-        """
-        if temp is None:
-            temp = self.bath_temperature
-        assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
-
-        try:
-            start = timelib.time()
-            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
-            end = timelib.time()
-            elapsed = end - start
-
-            # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
-            self.energy = energy
-            return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
-        except Exception as e:
-            raise ValueError(f"Error in frame.next(): {e}")
-
-    def prev(self, temp=None):
-        """
-        Computes previous frame using ``self.trajectory.integrator``.
-
-        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
-        """
-        return self.next(temp, forwards=False)
-
     def potential_energy(self):
         """ Returns the potential energy in kcal/mol. """
         return self.energy * presto.constants.KCAL_PER_HARTREE

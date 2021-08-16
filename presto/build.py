@@ -73,8 +73,8 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         assert isinstance(settings["anchor"], int), "``anchor`` must be an atomic number!"
         constraints.insert(0, presto.constraints.Anchor(settings["anchor"]))
 
-    i = presto.integrators.build_integrator(settings["integrator"], potential=p)
-    c = presto.calculators.build_calculator(settings["calculator"], checkpoint, constraints=constraints)
+    i = presto.integrators.build_integrator(settings["integrator"])
+    c = presto.calculators.build_calculator(settings["calculator"], checkpoint, constraints=constraints, potential=p)
 
     args["checkpoint_filename"] = checkpoint
     assert isinstance(settings["type"], str), "`type` must be a string"
