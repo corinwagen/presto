@@ -34,6 +34,8 @@ class Calculator():
         """
         pass
 
+#TODO (MS): refactor common xtb/gaussian/orca code into nullcalculator parent class
+
 class NullCalculator(Calculator):
     """
     Does nothing except evaluate constraints. Mostly for testing purposes, but I guess you could also model something insanely boring this way.
@@ -58,7 +60,6 @@ class NullCalculator(Calculator):
             pipe.close()
         else:
             return energy, forces
-
 
 class XTBCalculator(Calculator):
     """
@@ -203,7 +204,7 @@ class GaussianCalculator(Calculator):
             charge=0,
             multiplicity=1,
             link0={"mem":"1GB", "nprocshared":"4"},
-            route_card="#p hf/3-21g force",
+            route_card="#p hf/3-21g force nopop",
             footer=None,
             constraints=list(),
             gaussian_chk=None,
@@ -309,6 +310,145 @@ class GaussianCalculator(Calculator):
 
         # restore working directory
         os.chdir(old_working_directory)
+
+        # apply constraints
+        for c in self.constraints:
+            f, e = c.evaluate(positions, time=time)
+            energy += e
+            forces += f
+
+        # return result
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
+
+class OrcaCalculator(Calculator):
+    def __init__(
+            self,
+            charge=0,
+            multiplicity=1,
+            nprocs=4,
+            maxcore=4000,
+            keyword_line="! HF-3c engrad nopop smallprint",
+            constraints=list(),
+            autostart=True
+        ):
+
+        if not re.search("engrad", keyword_line, re.IGNORECASE): # required to calculate forces
+            keyword_line += ' engrad'
+
+        self.autostart=False
+        if autostart:
+            self.autostart = True
+            keyword_line += ' autostart'
+
+        self.charge = charge
+        self.multiplicity = multiplicity
+
+        keyword_line += f'\n%pal nprocs {nprocs} end\n%maxcore {maxcore}'
+        self.keyword_line = keyword_line
+
+        for c in constraints:
+            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
+        self.constraints = constraints
+
+
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
+        """
+        Gets the electronic energy and Cartesian forces for the specified geometry.
+
+        Args:
+            atomic_numbers (cctk.OneIndexedArray): the atomic numbers (int)
+            positions (cctk.OneIndexedArray): the atomic positions in angstroms
+            high_atoms (np.ndarray): do nothing with this
+            pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
+            qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails
+
+        Returns:
+            energy (float): in Hartree
+            forces (cctk.OneIndexedArray): in amu Å per fs**2
+        """
+        assert shutil.which(presto.config.ORCA_EXEC), f"bad ORCA executable {presto.config.ORCA_EXEC}"
+
+        old_working_directory = os.getcwd()
+
+        molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
+        keyword_line = self.keyword_line
+
+        # option to change SCF algorithm? though easily specified in keyword line
+
+        energy, forces = None, None
+        elapsed = 0
+        with tempfile.TemporaryDirectory() as tmpdir:
+            #tmpdir = f'{os.getcwd()}/orcatmpdir'
+            #os.mkdir(tmpdir)
+
+            cctk.OrcaFile.write_molecule_to_file(f"{tmpdir}/orca-in.inp", molecule, keyword_line)
+            if self.autostart and os.path.exists("orca-in.gbw"):
+                shutil.move("orca-in.gbw", f"{tmpdir}/orca-in.gbw")
+            
+            command = f"{presto.config.ORCA_PATH}/{presto.config.ORCA_EXEC} orca-in.inp > orca-out.out"
+
+            start = timelib.time()
+            result = sp.run(command, cwd=tmpdir, shell=True, capture_output=True)
+            end = timelib.time()
+            elapsed = end - start
+
+            result.check_returncode()
+            assert os.path.isfile(f"{tmpdir}/orca-out.out"), "no orca output file!"
+            assert os.path.isfile(f"{tmpdir}/orca-in.engrad"), "no orca energy and gradient (.engrad) file!"
+
+            orca_success = False
+            with open(f'{tmpdir}/orca-out.out') as orca_out:
+                for line in reversed(orca_out.readlines()):
+                    if 'ORCA TERMINATED NORMALLY' in line:
+                        orca_success = True
+                        break
+
+            if not orca_success:
+                random_number = randrange(1000000)
+                print(f"dumping ORCA files with label {random_number:06d}")
+                shutil.copyfile(f"{tmpdir}/orca-in.inp", f"{old_working_directory}/orca-{random_number:06d}-failed-input.inp")
+                shutil.copyfile(f"{tmpdir}/orca-out.out", f"{old_working_directory}/orca-{random_number:06d}-failed-output.out")
+                raise ValueError(f"ORCA failed.\nfiles:{os.listdir(tmpdir)}")
+
+            # extract output
+            with open(f"{tmpdir}/orca-in.engrad") as orca_engrad:
+                for i in range(3):
+                    orca_engrad.readline() # skip initial lines
+
+                num_atoms = int(orca_engrad.readline().strip())
+                assert num_atoms == len(atomic_numbers), 'number of atoms in engrad file does not match input number of atoms!'
+
+                # Skips to the line with final system energy
+                for i in range(3):
+                    orca_engrad.readline()
+
+                energy = float(orca_engrad.readline().strip())
+
+                # Skips to the lines with gradients
+                for i in range(3):
+                    orca_engrad.readline()
+
+                forces = []
+                for i in range(num_atoms): # orca reports x1 y1 z1 x2 y2 z2 ....
+                    forces_atom = []
+                    for j in range(3):
+                        forces_atom.append(-float(orca_engrad.readline().strip()))
+                    forces.append(forces_atom)
+                forces = cctk.OneIndexedArray(forces)
+                forces *= presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
+
+                # save new checkpoint file
+                if self.autostart and os.path.exists(f"{tmpdir}/orca-in.gbw"):
+                    shutil.copyfile(f"{tmpdir}/orca-in.gbw", f"{old_working_directory}/orca-in.gbw")
+
+        # restore working directory
+        os.chdir(old_working_directory)
+        #shutil.rmtree(tmpdir)
 
         # apply constraints
         for c in self.constraints:
@@ -500,7 +640,40 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), ):
 
         return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology)
 
+    elif settings["type"].lower() == "orca":
+        charge = 0
+        if "charge" in settings:
+            assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
+            charge = settings["charge"]
+
+        multiplicity = 1
+        if "multiplicity" in settings:
+            assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
+            assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
+            multiplicity = settings["multiplicity"]
+
+        nprocs = 1
+        if "nprocs" in settings:
+            assert isinstance(settings["nprocs"], int), "Calculator `nprocs` must be an integer."
+            nprocs = settings["nprocs"]
+
+        maxcore=4000
+        if "maxcore" in settings:
+            assert isinstance(settings["maxcore"], int), "Calculator `maxcore` must be a dictionary."
+            maxcore = settings["maxcore"]
+            
+        assert "keyword_line" in settings, "Need a keyword line starting with \'!\' for `OrcaCalculator`!"
+        assert isinstance(settings["keyword_line"], str), "Calculator `keyword_line` must be a string."
+        assert re.search("! ", settings["keyword_line"]), "Need `! ` in keyword_line!"
+
+        autostart = True
+        if "autostart" in settings:
+            autostart = settings["autostart"]
+        
+
+        return OrcaCalculator(charge=charge, multiplicity=multiplicity, nprocs=nprocs, maxcore=maxcore, keyword_line=settings["keyword_line"], constraints=constraints, autostart=autostart)
+
     else:
-        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
+        raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, `gaussian`, or `orca`.")
 
 

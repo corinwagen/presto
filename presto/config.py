@@ -39,9 +39,13 @@ else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
 check_directory("XTB_PATH",XTB_PATH)
 
+ORCA_PATH = resolve_directory(config['orca']['orca_PATH'])
+check_directory("ORCA_PATH", ORCA_PATH)
+
 # load execs - will be run during Calculator.__init__()
 XTB_EXEC = config['xtb']['XTB_EXEC']
 G16_EXEC = config['gaussian']['GAUSSIAN_EXEC']
+ORCA_EXEC = config['orca']['ORCA_EXEC']
 logger.info(f"Loaded configuration data from {CONFIGURATION_FILE}.")
 
 def build(*args, **kwargs):
