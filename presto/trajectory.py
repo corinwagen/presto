@@ -117,7 +117,8 @@ class Trajectory():
             self.set_inactive_atoms(kwargs["inactive_atoms"])
         else:
             # assume all atoms are active
-            self.set_inactive_atoms(np.ndarray([]))
+            self.set_inactive_atoms(None)
+            
 
         if not hasattr(self, "masses"):
             self.masses = cctk.OneIndexedArray([float(cctk.helper_functions.draw_isotopologue(z)) for z in atomic_numbers])
@@ -143,14 +144,17 @@ class Trajectory():
     def set_inactive_atoms(self, inactive_atoms):
         """
         Since sometimes it's easier to specify the inactive atoms than the inactive atoms, this method updates ``self.active_atoms`` with the complement of ``inactive_atoms``.
+
+        Args:
+        inactive_atoms (None or np.ndarray)
         """
-        assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
         active_atoms = list(range(1, len(self.atomic_numbers)+1))
-        if len(inactive_atoms):
+        if inactive_atoms is not None:
+            assert isinstance(inactive_atoms, (list, np.ndarray)), "Need list of atoms!"
             for atom in inactive_atoms:
                 active_atoms.remove(atom)
-        active_atoms = np.array(active_atoms)
-        self.active_atoms = active_atoms
+        
+        self.active_atoms = np.array(active_atoms)
 
     def run(self, keep_all=False, time=None, **kwargs):
         """
@@ -242,15 +246,7 @@ class Trajectory():
                 all_velocities= h5.get("all_velocities")[frames]
                 all_accels = h5.get("all_accelerations")[frames]
                 temperatures = h5.get("bath_temperatures")[frames]
-
-                # v0.2.2 - provisionally removing this
-#                all_times = None
-#                try:
                 all_times = h5.get("all_times")[frames]
-#                except Exception as e:
-#                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
-#                    # this was added recently, so may be some backwards compatibility issues.
-#                    pass
 
                 if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
@@ -402,8 +398,16 @@ class Trajectory():
         """
 
         # what do we make a movie of?
-        if idxs is not None:
-            assert isinstance(idxs, list), "idxs must be list of indices or ``None``!"
+        if idxs:
+            if isinstance(idxs, str):
+                if idxs == "high":
+                    idxs = self.high_atoms
+                elif idxs == "all":
+                    idxs = None
+                else:
+                    raise ValueError(f"unknown idxs keyword {idxs} -- must be 'high' or 'all'")
+            else:
+                raise ValueError(f"unknown idxs keyword {idxs} -- must be 'high' or 'all'")
         else:
             if isinstance(solvents, str):
                 if solvents == "high":
@@ -419,7 +423,7 @@ class Trajectory():
                 raise ValueError("``solvents`` must be int, 'high', or 'all'!")
 
         ensemble = self.as_ensemble(idxs)
-        logger.info("Writing trajectory to {filename}")
+        logger.info(f"Writing trajectory to {filename}")
         if re.search("pdb$", filename):
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
@@ -433,12 +437,13 @@ class Trajectory():
 
     def as_ensemble(self, idxs=None):
         ensemble = cctk.ConformationalEnsemble()
-        for frame in self.frames[:-1]:
+        # for frame in self.frames[:-1]: # why is this up to only the second last frame?
+        for frame in self.frames:
             ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
     @classmethod
-    def new_from_checkpoint(cls, checkpoint, frame):
+    def new_from_checkpoint(cls, checkpoint, frame=slice(None)):
         """
         Creates new trajectory from the given checkpoint file.
 
@@ -449,12 +454,13 @@ class Trajectory():
         Returns:
             new ``Trajectory`` object
         """
-        assert isinstance(frame, int), "need an integer frame number"
+        assert isinstance(frame, slice), "frame needs to be a Slice object"
 
-        new_traj = cls(checkpoint_filename=checkpoint)
-        new_traj.load_from_checkpoint(idxs=frame)
+        new_traj = cls(checkpoint_filename=checkpoint, stop_time=10000, save_interval=1) 
+        # added defaults here to avoid errors when creating new trajectory object
+        new_traj.load_from_checkpoint(frames=frame)
 
-        assert len(new_traj.frames) == 1, "got too many frames!"
+        #assert len(new_traj.frames) == 1, "got too many frames!"
         return new_traj
 
     def initialize_lock(self):
