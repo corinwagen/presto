@@ -81,12 +81,17 @@ class TopologyCheck(Check):
         old_mol = old_frame.molecule().assign_connectivity()
         assert cctk.topology.are_isomorphic(new_mol, old_mol), "TopologyCheck failed! different topologies found."
 
-def build_check(settings):
-    if settings["type"] == "velocity":
-        return VelocityCheck(**settings)
-    elif settings["type"] == "radius":
-        return RadiusCheck(**settings)
-    elif settings["type"] == "topology":
-        return TopologyCheck(**settings)
-    else:
-        raise ValueError(f"unknown presto.check.Check type {settings['type']}!")
+def build_checks(settings):
+    checks = list()
+
+    for row in list(settings.values()):
+        if row["type"] == "velocity":
+            checks.append(VelocityCheck())
+        elif row["type"] == "radius":
+            checks.append(RadiusCheck())
+        elif row["type"] == "topology":
+            checks.append(TopologyCheck())
+        else:
+            raise ValueError(f"unknown presto.check.Check type {row['type']}!")
+
+    return checks

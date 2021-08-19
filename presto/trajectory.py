@@ -33,6 +33,7 @@ class Trajectory():
         checkpoint_interval (int):
         lock (fasteners.InterProcessLock): lock object
         save_interval (int): how many frames to save
+        buffer (int): how many frames to keep in memory
     """
 
     def __init__(
@@ -49,6 +50,7 @@ class Trajectory():
         checkpoint_interval=10,
         stop_time=None,
         save_interval=1,
+        buffer=100,
         load_frames="all", # or ``first`` or ``last`` or a slice
         **kwargs
     ):

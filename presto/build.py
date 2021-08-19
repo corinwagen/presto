@@ -69,6 +69,10 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     if "constraints" in settings:
         constraints = presto.constraints.build_constraints(settings["constraints"])
 
+    checks = list()
+    if "checks" in settings:
+        checks = presto.checks.build_checks(settings["checks"])
+
     if "anchor" in settings:
         assert isinstance(settings["anchor"], int), "``anchor`` must be an atomic number!"
         constraints.insert(0, presto.constraints.Anchor(settings["anchor"]))
@@ -104,6 +108,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         t = presto.trajectory.EquilibrationTrajectory(
             calculator=c,
             integrator=i,
+            checks=checks,
             bath_scheduler=s,
             **args,
         )
@@ -150,6 +155,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
             calculator=c,
             integrator=i,
             termination_function=f,
+            checks=checks,
             **args,
         )
 
