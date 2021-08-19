@@ -132,13 +132,15 @@ elif args["type"] == "analyze":
             y_dists.append(y_dist)
             timeseries_text += f"{args['cutoff'] + idx}\t{x_dist:.4f}\t{y_dist:.4f}\n"
 
-        new_filename = name.rsplit('/',1)[-1]
-        with open(f"{new_filename}.csv", "w") as timeseries:
+        new_filename = name.rsplit('/',1)[-1] + ".csv"
+        if os.path.exists(new_filename):
+            raise ValueError(f"Can't write to {new_filename} -- file already exists!")
+        with open(new_filename, "w") as timeseries:
             timeseries.write(timeseries_text)
 
         x_file_hist, bin_edges = np.histogram(x_dists, bins=100, range=(min_x, max_x))
         y_file_hist, bin_edges = np.histogram(y_dists, bins=100, range=(min_y, max_y))
-        return x_file_hist, y_file_hist, len(x_dists), f"{new_filename}.csv\t{dx:.4f}\t{dy:.4f}\t{kx:.4f}\t{ky:.4f}\n"
+        return x_file_hist, y_file_hist, len(x_dists), f"{new_filename}\t{dx:.4f}\t{dy:.4f}\t{kx:.4f}\t{ky:.4f}\n"
 
     # reading is slow, do it in parallel
     pool = mp.Pool(processes=1)
