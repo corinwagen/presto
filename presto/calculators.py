@@ -8,13 +8,6 @@ from random import randrange
 
 logger = logging.getLogger(__name__)
 
-############################
-### Directory Parameters ###
-############################
-
-# A-Za-z0-9
-LETTERS_AND_DIGITS = string.ascii_letters + string.digits
-
 # where the xtb GFNn config files are stored
 XTB_PATH = presto.config.XTB_PATH
 
@@ -84,6 +77,14 @@ class Calculator():
 
         return energy, forces
 
+    def return_energy_and_forces(self, energy, forces, pipe=None):
+        if pipe is not None:
+            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
+            pipe.send([energy, forces])
+            pipe.close()
+        else:
+            return energy, forces
+
 
 class XTBCalculator(Calculator):
     """
@@ -107,14 +108,6 @@ class XTBCalculator(Calculator):
         self.gfn = gfn
         self.parallel = parallel
 
-        if potential is not None:
-            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
-        self.potential = potential
-
-        for c in constraints:
-            assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
-        self.constraints = constraints
-
         if xcontrol_path is not None:
             assert isinstance(xcontrol_path, str)
         self.xcontrol_path = xcontrol_path
@@ -122,6 +115,10 @@ class XTBCalculator(Calculator):
         if gfn == "ff":
             assert isinstance(topology, str), "need path for topology file!"
         self.topology = topology
+
+        # call Calculator.__init__() for potential and constraints
+        super().__init__(potential=potential, constraints=constraints)
+
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
         """
@@ -155,7 +152,7 @@ class XTBCalculator(Calculator):
             command += f" --input {self.xcontrol_path}"
         command += " --grad xtb-in.xyz &> xtb-out.out"
 
-        # set env variables
+        # set env variables - xtb requires some twiddling
         os.environ["OMP_NUM_THREADS"] = str(self.parallel)
         os.environ["MKL_NUM_THREADS"] = str(self.parallel)
         os.environ["OMP_STACKSIZE"] = "4G"
@@ -217,13 +214,7 @@ class XTBCalculator(Calculator):
         energy += constraint_e
         forces += constraint_f
 
-        # return result
-        if pipe is not None:
-            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
-            pipe.send([energy, forces])
-            pipe.close()
-        else:
-            return energy, forces
+        self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 class GaussianCalculator(Calculator):
     def __init__(
@@ -246,17 +237,12 @@ class GaussianCalculator(Calculator):
         self.route_card = route_card
         self.footer = footer
 
-        if potential is not None:
-            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
-        self.potential = potential
-
-        for c in constraints:
-            assert isinstance(c, presto.constraints.Constraint), f"{c} is not a valid constraint!"
-        self.constraints = constraints
-
         if gaussian_chk is not None:
             assert isinstance(gaussian_chk, str), "gaussian_chk must be string"
         self.gaussian_chk = gaussian_chk
+
+        # call Calculator.__init__() for potential and constraints
+        super().__init__(potential=potential, constraints=constraints)
 
     def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None):
         """
@@ -340,13 +326,7 @@ class GaussianCalculator(Calculator):
         energy += constraint_e
         forces += constraint_f
 
-        # return result
-        if pipe is not None:
-            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
-            pipe.send([energy, forces])
-            pipe.close()
-        else:
-            return energy, forces
+        self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 class ONIOMCalculator(Calculator):
     """
@@ -432,7 +412,7 @@ class ONIOMCalculator(Calculator):
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
-        return energy, forces
+        self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 def build_calculator(settings, checkpoint_filename, constraints=list(), potential=None):
     """
@@ -451,83 +431,90 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), potentia
             constraints=constraints,
             potential=potential,
         )
+
     elif settings["type"].lower() == "gaussian":
-        charge = 0
+        args = {
+            "charge": 0,
+            "multiplicity": 1,
+            "footer": None,
+            "gaussian_chk": None,
+        }
+
         if "charge" in settings:
             assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
-            charge = settings["charge"]
+            args["charge"] = settings["charge"]
 
-        multiplicity = 1
         if "multiplicity" in settings:
             assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
             assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            multiplicity = settings["multiplicity"]
+            args["multiplicity"] = settings["multiplicity"]
 
-        link0 = None
+        # don't put in args unless it's specifically mentioned
         if "link0" in settings:
             assert isinstance(settings["link0"], dict), "Calculator `link0` must be a dictionary."
-            link0 = settings["link0"]
+            args["link0"] = settings["link0"]
 
         assert "route_card" in settings, "Need a route card for `GaussianCalculator`!"
         assert isinstance(settings["route_card"], str), "Calculator `route_card` must be a string."
         assert re.search("#p", settings["route_card"]), "Need `#p` in route card!"
         assert re.search("force", settings["route_card"]), "Need `force` in route card!"
+        args["route_card"] = settings["route_card"]
 
-        footer = None
         if "footer" in settings:
             assert isinstance(settings["footer"], str), "Calculator `footer` must be string or `None`."
-            footer = settings["footer"]
+            args["footer"] = settings["footer"]
 
-        gaussian_chk = None
         if "gaussian_chk" in settings:
             if isinstance(settings["gaussian_chk"], str):
-                gaussian_chk = settings["gaussian_chk"]
+                args["gaussian_chk"] = settings["gaussian_chk"]
             elif settings["gaussian_chk"] is True:
-                gaussian_chk = f"{checkpoint_filename}.gchk"
+                # default to the checkpoint_filename - safe option
+                args["gaussian_chk"] = f"{checkpoint_filename}.gchk"
             else:
                 raise ValueError("`gaussian_chk` must be string or True!")
 
-        if link0 is not None:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, link0=link0, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk, potential=potential)
-        else:
-            return GaussianCalculator(charge=charge, multiplicity=multiplicity, route_card=settings["route_card"], footer=footer, constraints=constraints, gaussian_chk=gaussian_chk, potential=potential)
+        return GaussianCalculator(constraints=constraints, potential=potential, **args)
 
     elif settings["type"].lower() == "xtb":
-        charge = 0
+        args = {
+            "charge": 0,
+            "multiplicity": 1,
+            "gfn": 2,
+            "parallel": 1,
+            "xcontrol": None,
+            "topology": None,
+        }
+
         if "charge" in settings:
             assert isinstance(settings["charge"], int), "Calculator `charge` must be an integer."
-            charge = settings["charge"]
+            args["charge"] = settings["charge"]
 
-        multiplicity = 1
         if "multiplicity" in settings:
             assert isinstance(settings["multiplicity"], int), "Calculator `multiplicity` must be an integer."
             assert settings["multiplicity"] > 0, "Calculator `multiplicity` must be positive."
-            multiplicity = settings["multiplicity"]
+            args["multiplicity"] = settings["multiplicity"]
 
-        gfn = 2
         if "gfn" in settings:
             assert settings["gfn"] in [0, 1, 2, "ff"], "Calculator `gfn` must be 0, 1, 2, or ``ff``."
-            gfn = settings["gfn"]
+            args["gfn"] = settings["gfn"]
 
-        parallel = 1
         if "parallel" in settings:
             assert isinstance(settings["parallel"], int), "Calculator `parallel` must be an integer."
             assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
-            parallel = settings["parallel"]
+            args["parallel"] = settings["parallel"]
 
-        xcontrol = None
         if "xcontrol" in settings:
             assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
-            xcontrol = settings["xcontrol"]
+            args["xcontrol"] = settings["xcontrol"]
 
-        topology = None
         if "topology" in settings:
             assert isinstance(settings["topology"], str), "Calculator `topology` must be a string (path where topology will be stored)."
-            topology = settings["topology"]
+            args["topology"] = settings["topology"]
         elif gfn == "ff":
-            topology = f"{checkpoint_filename}.top"
+            # need to store this somewhere!
+            args["topology"] = f"{checkpoint_filename}.top"
 
-        return XTBCalculator(charge=charge, multiplicity=multiplicity, gfn=gfn, parallel=parallel, constraints=constraints, xcontrol_path=xcontrol, topology=topology, potential=potential)
+        return XTBCalculator(constraints=constraints, potential=potential, **args)
 
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `oniom`, `xtb`, or `gaussian`.")
