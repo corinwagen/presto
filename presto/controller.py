@@ -17,7 +17,18 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, end_time=None, runtime=None, **kwargs):
+    def run(self, end_time=None, runtime=None, time_after_finished=10, **kwargs):
+        """
+        Run a given trajectory.
+
+        The default runtime behavior is mostly good and follows ``trajectory.stop_time.``
+        The arguments here are just for fine-tuning in tricky cases.
+
+        Args:
+            end_time (int): when the trajectory should be cut off.
+            runtime (int): how long the trajectory should run for
+            time_after_finished (int): if "termination_function" is satisfied, how much longer is needed?
+        """
         traj = self.trajectory
         current_time = traj.frames[-1].time
         dt = traj.timestep
@@ -49,9 +60,7 @@ class Controller():
             current_time += dt
             current_frame = traj.frames[-1]
 
-            bath_temperature = current_frame.bath_temperature
-            if isinstance(traj, presto.trajectory.EquilibrationTrajectory):
-                bath_temperature = traj.bath_scheduler(current_time)
+            bath_temperature = traj.bath_scheduler(current_time)
 
             new_frame = None
             try:
@@ -89,24 +98,22 @@ class Controller():
 
             # do we initiate early stopping?
             if not finished_early:
-                if isinstance(self.trajectory, presto.trajectory.ReactionTrajectory):
-                    if self.trajectory.termination_function(self.trajectory.frames[-1]):
-                        end_time = current_time + self.trajectory.time_after_finished
-                        finished_early = True
-                        logger.info(f"Reaction trajectory finished! {self.trajectory.time_after_finished} additional fs will be run.")
+                if self.trajectory.termination_function(self.trajectory.frames[-1]):
+                    end_time = current_time + time_after_finished
+                    finished_early = True
+                    logger.info(f"Trajectory finished! {time_after_finished} additional fs will be run.")
 
             if int(current_time/dt) % int(self.trajectory.checkpoint_interval/dt) == 0:
                 self.trajectory.save()
 
             count += 1
-            if count < 100:
+            if count < 10:
                 logger.info(f"Run initiated ok - frame {count:05d} completed in {new_frame.elapsed:.2f} s.")
 
         if current_time == self.trajectory.stop_time:
             self.trajectory.finished = True
         elif finished_early:
             self.trajectory.finished = self.trajectory.termination_function(self.trajectory.frames[-1])
-#            self.trajectory.finished = True # somehow that previous line was not working
         self.trajectory.save()
 
         logger.info(f"Trajectory done running with {self.trajectory.num_frames()} frames.")
