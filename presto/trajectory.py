@@ -527,26 +527,6 @@ class Trajectory():
             ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
         return ensemble
 
-    @classmethod
-    def new_from_checkpoint(cls, checkpoint, frame):
-        """
-        Creates new trajectory from the given checkpoint file.
-
-        Args:
-            checkpoint (str): path to checkpoint file
-            frame (int): the index of the desired frame
-
-        Returns:
-            new ``Trajectory`` object
-        """
-        assert isinstance(frame, int), "need an integer frame number"
-
-        new_traj = cls(checkpoint_filename=checkpoint)
-        new_traj.load_from_checkpoint(idxs=frame)
-
-        assert len(new_traj.frames) == 1, "got too many frames!"
-        return new_traj
-
     def initialize_lock(self):
         """
         Create hidden lockfile to accompany ``.chk`` file.

@@ -1,5 +1,5 @@
 # presto config file
-type: equilibration
+
 timestep: 1
 stop_time: 250
 anchor: 1

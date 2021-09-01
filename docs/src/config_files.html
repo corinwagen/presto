@@ -1,0 +1,168 @@
+---
+title: Config Files
+blog: False
+---
+<h1> Config Files </h1>
+
+<h2> Anatomy </h2>
+
+<p>
+  Config files are used by <i>presto</i> to generate <span class=code>Trajectory</span> objects with the desired parameters.
+  They are structure-independent, so a single config file can be used for a whole set of trajectory initiated from different starting configurations. 
+  Config files are written in the <a href="https://yaml.org/">YAML</a> format, making them easily human-readable and editable.
+</p>
+
+<p>
+  The following code illustrates how a config file can be used to build a Trajectory object:
+</p>
+
+<pre class=code-block>
+  &gt; trajectory = presto.build("config.yaml", "save.chk")
+  &gt; print(trajectory)
+  Trajectory(243 frames)
+</pre>
+
+<p>
+  Here is an example of a simple config file (from <a href=tutorial_00.html>tutorial 00</a>):
+</p>
+
+<pre class=code-block>
+  # presto config file
+
+  timestep: 1
+  stop_time: 250
+  anchor: 1
+  save_interval: 5
+  checkpoint_interval: 25
+
+  integrator:
+      type: langevin
+      viscosity: 0.0001
+
+  calculator:
+      type: xtb
+      gfn : 2
+      parallel: 8
+
+  bath_scheduler:
+      type: constant
+      target_temp: 298
+
+  potential:
+      type: spherical_harmonic
+      radius: 10
+</pre>
+
+<p>
+  This config file:
+</p>
+
+<ul>
+  <li>
+    defines a timestep (1 fs), a stop time (250 fs), how often to save (every 25 fs), and which frames to save (every 5th).
+  </li>
+  <li>
+    specifies that a spherical harmonic potential with a cutoff radius of 10 Å is to be applied, and that atom #1 is to be "anchored" to the center of the simulation.
+  </li>
+  <li>
+    dictates that a Langevin integrator is to be employed, and the temperature held at 298 K.
+  </li>
+  <li>
+    specifies that the GFN2 method in xtb is to be used to calculate forces.
+  </li>
+</ul>
+
+<p>
+  A (hopefully complete) list of config file options is found below.
+</p>
+
+<h2> Required Information </h2>
+
+  <div class=indent>
+    <b> timestep </b> (int/float):
+    <p class=indent>
+      The time which elapses between frames, in fs.
+      Values of 0.5 or 1.0 fs are typical -- at high temperatures or in the gas phase, smaller values might be needed.
+      Above 1.0 fs, errors may begin to accumulate, resulting in energy creep.
+    </p>
+
+    <b> stop_time </b> (int/float):
+    <p class=indent>
+      How long to run the trajectory for, in fs.
+      Should be a multiple of ``timestep``.
+    </p>
+
+    <b> integrator </b> (dict):
+    <p class=indent>
+    (placeholder description)
+    </p>
+
+    <b> calculator </b> (dict):
+    <p class=indent>
+    (placeholder description)
+    </p>
+  </div>
+
+<h2> Optional Information </h2>
+
+  <div class=indent>
+    <b> initialization </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> termination </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> high_atoms </b> (atomlist):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> active_atoms </b> or <b> inactive_atoms </b> (atomlist):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> save_interval </b> (int):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> checkpoint_interval </b> (int):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> anchor </b> (int):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> forwards </b> (bool):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> potential </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> bath_scheduler </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> constraints </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+
+    <b> monitor </b> (dict):
+    <p class="indent">
+    (placeholder description)
+    </p>
+  </div>
