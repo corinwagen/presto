@@ -128,7 +128,7 @@ class XTBCalculator(Calculator):
             forces (cctk.OneIndexedArray): in amu Å per fs**2
             time (float): in seconds
         """
-        assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
+        molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
         energy, forces, elapsed = presto.external.run_xtb(
             molecule,
@@ -194,8 +194,6 @@ class GaussianCalculator(Calculator):
             energy (float): in Hartree
             forces (cctk.OneIndexedArray): in amu Å per fs**2
         """
-        assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
-
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
         input_file = cctk.GaussianFile(
             molecule=molecule,

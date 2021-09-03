@@ -7,6 +7,11 @@ import numpy as np
 import os, random, string, re, cctk, ctypes, copy, shutil, tempfile, logging, time
 import subprocess as sp
 
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    import importlib_resources as pkg_resources
+
 import presto
 
 logger = logging.getLogger(__name__)
@@ -72,6 +77,9 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
 
     # write gaussian input file
     gaussian_file.write_file(f"{manager.workdir}/g16-in.gjf")
+
+    # build command
+    assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
     command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
     # run gaussian
@@ -103,7 +111,7 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     del manager
     return energy, forces, elapsed
 
-def run_xtb(molecule, gfn=2, parallel=8, charge=0, multiplicity=1, xcontrol_path=None, topo_path=None, directory=None)
+def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None)
     """
     Run an xtb job.
 
@@ -111,8 +119,6 @@ def run_xtb(molecule, gfn=2, parallel=8, charge=0, multiplicity=1, xcontrol_path
         molecule (cctk.Molecule):
         gfn (int or "ff"): which gfn method to use
         parallel (int):
-        charge (int):
-        multiplicity (int):
         xcontrol_path (str):
         topo_path (str):
         directory (str):
@@ -126,12 +132,13 @@ def run_xtb(molecule, gfn=2, parallel=8, charge=0, multiplicity=1, xcontrol_path
     manager = ExternalProgramManager(directory)
 
     # build command
+    assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
     command = presto.config.XTB_EXEC
     if gfn == "ff":
         command += " --gfnff"
     else:
         command += f" --gfn {gfn}"
-    command += f" --chrg {charge} --uhf {multiplicity - 1}"
+    command += f" --chrg {molecule.charge} --uhf {molecule.multiplicity - 1}"
     if parallel > 1:
         command += f" --parallel {parallel}"
     if xcontrol_path:
@@ -190,4 +197,56 @@ def run_xtb(molecule, gfn=2, parallel=8, charge=0, multiplicity=1, xcontrol_path
     del manager
     return energy, forces, elapsed
 
-def run_packmol(directory=None):
+def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100], directory=None):
+    """
+    Solvate ``input_xyz`` with ``num`` molecules of ``solvent`` using PACKMOL.
+    Generates ``output_xyz``.
+    """
+
+    manager = ExternalProgramManager(directory)
+    assert len(solvent) == len(num), "num solvents must match num numbers"
+
+    # write packmol control file   
+    text = "#\n# input file built automatically\n# presto\n\n"
+    text += "tolerance 2.0\nfiletype xyz\n\n"
+    text += f"structure {input_xyz}\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\n  centerofmass\nend structure\n\n"
+    manager.copy_to_work(input_xyz, input_xyz)
+
+    # compute solute volume
+    volume = cctk.XYZFile.read_file(input_xyz).get_molecule().volume()
+
+    # compute solvent volume
+    import presto.solvents as solvents
+    for s, n in zip(solvent, num):
+        with pkg_resources.path(solvents, f"{s}.xyz") as file:
+            f = cctk.XYZFile.read_file(file)
+            title_dict = {x.split("=")[0]: x.split("=")[1] for x in f.title.split(" ")}
+
+            assert "mw" in title_dict.keys(), f"need mw=__ in title of {s}.xyz!"
+            assert "density" in title_dict.keys(), f"need density=__ in title of {s}.xyz!"
+
+            volume += n * float(title_dict["mw"]) / float(title_dict["density"]) * 1.6606 # 10^24 (Å**3 per mL) divided by Avogadro's number
+
+    # compute bounding radius
+    radius = np.cbrt(0.75 * volume / math.pi)
+
+    # finish packmol control file, now that we have the bounding radius
+    for s, n in zip(solvent, num):
+        with pkg_resources.path(solvents, f"{s}.xyz") as file:
+            text += f"structure {file}\n  number {n}\n  inside sphere 0. 0. 0. {radius:.2f}\nend structure\n\n"
+    text += f"output {output_xyz}"
+
+    # write temporary packmol input file
+    with open(f"{manager.workdir}/packmol.inp", "w+") as file:
+        file.write(text)
+
+    # call packmol!
+    # todo - specify packmol executable in presto.config
+    result = sp.run("packmol < packmol.inp", cwd=manager.workdir, shell=True, capture_output=True)
+    result.check_returncode()
+
+    # copy output home
+    manager.copy_to_home(output_xyz, output_xyz)
+
+    manager.cleanup()
+    del manager
