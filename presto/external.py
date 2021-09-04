@@ -1,5 +1,7 @@
 """
 Methods for interfacing *presto* with external programs.
+
+This is code that, by necessity, is a bit "ugly."
 """
 
 import sys, os
@@ -206,6 +208,9 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     manager = ExternalProgramManager(directory)
     assert len(solvent) == len(num), "num solvents must match num numbers"
 
+    # check packmol exec
+    assert shutil.which(presto.config.PACKMOL_EXEC), f"bad packmol executable {presto.config.PACKMOL_EXEC}"
+
     # write packmol control file   
     text = "#\n# input file built automatically\n# presto\n\n"
     text += "tolerance 2.0\nfiletype xyz\n\n"
@@ -242,11 +247,14 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
 
     # call packmol!
     # todo - specify packmol executable in presto.config
-    result = sp.run("packmol < packmol.inp", cwd=manager.workdir, shell=True, capture_output=True)
+    result = sp.run(f"{presto.config.PACKMOL_EXEC} < packmol.inp", cwd=manager.workdir, shell=True, capture_output=True)
     result.check_returncode()
 
     # copy output home
     manager.copy_to_home(output_xyz, output_xyz)
 
+    # clean it up
     manager.cleanup()
     del manager
+
+    return radius
