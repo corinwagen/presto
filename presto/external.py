@@ -6,7 +6,7 @@ This is code that, by necessity, is a bit "ugly."
 
 import sys, os
 import numpy as np
-import os, random, string, re, cctk, ctypes, copy, shutil, tempfile, logging, time
+import os, random, string, re, cctk, ctypes, copy, shutil, tempfile, logging, time, math
 import subprocess as sp
 
 try:
@@ -46,7 +46,7 @@ class ExternalProgramManager():
     def copy_to_work(self, from_filename, to_filename):
         shutil.copyfile(f"{self.homedir}/{from_filename}", f"{self.workdir}/{to_filename}")
 
-    def copy_from_work(self, from_filename, to_filename):
+    def copy_to_home(self, from_filename, to_filename):
         shutil.copyfile(f"{self.workdir}/{from_filename}", f"{self.homedir}/{to_filename}")
 
 def run_gaussian(gaussian_file, chk_file=None, directory=None):
@@ -72,7 +72,7 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
         gaussian_file.link0["chk"] = "chk.chk"
 
         # if there's already a chk file, then we want to use that for SCF guess
-        if os.path.exists(chk_file)
+        if os.path.exists(chk_file):
             gaussian_file.link0["oldchk"] = "oldchk.chk"
             manager.copy_to_work(chk_file, "oldchk.chk")
             gaussian_file.route_card += " guess=read"
@@ -113,7 +113,7 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     del manager
     return energy, forces, elapsed
 
-def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None)
+def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None):
     """
     Run an xtb job.
 
@@ -203,6 +203,13 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     """
     Solvate ``input_xyz`` with ``num`` molecules of ``solvent`` using PACKMOL.
     Generates ``output_xyz``.
+
+    Args:
+        input_file (str): path to input xyz file
+        output_file (str): path to output xyz file
+        solvent (list of str): solvent names
+        num (list of int): how many of each solvent
+        directory (str): directory to work in. if None, tmpdir will be used.
     """
 
     manager = ExternalProgramManager(directory)
@@ -214,8 +221,8 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     # write packmol control file   
     text = "#\n# input file built automatically\n# presto\n\n"
     text += "tolerance 2.0\nfiletype xyz\n\n"
-    text += f"structure {input_xyz}\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\n  centerofmass\nend structure\n\n"
-    manager.copy_to_work(input_xyz, input_xyz)
+    text += f"structure input.xyz\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\n  centerofmass\nend structure\n\n"
+    manager.copy_to_work(input_xyz, "input.xyz")
 
     # compute solute volume
     volume = cctk.XYZFile.read_file(input_xyz).get_molecule().volume()
@@ -225,7 +232,8 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     for s, n in zip(solvent, num):
         with pkg_resources.path(solvents, f"{s}.xyz") as file:
             f = cctk.XYZFile.read_file(file)
-            title_dict = {x.split("=")[0]: x.split("=")[1] for x in f.title.split(" ")}
+            title = f.titles[0]
+            title_dict = {x.split("=")[0]: x.split("=")[1] for x in title.split(" ")}
 
             assert "mw" in title_dict.keys(), f"need mw=__ in title of {s}.xyz!"
             assert "density" in title_dict.keys(), f"need density=__ in title of {s}.xyz!"
@@ -239,7 +247,7 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     for s, n in zip(solvent, num):
         with pkg_resources.path(solvents, f"{s}.xyz") as file:
             text += f"structure {file}\n  number {n}\n  inside sphere 0. 0. 0. {radius:.2f}\nend structure\n\n"
-    text += f"output {output_xyz}"
+    text += f"output output.xyz"
 
     # write temporary packmol input file
     with open(f"{manager.workdir}/packmol.inp", "w+") as file:
@@ -251,7 +259,7 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
     result.check_returncode()
 
     # copy output home
-    manager.copy_to_home(output_xyz, output_xyz)
+    manager.copy_to_home("output.xyz", output_xyz)
 
     # clean it up
     manager.cleanup()

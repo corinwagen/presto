@@ -23,15 +23,15 @@ def check_directory(field_name, directory):
 # this loads the configuration file
 CONFIGURATION_FILE = None
 if os.path.isfile("presto.config"):
-        CONFIGURATION_FILE = "presto.config"
-    if "PRESTO_CONFIG" in os.environ:
-        CONFIGURATION_FILE = os.environ["PRESTO_CONFIG"]
-    else:
-        logger.info(f"presto configuration file presto.config not found in current directory and $PRESTO_CONFIG not found")
+    CONFIGURATION_FILE = "presto.config"
+elif "PRESTO_CONFIG" in os.environ:
+    CONFIGURATION_FILE = os.environ["PRESTO_CONFIG"]
+else:
+    logger.info(f"presto configuration file presto.config not found in current directory and $PRESTO_CONFIG not found")
 
 config = configparser.ConfigParser()
 if CONFIGURATION_FILE:
-    logger.info(f"reading presto configuration file {CONFIGURATION FILE}")
+    logger.info(f"reading presto configuration file {CONFIGURATION_FILE}")
     config.read(CONFIGURATION_FILE)
 
 # auto-populate some directory names
