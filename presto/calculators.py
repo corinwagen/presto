@@ -134,8 +134,6 @@ class XTBCalculator(Calculator):
             molecule,
             gfn=self.gfn,
             parallel=self.parallel,
-            charge=self.charge,
-            multiplicity=self.multiplicity,
             xcontrol_path=self.xcontrol_path,
             topo_path=self.topology,
             directory=directory,
@@ -146,7 +144,7 @@ class XTBCalculator(Calculator):
         energy += constraint_e
         forces += constraint_f
 
-        self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 class GaussianCalculator(Calculator):
     def __init__(
@@ -210,7 +208,7 @@ class GaussianCalculator(Calculator):
         energy += constraint_e
         forces += constraint_f
 
-        self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 class ONIOMCalculator(Calculator):
     """
@@ -296,7 +294,7 @@ class ONIOMCalculator(Calculator):
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
-        self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, pipe=pipe)
 
 def build_calculator(settings, checkpoint_filename, constraints=list(), potential=None):
     """
@@ -365,7 +363,7 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), potentia
             "multiplicity": 1,
             "gfn": 2,
             "parallel": 1,
-            "xcontrol": None,
+            "xcontrol_path": None,
             "topology": None,
         }
 
@@ -387,14 +385,14 @@ def build_calculator(settings, checkpoint_filename, constraints=list(), potentia
             assert settings["parallel"] > 0, "Calculator `parallel` must be positive."
             args["parallel"] = settings["parallel"]
 
-        if "xcontrol" in settings:
-            assert isinstance(settings["xcontrol"], str), "Calculator `xcontrol` must be a string."
-            args["xcontrol"] = settings["xcontrol"]
+        if "xcontrol_path" in settings:
+            assert isinstance(settings["xcontrol_path"], str), "Calculator `xcontrol` must be a string."
+            args["xcontrol_path"] = settings["xcontrol_path"]
 
         if "topology" in settings:
             assert isinstance(settings["topology"], str), "Calculator `topology` must be a string (path where topology will be stored)."
             args["topology"] = settings["topology"]
-        elif gfn == "ff":
+        elif args["gfn"] == "ff":
             # need to store this somewhere!
             args["topology"] = f"{checkpoint_filename}.top"
 

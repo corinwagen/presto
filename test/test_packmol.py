@@ -15,4 +15,5 @@ class TestPackmol(unittest.TestCase):
             "test/static/solvated_H2.xyz",
         )
 
-        print(radius)
+        self.assertTrue(radius < 14 and radius > 13)
+
