@@ -61,7 +61,7 @@ class RadiusCheck(Check):
         frame = trajectory.frames[-1]
         positions = frame.positions.view(np.ndarray)
         radii = np.linalg.norm(frame.positions, axis=1)
-        max_r = trajectory.integrator.potential.max_radius * self.buffer
+        max_r = trajectory.calculator.potential.max_radius * self.buffer
         assert np.max(radii) < max_r, f"RadiusCheck failed! max allowed: {max_r:.2f}, max obtained; {np.max(radii):.2f}"
 
 class TopologyCheck(Check):

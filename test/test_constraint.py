@@ -16,7 +16,7 @@ class TestConstraint(unittest.TestCase):
         zs = cctk.OneIndexedArray([1, 1])
         c = presto.constraints.PairwisePolynomialConstraint(1, 2, distance, power=2)
 
-        traj = presto.trajectory.EquilibrationTrajectory(
+        traj = presto.trajectory.Trajectory(
             timestep=0.5,
             atomic_numbers=zs,
             high_atoms=np.array([]),

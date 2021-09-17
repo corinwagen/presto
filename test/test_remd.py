@@ -24,7 +24,7 @@ class TestReplicaExchange(unittest.TestCase):
             return 330
 
         zs = cctk.OneIndexedArray([2, 10])
-        traj1 = presto.trajectory.EquilibrationTrajectory(
+        traj1 = presto.trajectory.Trajectory(
             timestep=1,
             atomic_numbers=zs,
             high_atoms=np.array([2]),
@@ -36,7 +36,7 @@ class TestReplicaExchange(unittest.TestCase):
             stop_time = 400,
         )
 
-        traj2 = presto.trajectory.EquilibrationTrajectory(
+        traj2 = presto.trajectory.Trajectory(
             timestep=1,
             atomic_numbers=zs,
             high_atoms=np.array([2]),

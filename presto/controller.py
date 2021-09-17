@@ -17,7 +17,7 @@ class Controller():
 
         self.trajectory = trajectory
 
-    def run(self, end_time=None, runtime=None, time_after_finished=10, **kwargs):
+    def run(self, end_time=None, runtime=None, time_after_finished=10, forwards=True, **kwargs):
         """
         Run a given trajectory.
 
@@ -28,6 +28,7 @@ class Controller():
             end_time (int): when the trajectory should be cut off.
             runtime (int): how long the trajectory should run for
             time_after_finished (int): if "termination_function" is satisfied, how much longer is needed?
+            forwards (bool): run forwards or backwards in time?
         """
         traj = self.trajectory
         current_time = traj.frames[-1].time
@@ -65,19 +66,19 @@ class Controller():
             new_frame = None
             try:
                 start = time.time()
-                energy, new_x, new_v, new_a = traj.integrator.next(current_frame, forwards=forwards, time=traj.timestep+self.time)
+                energy, new_x, new_v, new_a = traj.integrator.next(current_frame, forwards=forwards, time=current_time)
                 end = time.time()
                 elapsed = end - start
 
                 # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
                 current_frame.energy = energy
-                new_frame = Frame(
+                new_frame = presto.frame.Frame(
                     self.trajectory,
                     new_x,
                     new_v,
                     new_a,
-                    bath_temperature=temp,
-                    time=self.time+traj.timestep,
+                    bath_temperature=bath_temperature,
+                    time=current_time,
                     energy=energy,
                     elapsed=elapsed
                 )

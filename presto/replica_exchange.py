@@ -26,7 +26,7 @@ class ReplicaExchange():
     def __init__(self, trajectories, checkpoint_filename="remd.chk", swap_interval=10):
         temps = np.zeros(shape=len(trajectories))
         for idx, traj in enumerate(trajectories):
-            assert isinstance(traj, presto.trajectory.EquilibrationTrajectory), "all trajectories must be EquilibrationTrajectories"
+            assert isinstance(traj, presto.trajectory.Trajectory), "all trajectories must be EquilibrationTrajectories"
             assert traj.timestep == trajectories[0].timestep, "all trajectories must have same ``timestep``"
             assert traj.stop_time == trajectories[0].stop_time, "all trajectories must have same ``stop_time``"
             assert np.array_equal(traj.high_atoms, trajectories[0].high_atoms), "all trajectories must have same ``high_atoms``"

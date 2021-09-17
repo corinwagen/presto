@@ -256,7 +256,7 @@ class Trajectory():
 
         # initialize with zero velocity and acceleration
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
-        zeros = np.zeros_like(positions).view(cctk.OneIndexedArray)
+        zeros = np.zeros_like(positions, dtype="float").view(cctk.OneIndexedArray)
         frame = presto.frame.Frame(self, positions, zeros, zeros, bath_temperature=self.bath_scheduler(0), time=0.0)
 
         # then adjust velocity and acceleration after-the-fact
@@ -264,7 +264,7 @@ class Trajectory():
             frame.add_thermal_energy()
         else:
             assert isinstance(velocities, cctk.OneIndexedArray)
-            velocities[frame.inactive_mask()] = 0
+            velocities[frame.inactive_mask()] = 0.0
             frame.velocities += velocities
 
             # add extra kick to requested atoms
@@ -273,7 +273,7 @@ class Trajectory():
 
         if accelerations is not None:
             assert isinstance(accelerations, cctk.OneIndexedArray)
-            accelerations[frame.inactive_mask()] = 0
+            accelerations[frame.inactive_mask()] = 0.0
             frame.accelerations += accelerations
 
         self.frames = [frame]
@@ -477,7 +477,7 @@ class Trajectory():
         if keep_all:
             pass
         else:
-            self.frames = [self.frames[-self.buffer:]]
+            self.frames = self.frames[-self.buffer:]
 
     def write_movie(self, filename, solvents="all", idxs=None):
         """
