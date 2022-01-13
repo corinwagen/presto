@@ -91,7 +91,7 @@ class Controller():
 
             for check in self.trajectory.checks:
                 if int(current_time % check.interval) == 0:
-                    check.check_frame(new_frame)
+                    check.check(new_frame)
 
             for reporter in self.trajectory.reporters:
                 if int(current_time % reporter.interval) == 0:

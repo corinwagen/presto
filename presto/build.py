@@ -32,7 +32,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     assert "integrator" in settings, "Need `integrator` in config YAML file."
     assert "calculator" in settings, "Need `calculator` in config YAML file."
-    assert "type" in settings, "Need `type` in config YAML file."
+#    assert "type" in settings, "Need `type` in config YAML file."
 
     if "active_atoms" in settings:
         args["active_atoms"] = parse_atom_list(settings["active_atoms"])

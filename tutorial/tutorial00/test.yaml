@@ -23,3 +23,15 @@ bath_scheduler:
 potential:
     type: spherical_harmonic
     radius: 10
+
+checks:
+    check1:
+        type: velocity
+        interval: 10
+    check2:
+        type: radius
+        interval: 10
+        radius: 12
+    check3:
+        type: topology
+        interval: 10
