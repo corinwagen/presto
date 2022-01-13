@@ -1,4 +1,4 @@
-import configparser, os, re, pathlib, yaml, cctk, h5py, logging
+import configparser, os, re, pathlib, yaml, cctk, h5py, logging, shutil
 import numpy as np
 import presto
 
@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 """
 *presto* configuration, runs on startup.
+
+Among several important things, this file checks if external programs are callable.
 """
 
 def resolve_directory(directory):
@@ -51,18 +53,36 @@ else:
     XTB_PATH = resolve_directory(config['xtb']['XTB_PATH'])
 check_directory("XTB_PATH",XTB_PATH)
 
-# load external execs 
+# load external execs and see what this system actually has
+
+def check_exec(executable):
+    """ simple solution but mostly effective, can improve later. """
+    try:
+        shutil_res = shutil.which(executable)
+        if shutil_res is not None:
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False
+
+# xtb
 XTB_EXEC = "xtb"
 if config.has_option("xtb", "XTB_EXEC"):
     XTB_EXEC = config['xtb']['XTB_EXEC']
+HAS_XTB = check_exec(XTB_EXEC)
 
+# gaussian
 G16_EXEC = "g16"
 if config.has_option("gaussian", "GAUSSIAN_EXEC"):
     G16_EXEC = config['gaussian']['GAUSSIAN_EXEC']
+HAS_G16 = check_exec(G16_EXEC)
 
+# packmol
 PACKMOL_EXEC = "packmol"
 if config.has_option("packmol", "PACKMOL_EXEC"):
     PACKMOL_EXEC = config['packmol']['PACKMOL_EXEC']
+HAS_PACKMOL = check_exec(PACKMOL_EXEC)
 
 # backwards-compatibility with v0.2.4 and before
 def build(*args, **kwargs):

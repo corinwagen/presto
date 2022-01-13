@@ -65,6 +65,11 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
         forces
         elapsed time
     """
+    # check that g16 is even on this system
+    assert presto.config.HAS_G16, f"G16 not present; can't run job!"
+    print(presto.config.HAS_G16)
+    print('do we got it')
+
     manager = ExternalProgramManager(directory)
 
     # copy oldchk
@@ -81,7 +86,6 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     gaussian_file.write_file(f"{manager.workdir}/g16-in.gjf")
 
     # build command
-    assert shutil.which(presto.config.G16_EXEC), f"bad Gaussian executable {presto.config.G16_EXEC}"
     command = f"{presto.config.G16_EXEC} g16-in.gjf g16-out.out"
 
     # run gaussian
@@ -130,11 +134,13 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         forces
         elapsed time
     """
+    # check that xtb is even on this system
+    assert presto.config.HAS_XTB, f"xtb not present; can't run job!"
+
     forces, energy = None, None
     manager = ExternalProgramManager(directory)
 
     # build command
-    assert shutil.which(presto.config.XTB_EXEC), f"bad xtb executable {presto.config.XTB_EXEC}"
     command = presto.config.XTB_EXEC
     if gfn == "ff":
         command += " --gfnff"
@@ -211,12 +217,11 @@ def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100]
         num (list of int): how many of each solvent
         directory (str): directory to work in. if None, tmpdir will be used.
     """
+    # check that packmol is even on this system
+    assert presto.config.HAS_PACKMOL, f"PACKMOL not present; can't run job!"
 
     manager = ExternalProgramManager(directory)
     assert len(solvent) == len(num), "num solvents must match num numbers"
-
-    # check packmol exec
-    assert shutil.which(presto.config.PACKMOL_EXEC), f"bad packmol executable {presto.config.PACKMOL_EXEC}"
 
     # write packmol control file   
     text = "#\n# input file built automatically\n# presto\n\n"
