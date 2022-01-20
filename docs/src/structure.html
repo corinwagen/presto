@@ -7,24 +7,42 @@ blog: False
 <h2> Object Hierarchy </h2>
 
 <p>
-  The core object in <i>presto</i> is the <span class=code>Trajectory</span>, which represents a single trajectory from start to finish. 
-  More specifically, there are <span class=code>EquilibrationTrajectory</span> objects, which are run for a user-defined time,
-  and <span class=code>ReactionTrajectory</span> objects, which are run for a short time and terminate based on user-defined conditions.
-  Every trajectory is associated with a <span class=code>.chk</span> checkpoint file, which represents a saved snapshot of the trajectory and, 
-  in combination with the appropriate <span class=code>.yaml</span> config file, can be used to rebuild the object.
+  The core object in <i>presto</i> is the <span class=code>Trajectory</span>, which represents a single trajectory.
+  Each trajectory contains a number of <span class=code>Frame</span> objects, which represent snapshots of atomic positions, velocities, and accelerations.
+  Frames can be converted into <span class=code>cctk.Molecule</span> objects by calling <span class=code>frame.molecule()</span>.
+</p>
+
+<p>
+  Each trajectory is associated with a given <span class=code>Calculator</span> and <span class=code>Integrator</span>,
+  which together dictate how new frames are generated. 
+  More specifically, the calculator calls an external program to compute the forces, 
+  and the integrator generates the next frame by applying the forces to the current frame.
+</p>
+
+<p>
+  Every trajectory has a <span class=code>.chk</span> checkpoint file, which represents a saved snapshot of the trajectory.
+  The checkpoint file is stored in the compressed <span class=code>hdf5</span> format and is not human-readable.
+  Frames are added to the checkpoint file every <span class=code>trajectory.checkpoint_interval</span> frames.
+</p>
+
+<p>
+  Although trajectories can be initiated from pure Python code, the simplest and safest way to start a trajectory with the desired settings is
+  by using a config <span class=code>.yaml</span> file, which builds the desired Python objects automatically:
 </p>
 
 <pre class=code-block>
-  &gt; trajectory = presto.build(config.yaml, save.chk)
+  &gt; trajectory = presto.build("config.yaml", "save.chk")
   &gt; print(trajectory)
-  ReactionTrajectory(243 frames)
+  Trajectory(243 frames)
 </pre>
 
 <p>
-  Each trajectory contains a number of <span class=code>Frame</span> objects, which represent snapshots of atomic positions, velocities, and accelerations.
-  Frames can be converted into <span class=code>cctk.Molecule</span> objects by calling <span class=code>frame.molecule()</span>.
-  Frames are added to <span class=code>trajectory.frames</span> as <i>presto</i> runs before being saved to disk every <span class=code>trajectory.checkpoint_interval</span> frames.
+  Trajectories also possess <span class=code>Check</span> and <span class=code>Reporter</span> objects. 
+  Check objects periodically perform "sanity checks" on the trajectory,
+  while reporter objects extract data and write it to an external file.
 </p>
+
+<h2> What Happens When A Trajectory Is Run? </h2>
 
 <p>
   When a trajectory is run (using <span class=code>trajectory.run()</span>), a complex sequence of events occurs:
@@ -38,7 +56,7 @@ blog: False
     The controller determines the new forces using the trajectory's <span class=code>Calculator</span> (<span class=code>trajectory.calculator</span>).
     <ol style="list-style-type:lower-alpha;">
       <li>
-        The calculator dispatches force jobs to Gaussian or <i>xtb</i> and parses the output. (This is usually the slow step.)
+        The calculator dispatches force jobs to Gaussian or <i>xtb</i> and parses the output. (This is usually the rate-determining step.)
       </li>
       <li>
         Then, the calculator applies whatever constraints the user has defined, to freeze certain bonds or prevent atoms from leaving the sphere.
@@ -50,7 +68,7 @@ blog: False
     writes a new frame, and appends it to <span class=code>trajectory.frames</span>.
   </li>
   <li>
-    The controller checks if the new frame satisfies the termination conditions (for a <span class=code>ReactionTrajectory</span>) or if the timelimit has been exceeded.
+    The controller checks if the new frame satisfies the termination conditions or if the timelimit has been exceeded.
     If not, the cycle repeats!
   </li>
 </ol>

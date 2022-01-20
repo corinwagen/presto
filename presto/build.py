@@ -32,7 +32,7 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
 
     assert "integrator" in settings, "Need `integrator` in config YAML file."
     assert "calculator" in settings, "Need `calculator` in config YAML file."
-    assert "type" in settings, "Need `type` in config YAML file."
+#    assert "type" in settings, "Need `type` in config YAML file."
 
     if "active_atoms" in settings:
         args["active_atoms"] = parse_atom_list(settings["active_atoms"])
@@ -69,97 +69,86 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     if "constraints" in settings:
         constraints = presto.constraints.build_constraints(settings["constraints"])
 
+    checks = list()
+    if "checks" in settings:
+        checks = presto.checks.build_checks(settings["checks"])
+
     if "anchor" in settings:
         assert isinstance(settings["anchor"], int), "``anchor`` must be an atomic number!"
         constraints.insert(0, presto.constraints.Anchor(settings["anchor"]))
 
-    i = presto.integrators.build_integrator(settings["integrator"], potential=p)
-    c = presto.calculators.build_calculator(settings["calculator"], checkpoint, constraints=constraints)
+    i = presto.integrators.build_integrator(settings["integrator"])
+    c = presto.calculators.build_calculator(settings["calculator"], checkpoint, constraints=constraints, potential=p)
 
     args["checkpoint_filename"] = checkpoint
-    assert isinstance(settings["type"], str), "`type` must be a string"
-    if settings["type"].lower() == "equilibration":
-        mol, x, v, a = None, None, None, None
-        if not os.path.exists(checkpoint):
-            if geometry is not None:
-                assert isinstance(geometry, str), "``geometry``must be a string!"
-                assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
-                mol = cctk.XYZFile.read_file(geometry).get_molecule()
-                args["atomic_numbers"] = mol.atomic_numbers
-                x = mol.geometry
 
-            elif oldchk is not None:
-                assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
-                with h5py.File(oldchk, "r") as h5:
-                    args["atomic_numbers"] = h5.attrs["atomic_numbers"].view(cctk.OneIndexedArray)
-                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
-                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
-                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
-            else:
-                raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
+    mol, x, v, a = None, None, None, None
+    if not os.path.exists(checkpoint):
+        if geometry is not None:
+            assert isinstance(geometry, str), "``geometry``must be a string!"
+            assert re.search("xyz$", geometry), "``geometry`` must be a path to an ``.xyz`` file!"
+            mol = cctk.XYZFile.read_file(geometry).get_molecule()
+            args["atomic_numbers"] = mol.atomic_numbers
+            x = mol.geometry
 
-        assert "bath_scheduler" in settings, "Need `bath_scheduler` in config YAML file for type=`equilibration`!"
-        s = build_bath_scheduler(settings["bath_scheduler"])
+        elif oldchk is not None:
+            assert os.path.exists(oldchk), f"Can't locate checkpoint file at {oldchk}!"
+            with h5py.File(oldchk, "r") as h5:
+                args["atomic_numbers"] = h5.attrs["atomic_numbers"].view(cctk.OneIndexedArray)
+                x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
+                v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
+                a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
 
-        t = presto.trajectory.EquilibrationTrajectory(
-            calculator=c,
-            integrator=i,
-            bath_scheduler=s,
-            **args,
-        )
+        elif "quasiclassical" in settings or "initialization" in settings:
+            try:
+                # changed nomenclature 8.2.21 - ccw
+                if "quasiclassical" in settings:
+                    settings["initialization"] = copy.deepcopy(settings["quasiclassical"])
 
-        if len(t.frames) == 0:
-            t.initialize(x, velocities=v, accelerations=a)
+                atomic_numbers, x, v, a = presto.initialization.initialize(c, **settings["initialization"], high_atoms=args["high_atoms"])
+                args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
+                temp = settings["initialization"]["temperature"]
+            except Exception as e:
+                raise ValueError(f"Initialization failed: {e}")
 
-        return t
+        else:
+            raise ValueError("No checkpoint file; need a geometry ``.xyz`` file or old checkpoint file for this to work!")
 
-    if settings["type"].lower() == "reaction":
-        if not os.path.exists(checkpoint):
-            x, v, a, temp = None, None, None, None
-            # oldchk takes precedence over qc init
-            if oldchk is not None and os.path.exists(oldchk):
-                with h5py.File(oldchk, "r") as h5:
-                    atomic_numbers = h5.attrs["atomic_numbers"]
-                    x = h5.get("all_positions")[oldchk_idx].view(cctk.OneIndexedArray)
-                    v = h5.get("all_velocities")[oldchk_idx].view(cctk.OneIndexedArray)
-                    a = h5.get("all_accelerations")[oldchk_idx].view(cctk.OneIndexedArray)
-                    temp = h5.get("bath_temperatures")[oldchk_idx]
-                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
-            elif "quasiclassical" in settings or "initialization" in settings:
-                try:
-                    # changed nomenclature 8.2.21 - ccw
-                    if "quasiclassical" in settings:
-                        settings["initialization"] = copy.deepcopy(settings["quasiclassical"])
+    if "bath_scheduler" in settings:
+        args["bath_scheduler"] = build_bath_scheduler(settings["bath_scheduler"])
+    else:
+        args["bath_scheduler"] = build_bath_scheduler()
 
-                    atomic_numbers, x, v, a = presto.initialization.initialize(c, **settings["initialization"], high_atoms=args["high_atoms"])
-                    args["atomic_numbers"] = atomic_numbers.view(cctk.OneIndexedArray)
-                    temp = settings["initialization"]["temperature"]
-                except Exception as e:
-                    raise ValueError(f"Initialization failed: {e}")
-            else:
-                raise ValueError("no old checkpoint file, no current checkpoint file, and no init - can't create trajectory")
+    args["termination_function"] = None
+    if "termination" in settings:
+        args["termination_function"] = presto.termination.build_termination_function(settings["termination"])
 
-        assert "termination_function" in settings, "Need `termination_function` in config YAML file for type=`reaction`!"
-        f = build_termination_function(settings["termination_function"])
+    if "time_after_finished" in settings:
+        assert isinstance(settings["time_after_finished"], (float, int)), "Need `time_after_finished` to be numeric!"
+        args["time_after_finished"] = settings["time_after_finished"]
 
-        if "time_after_finished" in settings:
-            assert isinstance(settings["time_after_finished"], (float, int)), "Need `time_after_finished` to be numeric!"
-            args["time_after_finished"] = settings["time_after_finished"]
+    t = presto.trajectory.Trajectory(
+        calculator=c,
+        integrator=i,
+        checks=checks,
+        **args,
+    )
 
-        t = presto.trajectory.ReactionTrajectory(
-            calculator=c,
-            integrator=i,
-            termination_function=f,
-            **args,
-        )
+    if len(t.frames) == 0:
+        t.initialize(positions=x, velocities=v, accelerations=a)
 
-        if not os.path.exists(checkpoint):
-            t.initialize(positions=x, velocities=v, accelerations=a, bath_temp=temp)
+    assert len(t.frames) > 0, "we shouldn't have 0 frames after initialization!"
+    return t
 
-        assert len(t.frames) > 0, "reaction trajectory needs a frame to start from!"
-        return t
+def build_bath_scheduler(settings=None):
+    # default to 298 K
+    if settings is None:
+        settings = {
+            "type": "constant",
+            "target_temp": 298,
+        }
 
-def build_bath_scheduler(settings):
+
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for bath scheduler"
     assert isinstance(settings["type"], str), "Bath scheduler `type` must be a string"
@@ -212,32 +201,3 @@ def parse_atom_list(string):
         except Exception as e:
             raise ValueError(f"Error parsing list item {item} - needs to be integers (3) or ranges (4-7).")
     return np.array(list(set(atoms))) # keep only distinct atoms
-
-def build_termination_function(settings):
-    def term(frame):
-        m = frame.molecule().assign_connectivity()
-        for name, row in settings.items():
-            exit_code = 1
-            if re.search("r$", name):
-                exit_code = 2
-
-            words = list(filter(None, row.split(" ")))
-            if words[0] == "bond":
-                assert len(words) == 3, f"Termination condition ``bond`` must be of form ``bond atom1 atom2`` -- {row} is invalid!"
-                if m.get_bond_order(int(words[1]), int(words[2])):
-                    return exit_code
-            elif words[0] == "distance":
-                assert len(words) == 5, f"Termination condition ``bond`` must be of form ``bond atom1 atom2 [greater_than/less_than] value`` -- {row} is invalid!"
-                if words[3] == "greater_than":
-                    if m.get_distance(int(words[1]), int(words[2])) > float(words[4]):
-                        return exit_code
-                elif words[3] == "less_than":
-                    if m.get_distance(int(words[1]), int(words[2])) < float(words[4]):
-                        return exit_code
-                else:
-                    raise ValueError(f"Invalid operator {words[3]} -- must be ``greater_than`` or ``less_than``")
-            else:
-                raise ValueError(f"Invalid constraint type {words[0]} -- must be ``bond`` or ``distance``")
-        return False
-
-    return term

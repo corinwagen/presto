@@ -83,6 +83,10 @@ li {
   line-height: 125%;
 }
 
+.indent {
+  margin: 10px
+}
+
 .blogroll-container {
   margin: 2em 0;
 }

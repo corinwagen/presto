@@ -4,12 +4,33 @@ import matplotlib.pyplot as plt
 
 import presto
 
-def autocorrelation(values):
+def autocorrelation_time(values, timestep):
+    """
+    Computes autocorrelation time of a list of values, per instructions from https://sites.engineering.ucsb.edu/~shell/che210d/Computing_properties.pdf.
 
-    block_length = 1
-    variance = 0
+    Args:
+        values (list-like): list of the values under study
+        timestep (float): ∆t between adjacent times
+    """
+    # we cannot determine variance of <10 samples
+    max_block_length = int(len(values)/10)
 
-    return block_length, variance
+    lengths = list(range(1, max_block_length))
+    variances = [0 for l in lengths]
+
+    for i, N in enumerate(lengths):
+        current_idx = 0
+        block_averages = []
+        while current_idx < len(values):
+            block_averages.append(np.average(values[current_idx:current_idx+N]))
+            current_idx += N
+        variances[i] = np.var(block_averages)
+
+    X = np.array([variances[0]/t for t in lengths])
+    Y = np.array(variances)
+
+    slope, intercept = np.polyfit(X, Y, 1)
+    return slope/2 * timestep
 
 def radial_distribution(frames, indices, cutoff=10, center_cutoff=5, resolution=0.025):
     """

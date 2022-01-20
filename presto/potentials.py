@@ -29,7 +29,7 @@ class SphericalHarmonicPotential(Potential):
     In *presto* units, this is 0.004184 amu Å**2 fs**-2.
 
     Attributes:
-        radius (float): area outside which this takes effect
+        radius (float): area outside which this takes effect.
         force_constant (float):
         convert_from_kcal (bool):
     """
@@ -78,18 +78,20 @@ def build_potential(settings):
     assert isinstance(settings, dict), "Need to pass a dictionary!!"
     assert "type" in settings, "Need `type` for potential"
     assert isinstance(settings["type"], str), "Potential `type` must be a string"
+    args = dict()
 
     if settings["type"].lower() == "spherical_harmonic":
-        assert "radius" in settings, "Need `radius` for spherical harmonic potential."
+        assert "radius" in settings, "need a radius for a spherical_harmonic potential"
         assert isinstance(settings["radius"], (int, float)), "`radius` must be numeric!"
         assert settings["radius"] > 0, "`radius` must be positive!"
+        args["radius"] = settings["radius"]
 
         if "force_constant" in settings:
             assert isinstance(settings["force_constant"], (int, float)), "`force_constant` must be numeric!"
             assert settings["force_constant"] > 0, "`force_constant` must be positive!"
-            return SphericalHarmonicPotential(radius=settings["radius"], force_constant=settings["force_constant"])
-        else:
-            return SphericalHarmonicPotential(radius=settings["radius"])
+            args["force_constant"] = settings["force_constant"]
+
+        return SphericalHarmonicPotential(**args)
 
     else:
         raise ValueError(f"Unknown potential type {settings['type']}! Allowed options are `spherical_harmonic` (free will is an illusion).")

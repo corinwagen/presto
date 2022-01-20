@@ -1,0 +1,22 @@
+name: presto
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - matplotlib
+  - numpy
+  - pandas
+  - python=3.7
+  - tabulate
+  - tqdm
+  - xtb
+  - pip
+  - pip:
+    - asciichartpy
+    - asteval
+    - basis-set-exchange
+    - cctk==0.2.12
+    - h5py
+    - networkx
+    - pyahocorasick
+    - scipy

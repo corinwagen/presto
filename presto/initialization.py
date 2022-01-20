@@ -21,7 +21,9 @@ def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="qua
     assert isinstance(tolerance, (int, float)), "tolerance must be numeric!"
     assert isinstance(max_attempts, int), "max_attempts must be integer"
     assert isinstance(temperature, (int, float)), "temperature must be numeric!"
-    assert isinstance(high_atoms, (list, np.ndarray)), "high_atoms must be list!"
+
+    if high_atoms is not None:
+        assert isinstance(high_atoms, (list, np.ndarray)), "high_atoms must be list!"
 
     qcf = cctk.GaussianFile.read_file(output_file)
     mol = qcf.get_molecule()

@@ -5,7 +5,7 @@ from scipy import constants
 import presto
 
 class Integrator():
-    def next(self, frame, forwards=True):
+    def next(self, frame, forwards=True, time=None):
         pass
 
 class VelocityVerletIntegrator(Integrator):
@@ -13,13 +13,10 @@ class VelocityVerletIntegrator(Integrator):
     Defines a Velocity Verlet integrator (NVE ensemble).
 
     Attributes:
-        potential (presto.potentials.Potential): confining potential
     """
 
-    def __init__(self, potential=None):
-        if potential is not None:
-            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
-        self.potential = potential
+    def __init__(self):
+        pass
 
     def next(self, frame, forwards=True, time=None):
         calculator = frame.trajectory.calculator
@@ -31,16 +28,10 @@ class VelocityVerletIntegrator(Integrator):
             x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
             energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
-            if self.potential is not None:
-                pe, pf = self.potential.evaluate(x_full)
-                forces += pf
-                energy += pe
             forces[frame.inactive_mask()] = 0
 
             a_full = forces / frame.masses()
-
             v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
-
             return energy, x_full, v_full, a_full
 
         except Exception as e:
@@ -54,10 +45,9 @@ class LangevinIntegrator(VelocityVerletIntegrator):
     Attributes:
         viscosity (float): solvent viscosity (in amu/(fs*Å))
         radius (float): distance from center where this kicks in!
-        potential (presto.potentials.Potential): confining potential
     """
 
-    def __init__(self, viscosity=0.001, convert_from_pascal_seconds=True, radius=0, potential=None):
+    def __init__(self, viscosity=0.001, convert_from_pascal_seconds=True, radius=0):
         assert isinstance(viscosity, (int, float)), "viscosity must be numeric"
         if convert_from_pascal_seconds:
             viscosity = viscosity * presto.constants.AMU_A_FS_PER_PASCAL_SECOND
@@ -65,10 +55,6 @@ class LangevinIntegrator(VelocityVerletIntegrator):
 
         assert isinstance(radius, (int, float)), "radius must be numeric"
         self.radius = radius
-
-        if potential is not None:
-            assert isinstance(potential, presto.potentials.Potential), f"needed a presto.Potential, got a {potential} instead"
-        self.potential = potential
 
     def next(self, frame, forwards=True, time=None):
         """
@@ -98,21 +84,17 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full = frame.positions + timestep * frame.velocities + C
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
+        # compute forces with Calculator
         energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time)
-        if self.potential is not None:
-            pe, pf = self.potential.evaluate(x_full)
-            forces += pf
-            energy += pe
-
         forces[frame.inactive_mask()] = 0
-        a_full = forces / frame.masses()
 
+        a_full = forces / frame.masses()
         v_full = frame.velocities + 0.5 * timestep * (a_full + frame.accelerations) - timestep * xi * frame.velocities + sigma * math.sqrt(timestep) * rand1 - xi * C
         v_full[frame.inactive_mask()] = 0
 
         return energy, x_full, v_full, a_full
 
-def build_integrator(settings, potential=None):
+def build_integrator(settings):
     """
     Build integrator from settings dict.
     """
@@ -121,7 +103,7 @@ def build_integrator(settings, potential=None):
     assert isinstance(settings["type"], str), "Integrator `type` must be a string"
 
     if settings["type"].lower() == "verlet":
-        return VelocityVerletIntegrator(potential=potential)
+        return VelocityVerletIntegrator()
     elif settings["type"].lower() == "langevin":
         assert "viscosity" in settings, "Need `viscosity` for Langevin integrator!"
         assert isinstance(settings["viscosity"], (int, float)), "Integrator `viscosity` must be numeric."
@@ -131,7 +113,7 @@ def build_integrator(settings, potential=None):
             assert isinstance(settings["radius"], (int, float)), "Integrator `radius` must be numeric."
             radius = settings["radius"]
 
-        return LangevinIntegrator(settings["viscosity"], radius=radius, potential=potential)
+        return LangevinIntegrator(settings["viscosity"], radius=radius)
     else:
         raise ValueError(f"Unknown integrator type {settings['type']}! Allowed options are `verlet` or `langevin`.")
 
