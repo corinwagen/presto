@@ -10,10 +10,12 @@ if __name__ == '__main__':
 
 class TestPackmol(unittest.TestCase):
     def test_packmol_ext(self):
-        radius = presto.external.run_packmol(
-            "test/static/H2.xyz",
-            "test/static/solvated_H2.xyz",
-        )
+        if presto.config.HAS_PACKMOL:
 
-        self.assertTrue(radius < 14 and radius > 13)
+            radius = presto.external.run_packmol(
+                "test/static/H2.xyz",
+                "test/static/solvated_H2.xyz",
+            )
+
+            self.assertTrue(radius < 14 and radius > 13)
 

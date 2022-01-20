@@ -1,8 +1,8 @@
 import cctk, os, pytest
 import numpy as np
 
-#import sys
-#sys.path.append('../presto')
+import sys
+sys.path.append('../presto')
 import presto
 
 def gen_test_traj():
