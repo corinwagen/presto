@@ -32,7 +32,7 @@ before_install:
 install:
   - pip install . # install package + test dependencies
 
-script: coverage run python -m unittest # run tests
+script: pytest # run tests
 
 after_success:
   - codecov # submit coverage
