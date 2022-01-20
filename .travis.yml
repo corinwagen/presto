@@ -25,6 +25,8 @@ before_install:
   - conda activate presto
 
   # code coverage stuff
+  - pip install pytest
+  - pip install pytest-cov
   - pip install coveralls
 
 install:

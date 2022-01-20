@@ -90,7 +90,6 @@ class XTBCalculator(Calculator):
         xcontrol_path (str):
         topology (str): path to gfn-ff topology file, if gfn is ``ff``.
     """
-
     def __init__(self, charge=0, multiplicity=1, gfn=2, parallel=1, constraints=list(), potential=None, xcontrol_path=None, topology=None):
         assert isinstance(charge, int)
         assert isinstance(multiplicity, int)

@@ -50,6 +50,7 @@ class RadiusCheck(Check):
         buffer (float): multiplied by ``potential.max_radius`` to give max allowable radius
     """
     def __init__(self, radius=None, interval=20, **kwargs):
+        print("hi")
         assert isinstance(interval, int), "interval must be integer"
         self.interval = interval
 
