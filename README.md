@@ -4,6 +4,8 @@
 
 [![PyPI version](https://badge.fury.io/py/presto-md.svg)](https://pypi.python.org/pypi/presto-md/)
 [![Downloads](https://img.shields.io/pypi/dm/presto-md.svg)](https://pypi.python.org/pypi/presto-md/)
+[![Build Status](https://app.travis-ci.com/corinwagen/presto.svg?branch=master)](https://app.travis-ci.com/corinwagen/presto)
+[![Coverage Status](https://coveralls.io/repos/github/corinwagen/presto/badge.svg?branch=master)](https://coveralls.io/github/corinwagen/presto?branch=master)
 
 ## Introduction
 
