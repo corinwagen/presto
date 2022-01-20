@@ -1,0 +1,13 @@
+language: python
+python:
+  - 3.7
+  - 3.8
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install codecov
+install:
+  - pip install . # install package + test dependencies
+script: python -m unittest # run tests
+after_success:
+  - codecov # submit coverage
