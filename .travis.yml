@@ -2,12 +2,35 @@ language: python
 python:
   - 3.7
   - 3.8
+
 before_install:
   - python --version
-  - pip install -U pip
-  - pip install codecov
+
+  # conda setup, copied from docs
+  # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+
+  # install conda dependencies
+  - conda env create -f presto.yml
+  - conda activate presto
+
+  # code coverage stuff
+  - pip install coveralls
+
 install:
   - pip install . # install package + test dependencies
-script: python -m unittest # run tests
+
+script: coverage run python -m unittest # run tests
+
 after_success:
   - codecov # submit coverage
