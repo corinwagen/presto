@@ -1,6 +1,5 @@
 language: python
 python:
-  - 3.7
   - 3.8
 
 before_install:
@@ -35,4 +34,4 @@ install:
 script: pytest # run tests
 
 after_success:
-  - codecov # submit coverage
+  - coveralls # submit coverage

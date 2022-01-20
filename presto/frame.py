@@ -99,7 +99,7 @@ class Frame():
         """
         Computes the pressure based on the following formula:
 
-        P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
+        P = 1/(3*V) * (sum{m_i * v_i * v_i + r_i * f_i}
         """
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms].view(np.ndarray)
         v = self.velocities[self.trajectory.active_atoms].view(np.ndarray)

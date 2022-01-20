@@ -15,7 +15,7 @@ dependencies:
     - asciichartpy
     - asteval
     - basis-set-exchange
-    - cctk==0.2.12
+    - cctk
     - h5py
     - networkx
     - pyahocorasick
