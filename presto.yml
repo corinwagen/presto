@@ -3,20 +3,19 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - matplotlib=3.4.3=py37hf985489_1
-  - matplotlib-base=3.4.3=py37h3147e9e_1
-  - numpy=1.20.1=py37ha9839cc_0
-  - pandas=1.2.3=py37hff173d8_0
-  - python=3.7.10=hf3644f1_104_cpython
-  - tabulate=0.8.9=pyhd8ed1ab_0
-  - tqdm=4.59.0=pyhd3eb1b0_1
-  - xtb=6.4.0=h8706be6_0
+  - matplotlib
+  - numpy
+  - pandas
+  - python=3.7
+  - tabulate
+  - tqdm
+  - xtb
   - pip:
-    - asciichartpy==1.5.25
-    - asteval==0.9.23
-    - basis-set-exchange==0.8.13
+    - asciichartpy
+    - asteval
+    - basis-set-exchange
     - cctk==0.2.12
-    - h5py==3.2.1
-    - networkx==2.5
-    - pyahocorasick==1.4.1
-    - scipy==1.6.1
+    - h5py
+    - networkx
+    - pyahocorasick
+    - scipy
