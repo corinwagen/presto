@@ -67,8 +67,6 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     """
     # check that g16 is even on this system
     assert presto.config.HAS_G16, f"G16 not present; can't run job!"
-    print(presto.config.HAS_G16)
-    print('do we got it')
 
     manager = ExternalProgramManager(directory)
 
