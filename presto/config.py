@@ -1,5 +1,4 @@
-import configparser, os, re, pathlib, yaml, cctk, h5py, logging, shutil
-import numpy as np
+import configparser, os, re, pathlib, logging
 import presto
 
 logger = logging.getLogger(__name__)
@@ -86,4 +85,4 @@ HAS_PACKMOL = check_exec(PACKMOL_EXEC)
 
 # backwards-compatibility with v0.2.4 and before
 def build(*args, **kwargs):
-    return presto.build(*args, **kwargs)
+    return presto.build.build(*args, **kwargs)

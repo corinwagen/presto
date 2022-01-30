@@ -1,4 +1,4 @@
-import configparser, os, re, pathlib, yaml, cctk, h5py, logging
+import os, re, yaml, cctk, h5py, logging
 import numpy as np
 import presto
 
