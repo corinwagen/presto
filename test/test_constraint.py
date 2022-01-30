@@ -16,12 +16,12 @@ class TestConstraint(unittest.TestCase):
         zs = cctk.OneIndexedArray([1, 1])
         c = presto.constraints.PairwisePolynomialConstraint(1, 2, distance, power=2)
 
-        traj = presto.trajectory.EquilibrationTrajectory(
+        traj = presto.trajectory.Trajectory(
             timestep=0.5,
             atomic_numbers=zs,
             high_atoms=np.array([]),
             active_atoms=np.array([1, 2]),
-            calculator=presto.calculators.NullCalculator([c]),
+            calculator=presto.calculators.Calculator([c]),
             integrator=presto.integrators.VelocityVerletIntegrator(),
             stop_time=250,
             checkpoint_filename="test/static/constraint-test.chk",

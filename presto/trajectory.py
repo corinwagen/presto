@@ -33,6 +33,10 @@ class Trajectory():
         checkpoint_interval (int):
         lock (fasteners.InterProcessLock): lock object
         save_interval (int): how many frames to save
+        buffer (int): how many frames to keep in memory
+
+        bath_scheduler (function): maps time to desired temperature, in K.
+        termination_function (function): determines if the trajectory is finished or not
     """
 
     def __init__(
@@ -49,7 +53,10 @@ class Trajectory():
         checkpoint_interval=10,
         stop_time=None,
         save_interval=1,
+        buffer=100,
         load_frames="all", # or ``first`` or ``last`` or a slice
+        bath_scheduler=298,
+        termination_function=None,
         **kwargs
     ):
 
@@ -79,6 +86,7 @@ class Trajectory():
         if self.has_checkpoint():
             self.load_from_checkpoint(load_frames)
 
+        # now we carry on building the "mundane" attributes 
         if calculator is not None:
             assert isinstance(calculator, presto.calculators.Calculator), "need a valid calculator!"
         self.calculator = calculator
@@ -135,6 +143,31 @@ class Trajectory():
         assert save_interval > 0, "save_interval needs to be positive"
         self.save_interval = save_interval
 
+        assert isinstance(buffer, int), "buffer needs to be positive"
+        assert buffer > 0, "buffer needs to be positive"
+        self.buffer = buffer
+
+        # build bath scheduler
+        if hasattr(bath_scheduler, "__call__"):
+            self.bath_scheduler = bath_scheduler
+        elif isinstance(bath_scheduler, (int, float)):
+            # most of the time it's ok just to keep things constant.
+            def sched(time):
+                return bath_scheduler
+            self.bath_scheduler = sched
+        else:
+            raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
+
+        # build termination function
+        if termination_function is not None:
+            assert hasattr(termination_function, "__call__"), "termination_function must be a function!"
+            self.termination_function = termination_function
+        else:
+            # if we haven't specified any criteria, we don't want to end before time's up! so we'll just say "end never."
+            def term(time):
+                return False
+            self.termination_function = term
+
     def __str__(self):
         return f"Trajectory({len(self.frames)} frames)"
 
@@ -189,11 +222,66 @@ class Trajectory():
 
         return self
 
-    def initialize(self):
+    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, init_atoms=None, **kwargs):
         """
-        Adds first frame with randomly-initialized velocities. Should call ``self.save()``.
+        Adds first frame with randomly-initialized velocities.
+        Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
+
+        Can pass either a frame (from a different trajectory) or positions/velocities/accelerations.
+
+        Args:
+            frame (presto.frame.Frame): frame to modify or copy
+            positions (cctk.OneIndexedArray): starting positions
+            velocities (cctk.OneIndexedArray): starting velocities, optional.
+            accelerations (cctk.OneIndexedArray): starting accelerations, optional.
+            init_atoms (list of int): atoms to randomly give starting velocity. can be a list of indices.
+                if velocity is ``None`` all active atoms will be given a starting velocity.
+
+        Returns:
+            frame
         """
-        pass
+
+        # have we already initialized things?
+        if len(self.frames):
+            return
+        elif self.has_checkpoint():
+            self.load_from_checkpoint(slice(-1,None,None))
+            assert len(self.frames), "didn't load frames properly!"
+            return
+
+        logger.info("Initializing new trajectory...")
+
+        # if we get given a frame, we'll just copy everything from that
+        if frame is not None:
+            assert isinstance(frame, presto.frame.Frame), "need a valid frame"
+            positions = frame.positions
+            velocities = frame.velocities
+            accelerations = frame.accelerations
+
+        # initialize with zero velocity and acceleration
+        assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
+        zeros = np.zeros_like(positions, dtype="float").view(cctk.OneIndexedArray)
+        frame = presto.frame.Frame(self, positions, zeros, zeros, bath_temperature=self.bath_scheduler(0), time=0.0)
+
+        # then adjust velocity and acceleration after-the-fact
+        if velocities is None:
+            frame.add_thermal_energy()
+        else:
+            assert isinstance(velocities, cctk.OneIndexedArray)
+            velocities[frame.inactive_mask()] = 0.0
+            frame.velocities += velocities
+
+            # add extra kick to requested atoms
+            if init_atoms:
+                frame.add_thermal_energy(atoms=init_atoms)
+
+        if accelerations is not None:
+            assert isinstance(accelerations, cctk.OneIndexedArray)
+            accelerations[frame.inactive_mask()] = 0.0
+            frame.accelerations += accelerations
+
+        self.frames = [frame]
+        self.save()
 
     def has_checkpoint(self):
         if self.checkpoint_filename is None:
@@ -209,7 +297,7 @@ class Trajectory():
 
         Args:
             frames (Slice object): if not all frames are desired, a Slice object can be passed
-                or a string - ``all``, ``first``, or ``last``
+                or a string - ``all``, ``first``, ``last``, or ``buffer``
 
         Returns:
             nothing
@@ -217,12 +305,14 @@ class Trajectory():
         if not self.has_checkpoint():
             return # nothing to load!
 
-        if frames=="all":
+        if frames == "all":
             frames = slice(None)
-        elif frames=="first":
+        elif frames == "first":
             frames = slice(1, None, None)
-        elif frames=="last":
+        elif frames == "last":
             frames = slice(-1, None, None)
+        elif frames == "buffer":
+            frames = slice(-self.buffer, None, None)
         else:
             assert isinstance(frames, slice), "load_frames must be ``all``, ``first``, ``last``, or slice"
 
@@ -379,11 +469,11 @@ class Trajectory():
             logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(frames_to_add)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         self.lock.release()
 
-        # lower memory usage
+        # lower memory usage by not keeping every frame in memory.
         if keep_all:
             pass
         else:
-            self.frames = [self.frames[-1]]
+            self.frames = self.frames[-self.buffer:]
 
     def write_movie(self, filename, solvents="all", idxs=None):
         """
@@ -435,7 +525,7 @@ class Trajectory():
         else:
             raise ValueError(f"error writing {filename}: this filetype isn't currently supported!")
 
-    def as_ensemble(self, idxs=None):
+    def as_ensemble(self):
         ensemble = cctk.ConformationalEnsemble()
         # for frame in self.frames[:-1]: # why is this up to only the second last frame?
         for frame in self.frames:
@@ -481,234 +571,4 @@ class Trajectory():
     def last_time_run(self):
         """ Get last finished time """
         return self.frames[-1].time
-
-class ReactionTrajectory(Trajectory):
-    """
-    Attributes:
-        termination_function (function): detects if first or last Frame has reached product/SM or should otherwise be halted.
-            takes ``Frame`` argument as option and returns ``True``/``False``.
-            optionally, can return 1 for forward and 2 for reverse (to differentiate recrossing from productive).
-        time_after_finished (float/int): how long (in fs) to continue propagation after termination conditions reached
-    """
-
-    @classmethod
-    def new_from_checkpoint(self):
-        pass
-
-    def __init__(self, termination_function=None, time_after_finished=20, **kwargs):
-        super().__init__(**kwargs)
-
-        assert isinstance(time_after_finished, (int, float)), "time_after_finished must be numeric"
-        self.time_after_finished = time_after_finished
-        self.elapsed_since_finished = 0
-
-        assert hasattr(termination_function, "__call__"), "termination_function must be a function!"
-        self.termination_function = termination_function
-
-    def __str__(self):
-        return f"ReactionTrajectory({len(self.frames)} frames)"
-
-    def __repr__(self):
-        return f"ReactionTrajectory({len(self.frames)} frames)"
-
-    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, bath_temp=None, new_velocities=None, **kwargs):
-        """
-        Generates initial frame object for reaction trajectory. Initializes any non-zero velocities.
-        Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
-
-        Can pass either a frame object, or the relevant attributes (frame gets precedence).
-
-        Args:
-            frame (presto.frame.Frame): equilibrated frame
-            new_velocities (cctk.OneIndexedArray): array of velocities to add to equilibrated frame (for previously-frozen atoms)
-            velocities, accelerations, positions (cctk.OneIndexedArray): values from frame (instead of frame object)
-            bath_temperature (float):
-
-        Returns:
-            frame
-        """
-        if self.has_checkpoint():
-            self.load_from_checkpoint(slice(-1,None,None))
-            logger.info(f"Loaded trajectory from {self.checkpoint_filename}.")
-            return
-        else:
-            logger.info("Initializing new reaction trajectory...")
-
-        if frame is not None:
-            assert isinstance(frame, presto.frame.Frame), "need a valid frame"
-
-            positions = frame.positions
-            velocities = frame.velocities
-            accelerations = frame.accelerations
-            bath_temp = frame.bath_temperature
-
-        else:
-            assert positions is not None, "no Frame supplied, need positions"
-            assert velocities is not None, "no Frame supplied, need velocities"
-            assert accelerations is not None, "no Frame supplied, need accelerations"
-            assert bath_temp is not None, "no Frame supplied, need bath temperature"
-
-            assert isinstance(positions, cctk.OneIndexedArray)
-            assert isinstance(velocities, cctk.OneIndexedArray)
-            assert isinstance(accelerations, cctk.OneIndexedArray)
-            assert isinstance(bath_temp, (float, int, np.integer))
-
-        new_frame = presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=bath_temp, time=0.0)
-
-        if new_velocities is None:
-            random_gaussian = np.random.normal(size=positions.shape).view(cctk.OneIndexedArray)
-            random_gaussian[new_frame.active_mask()] = 0
-            new_velocities = random_gaussian * np.sqrt(bath_temp * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
-
-        new_frame.velocities += new_velocities.view(cctk.OneIndexedArray)
-
-        self.frames = [new_frame]
-        self.save()
-
-class EquilibrationTrajectory(Trajectory):
-    """
-    Attributes:
-        bath_scheduler (function): takes current time and returns target temperature
-            alternatively, pass a number if you want a constant-temperature bath
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        bath_scheduler = kwargs.get("bath_scheduler")
-
-        if hasattr(bath_scheduler, "__call__"):
-            self.bath_scheduler = bath_scheduler
-        elif isinstance(bath_scheduler, (int, float)):
-            def sched(time):
-                return bath_scheduler
-
-            self.bath_scheduler = sched
-        else:
-            raise ValueError(f"unknown type {type(bath_scheduler)} for bath_scheduler - want either a function or a number!")
-
-    def __str__(self):
-        return f"EquilibrationTrajectory({len(self.frames)} frames)"
-
-    def __repr__(self):
-        return f"EquilibrationTrajectory({len(self.frames)} frames)"
-
-    def initialize(self, positions, velocities=None, accelerations=None, **kwargs):
-        """
-        Generates initial frame object for initialization trajectory.
-        Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
-
-        Args:
-            positions (cctk.OneIndexedArray): starting positions
-            velocities (cctk.OneIndexedArray): starting velocities, optional.
-            accelerations (cctk.OneIndexedArray): starting accelerations, optional.
-
-        Returns:
-            frame
-        """
-        logger.info("Initializing new equilibration trajectory...")
-        if self.has_checkpoint():
-            self.load_from_checkpoint(slice(-1,None,None))
-            assert len(self.frames) == 1, "didn't load frames properly!"
-            return
-
-        assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
-
-        # determine active atoms
-        inactive_mask = np.ones(shape=len(positions)).view(cctk.OneIndexedArray)
-        inactive_mask[self.active_atoms] = 0
-        inactive_mask = inactive_mask.astype(bool)
-
-        if velocities is None:
-            # add random velocity to everything
-            sigma = np.sqrt(self.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / self.masses.reshape(-1,1))
-            velocities = np.random.normal(scale=sigma, size=positions.shape).view(cctk.OneIndexedArray)
-            velocities[inactive_mask] = 0
-
-            # subtract out center-of-mass translational motion
-            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-            correction_tran = np.tile(com_translation / np.sum(self.masses[self.active_atoms]), (len(velocities),1))
-            correction_tran[inactive_mask] = 0
-            velocities = velocities - correction_tran
-            com_translation = np.sum(self.masses.reshape(-1,1) * velocities, axis=0)
-            assert np.linalg.norm(np.sum(self.masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
-
-            velocities = velocities.view(cctk.OneIndexedArray)
-        else:
-            assert isinstance(velocities, cctk.OneIndexedArray)
-            velocities[inactive_mask] = 0
-
-        if accelerations is None:
-            accelerations = np.zeros_like(positions).view(cctk.OneIndexedArray)
-        else:
-            assert isinstance(accelerations, cctk.OneIndexedArray)
-            accelerations[inactive_mask] = 0
-
-        self.frames = [presto.frame.Frame(self, positions, velocities, accelerations, bath_temperature=self.bath_scheduler(0), time=0.0)]
-        self.save()
-
-def join(traj1, traj2):
-    """
-    Join two reaction trajectories together -- one forward and one reverse!
-    Returns a single reaction trajectory.
-
-    Eugene edit: Times for the reverse trajectory will be made negative.
-
-    Args:
-        traj1 (presto.ReactionTrajectory): forward trajectory
-        traj2 (presto.ReactionTrajectory): reverse trajectory
-
-    Returns:
-        combined ``ReactionTrajectory``
-    """
-    logger.info("Joining forward and reverse reaction trajectories....")
-    assert isinstance(traj1, ReactionTrajectory), "Need a ReactionTrajectory"
-    assert isinstance(traj2, ReactionTrajectory), "Need a ReactionTrajectory"
-
-    assert traj1.forwards == True, "First trajectory must be forwards!"
-    assert traj2.forwards == False, "Second trajectory must be reverse!"
-
-    # Eugene edit: there doesn't seem to be a need to have the trajectories be finished
-    #assert traj1.finished, "First trajectory must be finished!"
-    #assert traj2.finished, "Second trajectory must be finished!"
-
-    # load all frames
-    traj1.load_from_checkpoint()
-    traj2.load_from_checkpoint()
-
-    assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
-    assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
-    assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "Link accelerations must be same!"
-
-    new_traj = ReactionTrajectory(
-        timestep = traj1.timestep,
-        atomic_numbers = traj1.atomic_numbers,
-        high_atoms = traj1.high_atoms,
-        active_atoms = traj1.active_atoms,
-        calculator = traj1.calculator,
-        integrator = traj1.integrator,
-        termination_function = traj1.termination_function,
-        stop_time = traj1.stop_time,
-        forwards = True,
-    )
-
-    f_frames = copy.deepcopy(traj1.frames)
-    r_frames = copy.deepcopy(traj2.frames)
-    r_frames.reverse()
-
-    # Eugene edit: make reverse reverse frame times negative
-    for frame in r_frames:
-        frame.time = -frame.time
-
-    new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
-
-    if traj1.finished == 2 and traj2.finished == 1:
-        #### if the first traj finished with the reverse condition, reverse order
-        new_traj.frames = new_traj.frames[::-1]
-
-        # Eugene edit: if this happens, reverse all times
-        for frame in new_traj.frames:
-            frame.time = -frame.time
-
-    return new_traj
 

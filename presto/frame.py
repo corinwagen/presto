@@ -63,36 +63,6 @@ class Frame():
     def __repr__(self):
         return f"presto.frame.Frame({len(self.positions)} atoms, time={self.time:.1f})"
 
-    def next(self, temp=None, forwards=True):
-        """
-        Computes next frame using ``self.trajectory.integrator``.
-
-        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
-        """
-        if temp is None:
-            temp = self.bath_temperature
-        assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
-
-        try:
-            start = timelib.time()
-            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
-            end = timelib.time()
-            elapsed = end - start
-
-            # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
-            self.energy = energy
-            return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
-        except Exception as e:
-            raise ValueError(f"Error in frame.next(): {e}")
-
-    def prev(self, temp=None):
-        """
-        Computes previous frame using ``self.trajectory.integrator``.
-
-        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
-        """
-        return self.next(temp, forwards=False)
-
     def potential_energy(self):
         """ Returns the potential energy in kcal/mol. """
         return self.energy * presto.constants.KCAL_PER_HARTREE
@@ -129,7 +99,7 @@ class Frame():
         """
         Computes the pressure based on the following formula:
 
-        P = 1/(3*V) * (\sum{m_i * v_i * v_i + r_i * f_i}
+        P = 1/(3*V) * (sum{m_i * v_i * v_i + r_i * f_i}
         """
         m = self.trajectory.masses.view(cctk.OneIndexedArray)[self.trajectory.active_atoms].view(np.ndarray)
         v = self.velocities[self.trajectory.active_atoms].view(np.ndarray)
@@ -200,3 +170,69 @@ class Frame():
     def L(self):
         """ Angular momentum """
         return np.sum(np.cross(self.velocities, self.masses() * self.positions), axis=0)
+
+    def add_thermal_energy(self, atoms=None, remove_com_translation=True):
+        """
+        Add Boltzmann-appropriate thermal energy to atoms.
+
+        Args:
+            atoms (list of indices): which atoms to add to. if left blank, will be added to all active atoms.
+            remove_com_translation (bool): whether to remove center-of-mass translational motion or not
+
+        Returns:
+            nothing
+        """
+
+        # build boolean array of which atoms to zero out
+        if atoms is None:
+            inactive_mask = self.inactive_mask()
+        else:
+            inactive_mask = np.zeros(shape=len(self.positions)).view(cctk.OneIndexedArray)
+            inactive_mask[atoms] = 1
+            inactive_mask = inactive_mask.astype(bool)
+
+        masses = self.trajectory.masses
+
+        # add random velocity to everything
+        sigma = np.sqrt(self.trajectory.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / masses.reshape(-1,1))
+        velocities = np.random.normal(scale=sigma, size=self.positions.shape).view(cctk.OneIndexedArray)
+        velocities[inactive_mask] = 0
+
+        if remove_com_translation:
+            com_translation = np.sum(masses.reshape(-1,1) * velocities, axis=0)
+
+            # total COM momentum / sum of masses = velocity to nudge everything by
+            correction_tran = np.tile(com_translation / np.sum(masses[~inactive_mask]), (len(velocities),1))
+            correction_tran[inactive_mask] = 0
+            velocities = velocities - correction_tran
+
+            # check total COM translation
+            assert np.linalg.norm(np.sum(masses.reshape(-1,1) * velocities, axis=0)) < 0.0001, "didn't remove COM translation well enough!"
+
+        velocities = velocities.view(cctk.OneIndexedArray)
+        self.velocities += velocities
+
+    # 9.17.21 - leaving this method here for convenience, but this is no longer the main way Controller propagates frames.
+    def next(self, temp=None, forwards=True):
+        """
+        Computes next frame using ``self.trajectory.integrator``.
+        The desired bath temperature is not used in the current force calculations, but is passed to the output frame.
+        """
+        if temp is None:
+            temp = self.bath_temperature
+        assert isinstance(temp, (float, int, np.integer)), "temp must be numeric!"
+
+        try:
+            start = timelib.time()
+            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
+            end = timelib.time()
+            elapsed = end - start
+
+            # strictly speaking the energy is for this frame, but we'll give the next frame this energy too in case it's the last one (better than leaving it null).
+            self.energy = energy
+            return Frame(self.trajectory, new_x, new_v, new_a, bath_temperature=temp, time=self.time+self.trajectory.timestep, energy=energy, elapsed=elapsed)
+        except Exception as e:
+            raise ValueError(f"Error in frame.next(): {e}")
+
+    def prev(self, temp=None):
+        return self.next(temp=temp, forwards=False)

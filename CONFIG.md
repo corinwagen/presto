@@ -50,6 +50,8 @@ For instance, ``high_atoms: 1-4, 7, 9`` will be parsed into the list ``[1, 2, 3,
 
 **``checkpoint_interval``**: How frequently to save to the checkpoint file. The default value of 10 saves the trajectory to disk after every 10 frames.
 
+**``buffer``**: How many frames to keep in Python memory.
+
 **``anchor``**: If present, tells *presto* to apply a weak harmonic potential between the origin and the specified atom number, to keep a given molecule centered.
 
 **``forwards``**: Whether to run a trajectory forwards in time (``True``, default) or backwards (``False``). 
@@ -60,6 +62,8 @@ You would only want to run a ``ReactionTrajectory`` backwards in time, usually f
 **``bath_scheduler``** (``EquilibrationTrajectory`` only): 
 
 **``constraints``**:
+
+**``checks``**:
 
 * **``fadein``
 

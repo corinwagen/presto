@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
 class TestGaussian(unittest.TestCase):
     def test_gaussian(self):
-        if not shutil.which("g16"):
+        if not presto.config.HAS_G16:
             return True
 
         hydrogen_molecule = cctk.XYZFile.read_file("test/static/H2.xyz").molecule

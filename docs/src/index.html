@@ -22,18 +22,16 @@ blog: False
 <p>
   Conventional quantum chemical calculations (such as <i>ab initio</i> wavefunction methods and density functional theory) can describe chemical reactivity with high accuracy, 
   but scale poorly with increasing system size. 
-  As a consequence, most computational analyses of organic reactions are performed in the gas phase with implicit solvation, 
-  which is unable to describe the behavior of many common species (e.g. ion pairs). 
-  In contrast, molecular dynamics permits the study of large, explicitly solvated systems, 
-  but the underlying molecular mechanics-based Hamiltonian renders such simulations unable to describe changes in bonding. 
-  <i>presto</i> seeks to combine elements of both approaches to permit the study of reactivity in explicit solvent.
+  In contrast, conventional molecular dynamics permits the study of large, explicitly solvated systems, 
+  but require parameterization and are unable to describe changes in bonding.
+  <i>presto</i> seeks to combine the best of both approaches to study reactivity in explicit solvent.
 </p>
 
 <p>
   Following precedent by Singleton and others, <i>presto</i> employs the 
   <a href="https://pubs.acs.org/doi/10.1021/cr5004419">ONIOM scheme</a> developed by Morokuma to embed an accurate “high” system (typically modelled using DFT) 
   inside a larger “low” system (modelled using semiempirical methods). 
-  Internally, <i>presto</i> repeatedly writes coordinates to each individual program and reads the corresponding energy and forces using 
+  Internally, <i>presto</i> repeatedly calls electronic structure programs and reads the corresponding energy and forces using 
   <a href="https://cctk.readthedocs.io/en/latest/"><i>cctk</i></a>. 
   Currently, <i>presto</i> is compatible with Gaussian 16 and Stefan Grimme’s 
   <a href="https://xtb-docs.readthedocs.io/en/latest/contents.html"><i>xtb</i></a>, but support for other programs can easily be added.
@@ -63,6 +61,9 @@ blog: False
   </li>
   <li>
     <b>Stefan Grimme</b> and <b>Sebastian Ehlert</b> for help with <i>xtb</i>.
+  </li>
+  <li>
+    <b>Marcus Sak</b> for testing and software development.
   </li>
 </ul>
 
