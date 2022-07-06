@@ -1,4 +1,4 @@
-import sys, re, glob, cctk, argparse, yaml, os, tqdm
+import sys, re, glob, cctk, argparse, yaml, os, tqdm, pandas
 import numpy as np
 import multiprocessing as mp
 from asciichartpy import plot
@@ -47,7 +47,7 @@ if args["type"] == "run":
     for file in files:
         for i, c in enumerate(coordinates):
             name = file.rsplit('/',1)[-1]
-            name = re.sub(".chk", f"_{int(i[0]):04d}", name)
+            name = re.sub(".chk", f"_{i:04d}", name)
 
             if os.path.exists("{name}.chk"):
                 continue
@@ -74,7 +74,7 @@ if args["type"] == "run":
             traj.frames[-1].positions = m.geometry
             traj.save()
 
-            assert traj.frames[-1].molecule().get_distance(args["atom1"], args["atom2"]) - x < 0.01
+            assert traj.frames[-1].molecule().get_distance(args["atom1"], args["atom2"]) - c["X"] < 0.01
 
             count += 1
 
@@ -85,7 +85,7 @@ elif args["type"] == "analyze":
     files = glob.glob(args["chks"], recursive=True)
     print(f"Ignoring first {args['cutoff']} frames of every trajectory: set --cutoff option to change!")
 
-    histogram = np.zeros(shape=args['num'])
+    histogram = np.zeros(shape=100)
     bin_edges = None
     count = 0
 
@@ -108,12 +108,15 @@ elif args["type"] == "analyze":
         with open(f"{name}.csv", "w") as timeseries:
             timeseries.write(timeseries_text)
 
-        file_hist, bin_edges = np.histogram(dists, bins=args['num'], range=(min_x, max_x))
-        return file_hist, len(dists), f"{name}.csv\t{d:.4f}\t{k:.4f}\n"
+        file_hist, bin_edges = np.histogram(dists, bins=100, range=(min_x, max_x))
+        return name, file_hist, len(dists), f"{name}.csv\t{d:.4f}\t{k:.4f}\n"
 
     # reading is slow, do it in parallel
     pool = mp.Pool(processes=16)
-    for (file_hist, file_count, file_metadata_text) in tqdm.tqdm(pool.imap(read_chk, files), total=len(files)):
+    for (name, file_hist, file_count, file_metadata_text) in tqdm.tqdm(pool.imap(read_chk, files), total=len(files)):
+        if file_count < 100:
+            print(f"skipping {name} -- too few frames ({file_count})")
+            continue
         histogram += file_hist
         count += file_count
         metadata_text += file_metadata_text

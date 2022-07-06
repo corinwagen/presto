@@ -79,6 +79,10 @@ class Trajectory():
         assert isinstance(checkpoint_interval, int) and checkpoint_interval > 0, "checkpoint_interval must be positive integer"
         self.checkpoint_interval = checkpoint_interval
 
+        assert isinstance(save_interval, int), "save_interval needs to be positive"
+        assert save_interval > 0, "save_interval needs to be positive"
+        self.save_interval = save_interval
+
         self.lock = None
         self.initialize_lock()
         self.frames = list()
@@ -137,10 +141,6 @@ class Trajectory():
             assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
             assert stop_time > 0, "stop_time needs to be positive!"
             self.stop_time = stop_time
-
-        assert isinstance(save_interval, int), "save_interval needs to be positive"
-        assert save_interval > 0, "save_interval needs to be positive"
-        self.save_interval = save_interval
 
         assert isinstance(buffer, int), "buffer needs to be positive"
         assert buffer > 0, "buffer needs to be positive"
@@ -257,7 +257,9 @@ class Trajectory():
         # initialize with zero velocity and acceleration
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
         zeros = np.zeros_like(positions, dtype="float").view(cctk.OneIndexedArray)
-        frame = presto.frame.Frame(self, positions, zeros, zeros, bath_temperature=self.bath_scheduler(0), time=0.0)
+        # horrible bugfix - need to not pass the same object to velocities and accelerations!!
+        # ccw 7.6.22
+        frame = presto.frame.Frame(self, positions, copy.deepcopy(zeros), copy.deepcopy(zeros), bath_temperature=self.bath_scheduler(0), time=0.0)
 
         # then adjust velocity and acceleration after-the-fact
         if velocities is None:
@@ -334,12 +336,12 @@ class Trajectory():
                 temperatures = h5.get("bath_temperatures")[frames]
 
                 # v0.2.2 - provisionally removing this
-#                all_times = None
-#                try:
-                all_times = h5.get("all_times")[frames]
-#                except Exception as e:
-#                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
-#                    # this was added recently, so may be some backwards compatibility issues.
+                all_times = None
+                try:
+                    all_times = h5.get("all_times")[frames]
+                except Exception as e:
+                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
+                    # this was added recently, so may be some backwards compatibility issues.
 #                    pass
 
                 if isinstance(all_energies, np.ndarray):
@@ -385,6 +387,9 @@ class Trajectory():
                 n_atoms = len(self.atomic_numbers)
                 h5.attrs['finished'] = self.finished
                 h5.attrs['forwards'] = self.forwards
+
+                #### change 3.22.22 - this way masses save automatically, so you can edit isotopologues.
+                h5.attrs['masses'] = self.masses.view(np.ndarray)
 
                 all_energies = h5.get("all_energies")
                 old_n_frames = len(all_energies)
@@ -521,7 +526,7 @@ class Trajectory():
         else:
             raise ValueError(f"error writing {filename}: this filetype isn't currently supported!")
 
-    def as_ensemble(self):
+    def as_ensemble(self, idxs):
         ensemble = cctk.ConformationalEnsemble()
         for frame in self.frames[:-1]:
             ensemble.add_molecule(frame.molecule(idxs), {"bath_temperature": frame.bath_temperature, "energy": frame.energy})
@@ -546,3 +551,66 @@ class Trajectory():
         """ Get last finished time """
         return self.frames[-1].time
 
+def join(traj1, traj2, check=True):
+    """
+    Join two trajectories together -- one forward and one reverse!
+    Returns a single reaction trajectory.
+    Eugene edit: Times for the reverse trajectory will be made negative.
+    Args:
+        traj1 (presto.Trajectory): forward trajectory
+        traj2 (presto.Trajectory): reverse trajectory
+        check (bool): check if the joining makes sense (highly recommended)
+    Returns:
+        combined ``ReactionTrajectory``
+    """
+    logger.info("Joining forward and reverse reaction trajectories....")
+    assert isinstance(traj1, Trajectory), "Need a ReactionTrajectory"
+    assert isinstance(traj2, Trajectory), "Need a ReactionTrajectory"
+
+    assert traj1.forwards == True, "First trajectory must be forwards!"
+    assert traj2.forwards == False, "Second trajectory must be reverse!"
+
+    # Eugene edit: there doesn't seem to be a need to have the trajectories be finished
+    #assert traj1.finished, "First trajectory must be finished!"
+    #assert traj2.finished, "Second trajectory must be finished!"
+
+    # load all frames
+    traj1.load_from_checkpoint()
+    traj2.load_from_checkpoint()
+
+    if check:
+        assert np.array_equal(traj1.frames[0].positions, traj2.frames[0].positions), "Link positions must be same!"
+        assert np.array_equal(traj1.frames[0].velocities, traj2.frames[0].velocities), "Link velocities must be same!"
+        assert np.array_equal(traj1.frames[0].accelerations, traj2.frames[0].accelerations), "Link accelerations must be same!"
+
+    new_traj = Trajectory(
+        timestep = traj1.timestep,
+        atomic_numbers = traj1.atomic_numbers,
+        high_atoms = traj1.high_atoms,
+        active_atoms = traj1.active_atoms,
+        calculator = traj1.calculator,
+        integrator = traj1.integrator,
+        termination_function = traj1.termination_function,
+        stop_time = traj1.stop_time,
+        forwards = True,
+    )
+
+    f_frames = copy.deepcopy(traj1.frames)
+    r_frames = copy.deepcopy(traj2.frames)
+    r_frames.reverse()
+
+    # Eugene edit: make reverse reverse frame times negative
+    for frame in r_frames:
+        frame.time = -frame.time
+
+    new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
+
+    if traj1.finished == 2 and traj2.finished == 1:
+        #### if the first traj finished with the reverse condition, reverse order
+        new_traj.frames = new_traj.frames[::-1]
+
+        # Eugene edit: if this happens, reverse all times
+        for frame in new_traj.frames:
+            frame.time = -frame.time
+
+    return new_traj
