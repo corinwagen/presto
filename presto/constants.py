@@ -46,6 +46,8 @@ AMU_A_FS_PER_PASCAL_SECOND = 60.22 # checked with Wolfram Alpha
 
 AMU_A_FS2_PER_ATM = 6.1019 * 10 ** -9 # checked with Wolfram Alpha)
 
+ISOTHERMAL_COMPRESSIBILITY_OF_WATER = 4.6e-10 / 9.869e-6 # convert from inverse Pa to inverse atm
+
 """
 Radii taken from Inorg. Mater. 2001, 37, 871 and J. Phys. Chem. A. 2009, 113, 5806.
 """

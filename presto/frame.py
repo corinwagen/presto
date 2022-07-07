@@ -23,9 +23,10 @@ class Frame():
         bath_temperature (float):
 
         elapsed (float): wallclock time to run frame
+        scale_factor (float): amount positions have been scaled by
     """
 
-    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0):
+    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -56,6 +57,7 @@ class Frame():
         self.energy = energy
         self.time = time
         self.elapsed = elapsed
+        self.scale_factor = scale_factor
 
     def __str__(self):
         return f"Frame({len(self.positions)} atoms, time={self.time:.1f})"
@@ -236,3 +238,10 @@ class Frame():
 
     def prev(self, temp=None):
         return self.next(temp=temp, forwards=False)
+
+    def scale(self, scale_factor=1):
+        """
+        Scales a system, used for pressure control.
+        """
+        self.positions *= scale_factor
+        self.scale_factor *= scale_factor

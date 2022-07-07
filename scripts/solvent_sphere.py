@@ -36,7 +36,7 @@ print(f"Loading solvent {args['solvent']} information...")
 for s, n in zip(args["solvent"], args["num"]):
     with pkg_resources.path(solvents, f"{s}.xyz") as file:
         f = cctk.XYZFile.read_file(file)
-        title_dict = {x.split("=")[0]: x.split("=")[1] for x in f.title.split(" ")}
+        title_dict = {x.split("=")[0]: x.split("=")[1] for x in f.titles[0].split(" ")}
 
         assert "mw" in title_dict.keys(), f"need mw=__ in title of {s}.xyz!"
         assert "density" in title_dict.keys(), f"need density=__ in title of {s}.xyz!"

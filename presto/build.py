@@ -127,6 +127,12 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         assert isinstance(settings["time_after_finished"], (float, int)), "Need `time_after_finished` to be numeric!"
         args["time_after_finished"] = settings["time_after_finished"]
 
+    if "barostat" in settings:
+        args["target_pressure"] = settings["barostat"]["target_pressure"]
+
+        if "time_constant" in settings["barostat"]:
+            args["barostat_time_constant"] = settings["barostat"]["time_constant"]
+
     t = presto.trajectory.Trajectory(
         calculator=c,
         integrator=i,

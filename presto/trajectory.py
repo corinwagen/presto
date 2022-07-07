@@ -37,6 +37,9 @@ class Trajectory():
 
         bath_scheduler (function): maps time to desired temperature, in K.
         termination_function (function): determines if the trajectory is finished or not
+
+        target_pressure (float): desired pressure for NPT simulation, or ``None`` for NVT simulation. in atm.
+        barostat_time_constant (float): desired time constant for NPT simulation barostat coupling. in fs.
     """
 
     def __init__(
@@ -57,6 +60,8 @@ class Trajectory():
         load_frames="all", # or ``first`` or ``last`` or a slice
         bath_scheduler=298,
         termination_function=None,
+        target_pressure=None,
+        barostat_time_constant=100,
         **kwargs
     ):
 
@@ -166,6 +171,14 @@ class Trajectory():
             def term(time):
                 return False
             self.termination_function = term
+
+        # build barostat
+        if target_pressure is not None:
+            assert isinstance(target_pressure, (int, float)), "target_pressure must be ``None`` or numeric"
+            self.target_pressure = target_pressure
+        else:
+            self.target_pressure = None
+        self.barostat_time_constant = barostat_time_constant
 
     def __str__(self):
         return f"Trajectory({len(self.frames)} frames)"
@@ -344,6 +357,13 @@ class Trajectory():
                     # this was added recently, so may be some backwards compatibility issues.
 #                    pass
 
+                # v0.2.6 - adding barostat support, working on backwards compatibility
+                all_scales = None
+                try:
+                    all_scales = h5.get("scale_factors")[frames]
+                except Exception as e:
+                    all_scales = np.ones_like(all_energies)
+
                 if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
                     assert len(all_velocities) == len(all_energies)
@@ -359,6 +379,7 @@ class Trajectory():
                         energy=all_energies[i],
                         bath_temperature=temperatures[i],
                         time=all_times[i],
+                        scale_factor=all_scales[i],
                     ))
 
         logger.info(f"Loaded trajectory from checkpoint file {self.checkpoint_filename} -- {len(self.frames)} frames read.")
@@ -442,6 +463,22 @@ class Trajectory():
                 all_temps.resize((now_n_frames,))
                 all_temps[-new_n_frames:] = new_temps
 
+                # v0.2.6 - adding scale factor for barostat
+                all_scales = None
+                try:
+                    all_scales = h5.get("scale_factors")
+                    assert all_scales is not None
+                except Exception as e:
+                    # this is a new column, so old checkpoints may not have it.
+                    old_scales = np.ones(shape=old_n_frames)
+                    h5.create_dataset("scale_factors", data=old_scales, maxshape=(None,), compression="gzip", compression_opts=9)
+                    all_scales = h5.get("scale_factors")
+
+                new_scales = np.stack([frame.scale_factor for frame in frames_to_add])
+                all_scales.resize((now_n_frames,))
+                all_scales[-new_n_frames:] = new_scales
+
+
             logger.info(f"Saving to existing checkpoint file {self.checkpoint_filename} ({new_n_frames} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         else:
             with h5py.File(self.checkpoint_filename, "w") as h5:
@@ -474,6 +511,9 @@ class Trajectory():
 
                 temps = np.asarray([frame.bath_temperature for frame in frames_to_add])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,), compression="gzip", compression_opts=9)
+
+                scales = np.asarray([frame.scale_factor for frame in frames_to_add])
+                h5.create_dataset("scale_factors", data=scales, maxshape=(None,), compression="gzip", compression_opts=9)
 
             logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(frames_to_add)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")
         self.lock.release()

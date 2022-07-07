@@ -80,7 +80,8 @@ class Controller():
                     bath_temperature=bath_temperature,
                     time=current_time,
                     energy=energy,
-                    elapsed=elapsed
+                    elapsed=elapsed,
+                    scale_factor=current_frame.scale_factor
                 )
 
             except Exception as e:
@@ -96,6 +97,16 @@ class Controller():
             for reporter in self.trajectory.reporters:
                 if int(current_time % reporter.interval) == 0:
                     reporter.report(self.trajectory)
+
+            # if barostat, do scaling
+            if self.trajectory.target_pressure:
+                current_pressure = new_frame.pressure()
+                # following convention, we use the isothermal compressibility of water for our scaling. it is fine even for non-aqueous solvents.
+                scale_factor = 1 - presto.constants.ISOTHERMAL_COMPRESSIBILITY_OF_WATER * dt / self.trajectory.barostat_time_constant * (self.trajectory.target_pressure - current_pressure)
+                scale_factor = (scale_factor)**(1/3)
+
+                # we then apply the scaling to the last frame
+                self.trajectory.frames[-1].scale(scale_factor)
 
             # do we initiate early stopping?
             if not finished_early:

@@ -10,7 +10,7 @@ class Potential():
         max_radius (float): maximum allowed distance for particles. for a sphere, this is just the radius. for a cube, it might be half the space diagonal.
             for an ellipsoid, it might be the major radius. used for internal automatic checks.
     """
-    def evaluate(self, positions):
+    def evaluate(self, positions, scale_factor=1):
         """
         Returns energy, forces from a given set of atomic coordinates.
 
@@ -53,10 +53,17 @@ class SphericalHarmonicPotential(Potential):
     def __repr__(self):
         return f"SphericalHarmonicPotential(radius={self.radius:.2f},force_constant={self.force_constant:.5f})"
 
-    def evaluate(self, positions):
+    def evaluate(self, positions, scale_factor=1):
+        """
+        Evaluates forces on a set of positions.
+
+        Args:
+            positions (cctk.OneIndexedArray):
+            scale_factor (float): amount to scale radius by when volume is flexible.
+        """
         radii = np.linalg.norm(positions, axis=1)
         # distance from equilibrium
-        excess_radius = positions - positions/radii.reshape(-1,1) * self.radius
+        excess_radius = positions - positions/radii.reshape(-1,1) * self.radius * scale_factor
 
         # F = -k * x
         forces = -1 * self.force_constant * excess_radius
@@ -65,7 +72,7 @@ class SphericalHarmonicPotential(Potential):
         energies = 0.5 * self.force_constant * np.linalg.norm(excess_radius, axis=1) ** 2
 
         # it's a one-sided spring.
-        inside = radii < self.radius
+        inside = radii < (self.radius * scale_factor)
         forces.view(np.ndarray)[inside,:] = 0
         energies.view(np.ndarray)[inside] = 0
 

@@ -24,7 +24,7 @@ class Calculator():
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, scale_factor=1):
         """
         Ordinarily there would be a call to an external program here.
 
@@ -32,7 +32,7 @@ class Calculator():
             energy
             forces
         """
-        energy, forces = self.apply_constraints_and_potential(positions, time)
+        energy, forces = self.apply_constraints_and_potential(positions, time, scale_factor=1)
 
         if pipe is not None:
             assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
@@ -41,13 +41,14 @@ class Calculator():
         else:
             return energy, forces
 
-    def apply_constraints_and_potential(self, positions, time):
+    def apply_constraints_and_potential(self, positions, time, scale_factor=1):
         """
         Applies constraints and potential.
 
         Arguments:
             positions (cctk.OneIndexedArray):
             time (float):
+            scale_factor (float):
 
         Returns:
             energy
@@ -60,7 +61,7 @@ class Calculator():
         forces = np.zeros_like(positions).view(cctk.OneIndexedArray)
 
         if self.potential is not None:
-            pe, pf = self.potential.evaluate(positions)
+            pe, pf = self.potential.evaluate(positions, scale_factor=scale_factor)
             energy += pe
             forces += pf
 
@@ -112,7 +113,7 @@ class XTBCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, directory=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, directory=None, scale_factor=1):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -121,6 +122,9 @@ class XTBCalculator(Calculator):
             positions (cctk.OneIndexedArray): the atomic positions in angstroms
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
+            time (float):
+            directory():
+            scale_factor (float):
 
         Returns:
             energy (float): in Hartree
@@ -139,7 +143,7 @@ class XTBCalculator(Calculator):
         )
 
         # apply constraints and potential
-        constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time)
+        constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time, scale_factor=1)
         energy += constraint_e
         forces += constraint_f
 
@@ -176,7 +180,7 @@ class GaussianCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, scale_factor=1):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -186,6 +190,8 @@ class GaussianCalculator(Calculator):
             high_atoms (np.ndarray): do nothing with this
             pipe (): for multiprocessing, the connection through which objects should be returned to the parent process
             qc (bool): try quadratic convergence for tricky cases, only after default DIIS fails
+            time (float):
+            scale_factor (float):
 
         Returns:
             energy (float): in Hartree
@@ -203,7 +209,7 @@ class GaussianCalculator(Calculator):
         energy, forces, elapsed = presto.external.run_gaussian(input_file, chk_file=self.gaussian_chk, directory=self.working_directory)
 
         # apply constraints and potential
-        constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time)
+        constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time, scale_factor=scale_factor)
         energy += constraint_e
         forces += constraint_f
 
@@ -236,7 +242,7 @@ class ONIOMCalculator(Calculator):
         self.full_calculator.constraints = constraints
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None, scale_factor=1):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
@@ -271,6 +277,7 @@ class ONIOMCalculator(Calculator):
             "positions": positions,
             "pipe": child_ll,
             "time": time,
+            "scale_factor": scale_factor,
         })
         process_ll.start()
 
