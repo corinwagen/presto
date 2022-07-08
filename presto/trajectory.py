@@ -512,7 +512,7 @@ class Trajectory():
                 temps = np.asarray([frame.bath_temperature for frame in frames_to_add])
                 h5.create_dataset("bath_temperatures", data=temps, maxshape=(None,), compression="gzip", compression_opts=9)
 
-                scales = np.asarray([frame.scale_factor for frame in frames_to_add])
+                scales = np.asarray([frame.scale_factor for frame in frames_to_add]).astype("float")
                 h5.create_dataset("scale_factors", data=scales, maxshape=(None,), compression="gzip", compression_opts=9)
 
             logger.info(f"Saving to new checkpoint file {self.checkpoint_filename} ({len(frames_to_add)} frames added; {last_run_time:.1f}/{self.stop_time:.1f} fs run in total)")

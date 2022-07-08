@@ -26,7 +26,7 @@ class Frame():
         scale_factor (float): amount positions have been scaled by
     """
 
-    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1):
+    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1.0):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
