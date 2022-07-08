@@ -362,7 +362,7 @@ class Trajectory():
                 try:
                     all_scales = h5.get("scale_factors")[frames]
                 except Exception as e:
-                    all_scales = np.ones_like(all_energies)
+                    all_scales = np.ones_like(all_energies, dtype="float")
 
                 if isinstance(all_energies, np.ndarray):
                     assert len(all_positions) == len(all_energies)
@@ -470,7 +470,7 @@ class Trajectory():
                     assert all_scales is not None
                 except Exception as e:
                     # this is a new column, so old checkpoints may not have it.
-                    old_scales = np.ones(shape=old_n_frames)
+                    old_scales = np.ones(shape=old_n_frames, dtype="float")
                     h5.create_dataset("scale_factors", data=old_scales, maxshape=(None,), compression="gzip", compression_opts=9)
                     all_scales = h5.get("scale_factors")
 
