@@ -141,7 +141,10 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     )
 
     if len(t.frames) == 0:
-        t.initialize(positions=x, velocities=v, accelerations=a)
+        remove_idxs = None
+        if "remove_idxs" in settings:
+            remove_idxs = settings["remove_idxs"]
+        t.initialize(positions=x, velocities=v, accelerations=a, remove_idxs=remove_idxs)
 
     assert len(t.frames) > 0, "we shouldn't have 0 frames after initialization!"
     return t

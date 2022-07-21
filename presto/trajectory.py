@@ -231,7 +231,7 @@ class Trajectory():
 
         return self
 
-    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, init_atoms=None, **kwargs):
+    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, init_atoms=None, remove_atoms=None, **kwargs):
         """
         Adds first frame with randomly-initialized velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -245,6 +245,7 @@ class Trajectory():
             accelerations (cctk.OneIndexedArray): starting accelerations, optional.
             init_atoms (list of int): atoms to randomly give starting velocity. can be a list of indices.
                 if velocity is ``None`` all active atoms will be given a starting velocity.
+            remove_atoms (list of int): atoms to remove. these indices will be deleted!
 
         Returns:
             frame
@@ -266,6 +267,13 @@ class Trajectory():
             positions = frame.positions
             velocities = frame.velocities
             accelerations = frame.accelerations
+
+        if remove_idxs is not None:
+            positions = np.delete(positions, remove_idxs)
+            if velocities is not None:
+                velocities = np.delete(velocities, remove_idxs)
+            if accelerations is not None:
+                accelerations = np.delete(accelerations, remove_idxs)
 
         # initialize with zero velocity and acceleration
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
