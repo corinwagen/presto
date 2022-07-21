@@ -268,12 +268,13 @@ class Trajectory():
             velocities = frame.velocities
             accelerations = frame.accelerations
 
+        # remove certain atoms, as desired
         if remove_idxs is not None:
-            positions = np.delete(positions, remove_idxs)
+            positions = np.delete(positions, [i - 1 for i in remove_idxs], axis=0).view(cctk.OneIndexedArray)
             if velocities is not None:
-                velocities = np.delete(velocities, remove_idxs)
+                velocities = np.delete(velocities, [i - 1 for i in remove_idxs], axis=0).view(cctk.OneIndexedArray)
             if accelerations is not None:
-                accelerations = np.delete(accelerations, remove_idxs)
+                accelerations = np.delete(accelerations, [i - 1 for i in remove_idxs], axis=0).view(cctk.OneIndexedArray)
 
         # initialize with zero velocity and acceleration
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
