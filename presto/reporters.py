@@ -30,9 +30,17 @@ class TimingReporter(Reporter):
         print(np.average(times))
 
 class PropertyReporter(Reporter):
-    def __init__(self, interval=10, properties=list()):
+    def __init__(self, prop, interval=10):
         assert isinstance(interval, int), "interval must be integer"
         self.interval = interval
 
+        assert prop in presto.trajectory.ALLOWED_PROPERTIES, "unknown property!"
+        self.prop = prop
+
     def report(self, trajectory):
-        pass
+        reporter_filename = trajectory.checkpoint_filename.replace(".chk", f".{self.prop}")
+
+        with open(reporter_filename, "a+") as f:
+            current_dipole = trajectory.frames[-1].dipole
+            if self.prop == "dipole":
+                f.write(f"{current_dipole[0]}\t{current_dipole[1]}\t{current_dipole[2]}\n")

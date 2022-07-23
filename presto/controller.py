@@ -56,6 +56,10 @@ class Controller():
         else:
             logger.info(f"Trajectory will run {int((end_time-current_time)/traj.timestep)} frames backwards in time (current time = {current_time:.1f} fs, end time = {end_time:.1f} fs)")
 
+        additional_args = dict()
+        if "dipole" in traj.properties:
+            additional_args["calc_dipole"] = True
+
         while current_time < end_time:
             # here's where the main logic of presto happens
             current_time += dt
@@ -66,7 +70,7 @@ class Controller():
             new_frame = None
             try:
                 start = time.time()
-                energy, new_x, new_v, new_a = traj.integrator.next(current_frame, forwards=forwards, time=current_time)
+                energy, new_x, new_v, new_a, properties = traj.integrator.next(current_frame, forwards=forwards, time=current_time, **additional_args)
                 end = time.time()
                 elapsed = end - start
 
@@ -81,7 +85,8 @@ class Controller():
                     time=current_time,
                     energy=energy,
                     elapsed=elapsed,
-                    scale_factor=current_frame.scale_factor
+                    scale_factor=current_frame.scale_factor,
+                    **properties
                 )
 
             except Exception as e:

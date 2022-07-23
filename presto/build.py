@@ -20,12 +20,18 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         oldchk_idx (int): which frame from ``oldchk`` to use as starting point
     """
     assert isinstance(file, str), "``file`` must be a string."
-    assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
 
     settings = dict()
     with open(file, "r+") as f:
         settings = yaml.safe_load(f)
 
+    return build_from_dict(settings, checkpoint=checkpoint, geometry=geometry, oldchk=oldchk, oldchk_idx=-1, **args)
+
+def build_from_dict(settings, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
+    """
+    Same as above method, but substituting a dictionary for the ``.yaml`` file.
+    """
+    assert isinstance(checkpoint, str), "``checkpoint`` must be a string."
     assert "timestep" in settings, "Need `timestep` in config YAML file."
     assert isinstance(settings["timestep"], (float, int)), "`timestep` must be numeric."
     args["timestep"] = settings["timestep"]
@@ -133,6 +139,20 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
         if "time_constant" in settings["barostat"]:
             args["barostat_time_constant"] = settings["barostat"]["time_constant"]
 
+    if "properties" in settings:
+        args["properties"] = settings["properties"]
+        if isinstance(args["properties"], str):
+            args["properties"] = [args["properties"]]
+
+    # handle index removal - rewrite to make this better later...
+    remove_idxs = None
+    if "remove_idxs" in settings and "atomic_numbers" in settings:
+        remove_idxs = settings["remove_idxs"]
+        if isinstance(remove_idxs, int):
+            remove_idxs = [remove_idxs]
+
+        args["atomic_numbers"] = np.delete(args["atomic_numbers"], [i-1 for i in remove_idxs]).view(cctk.OneIndexedArray)
+
     t = presto.trajectory.Trajectory(
         calculator=c,
         integrator=i,
@@ -141,9 +161,6 @@ def build(file, checkpoint, geometry=None, oldchk=None, oldchk_idx=-1, **args):
     )
 
     if len(t.frames) == 0:
-        remove_idxs = None
-        if "remove_idxs" in settings:
-            remove_idxs = settings["remove_idxs"]
         t.initialize(positions=x, velocities=v, accelerations=a, remove_idxs=remove_idxs)
 
     assert len(t.frames) > 0, "we shouldn't have 0 frames after initialization!"

@@ -64,7 +64,11 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
         energy
         forces
         elapsed time
+        properties_dict
     """
+
+    properties = dict()
+
     # check that g16 is even on this system
     assert presto.config.HAS_G16, f"G16 not present; can't run job!"
 
@@ -113,9 +117,9 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     # clean up and return data
     manager.cleanup()
     del manager
-    return energy, forces, elapsed
+    return energy, forces, elapsed, properties
 
-def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None):
+def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None, calc_dipole=False):
     """
     Run an xtb job.
 
@@ -126,12 +130,17 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         xcontrol_path (str):
         topo_path (str):
         directory (str):
+        calc_dipole (bool):
 
     Returns:
         energy
         forces
         elapsed time
+        properties dict
     """
+
+    properties = dict()
+
     # check that xtb is even on this system
     assert presto.config.HAS_XTB, f"xtb not present; can't run job!"
 
@@ -149,6 +158,8 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         command += f" --parallel {parallel}"
     if xcontrol_path:
         command += f" --input {xcontrol_path}"
+    if calc_dipole:
+        command += " --dipole"
     command += " --grad xtb-in.xyz &> xtb-out.out"
 
     # set system params
@@ -193,6 +204,15 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
     forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
     assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
+    if calc_dipole:
+        with open(f"{manager.workdir}/xtb-out.out", "r") as f:
+            output_lines = f.read().splitlines()
+            for linenum in range(len(output_lines)):
+                if "molecular dipole:" in output_lines[linenum]:
+                    dipole_pieces = output_lines[linenum+3].split()
+                    properties["dipole"] = np.array([float(d) for d in dipole_pieces[1:4]])
+                    break
+
     # save topology
     if gfn == "ff" and not os.path.exists(topo_path):
         assert os.path.exists(f"{manager.workdir}/gfnff_topo"), "xtb didn't generate topology file!"
@@ -201,7 +221,9 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
     # clean up and return data
     manager.cleanup()
     del manager
-    return energy, forces, elapsed
+    if calc_dipole:
+        assert "dipole" in properties, "we failed to calculate dipole!"
+    return energy, forces, elapsed, properties
 
 def run_packmol(input_xyz, output_xyz="solvated.xyz", solvent=["dcm"], num=[100], directory=None):
     """

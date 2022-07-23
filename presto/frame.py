@@ -22,11 +22,13 @@ class Frame():
         energy (float):
         bath_temperature (float):
 
+        dipole (np.ndarray):
+
         elapsed (float): wallclock time to run frame
         scale_factor (float): amount positions have been scaled by
     """
 
-    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1.0):
+    def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1.0, **args):
         assert isinstance(trajectory, presto.trajectory.Trajectory), "need trajectory"
 
         assert len(x) == len(v), "length of positions not same as length of velocities!"
@@ -58,6 +60,11 @@ class Frame():
         self.time = time
         self.elapsed = elapsed
         self.scale_factor = scale_factor
+
+        self.dipole = None
+        if "dipole" in args:
+            assert isinstance(args["dipole"], np.ndarray), "dipole must be ndarray with 3 elements"
+            self.dipole = args["dipole"]
 
     def __str__(self):
         return f"Frame({len(self.positions)} atoms, time={self.time:.1f})"
@@ -226,7 +233,7 @@ class Frame():
 
         try:
             start = timelib.time()
-            energy, new_x, new_v, new_a = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
+            energy, new_x, new_v, new_a, properties = self.trajectory.integrator.next(self, forwards=forwards, time=self.trajectory.timestep+self.time)
             end = timelib.time()
             elapsed = end - start
 

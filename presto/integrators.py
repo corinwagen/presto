@@ -18,7 +18,7 @@ class VelocityVerletIntegrator(Integrator):
     def __init__(self):
         pass
 
-    def next(self, frame, forwards=True, time=None):
+    def next(self, frame, forwards=True, time=None, **args):
         calculator = frame.trajectory.calculator
         timestep = frame.trajectory.timestep
         if forwards == False:
@@ -27,12 +27,12 @@ class VelocityVerletIntegrator(Integrator):
         try:
             x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
-            energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor)
+            energy, forces, properties = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor, **args)
             forces[frame.inactive_mask()] = 0
 
             a_full = forces / frame.masses()
             v_full = frame.velocities + (frame.accelerations + a_full) * 0.5 * timestep
-            return energy, x_full, v_full, a_full
+            return energy, x_full, v_full, a_full, properties
 
         except Exception as e:
             raise ValueError(f"Error in integrator: {e}")
@@ -56,7 +56,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         assert isinstance(radius, (int, float)), "radius must be numeric"
         self.radius = radius
 
-    def next(self, frame, forwards=True, time=None):
+    def next(self, frame, forwards=True, time=None, **args):
         """
         Using the approach from http://itf.fys.kuleuven.be/~enrico/Teaching/molecular_dynamics_2015.pdf
         (Vanden-Eijden–Ciccotti second-order Langevin integrator)
@@ -85,14 +85,14 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
         # compute forces with Calculator
-        energy, forces = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor)
+        energy, forces, properties = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor, **args)
         forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
         v_full = frame.velocities + 0.5 * timestep * (a_full + frame.accelerations) - timestep * xi * frame.velocities + sigma * math.sqrt(timestep) * rand1 - xi * C
         v_full[frame.inactive_mask()] = 0
 
-        return energy, x_full, v_full, a_full
+        return energy, x_full, v_full, a_full, properties
 
 def build_integrator(settings):
     """

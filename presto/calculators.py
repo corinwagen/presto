@@ -24,7 +24,7 @@ class Calculator():
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, scale_factor=1):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, scale_factor=1, **args):
         """
         Ordinarily there would be a call to an external program here.
 
@@ -34,12 +34,7 @@ class Calculator():
         """
         energy, forces = self.apply_constraints_and_potential(positions, time, scale_factor=1)
 
-        if pipe is not None:
-            assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
-            pipe.send([energy, forces])
-            pipe.close()
-        else:
-            return energy, forces
+        return self.return_energy_and_forces(energy, forces, dict(), pipe=pipe)
 
     def apply_constraints_and_potential(self, positions, time, scale_factor=1):
         """
@@ -72,13 +67,13 @@ class Calculator():
 
         return energy, forces
 
-    def return_energy_and_forces(self, energy, forces, pipe=None):
+    def return_energy_and_forces(self, energy, forces, properties, pipe=None):
         if pipe is not None:
             assert isinstance(pipe, mp.connection.Connection), "not a valid Connection instance!"
-            pipe.send([energy, forces])
+            pipe.send([energy, forces, properties])
             pipe.close()
         else:
-            return energy, forces
+            return energy, forces, properties
 
 
 class XTBCalculator(Calculator):
@@ -113,7 +108,7 @@ class XTBCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, directory=None, scale_factor=1):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, time=None, directory=None, scale_factor=1, **args):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -133,13 +128,14 @@ class XTBCalculator(Calculator):
         """
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
 
-        energy, forces, elapsed = presto.external.run_xtb(
+        energy, forces, elapsed, properties = presto.external.run_xtb(
             molecule,
             gfn=self.gfn,
             parallel=self.parallel,
             xcontrol_path=self.xcontrol_path,
             topo_path=self.topology,
             directory=directory,
+            **args
         )
 
         # apply constraints and potential
@@ -147,7 +143,7 @@ class XTBCalculator(Calculator):
         energy += constraint_e
         forces += constraint_f
 
-        return self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, properties, pipe=pipe)
 
 class GaussianCalculator(Calculator):
     def __init__(
@@ -180,7 +176,7 @@ class GaussianCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, scale_factor=1):
+    def evaluate(self, atomic_numbers, positions, high_atoms=None, pipe=None, qc=False, time=None, scale_factor=1, **args):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -206,14 +202,14 @@ class GaussianCalculator(Calculator):
         )
 
         # run g16
-        energy, forces, elapsed = presto.external.run_gaussian(input_file, chk_file=self.gaussian_chk, directory=self.working_directory)
+        energy, forces, elapsed, properties = presto.external.run_gaussian(input_file, chk_file=self.gaussian_chk, directory=self.working_directory, **args)
 
         # apply constraints and potential
         constraint_e, constraint_f = self.apply_constraints_and_potential(positions, time=time, scale_factor=scale_factor)
         energy += constraint_e
         forces += constraint_f
 
-        return self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, properties, pipe=pipe)
 
 class ONIOMCalculator(Calculator):
     """
@@ -242,7 +238,7 @@ class ONIOMCalculator(Calculator):
         self.full_calculator.constraints = constraints
         self.constraints = constraints
 
-    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None, scale_factor=1):
+    def evaluate(self, atomic_numbers, positions, high_atoms, pipe=None, time=None, scale_factor=1, **args):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
@@ -259,6 +255,7 @@ class ONIOMCalculator(Calculator):
             "positions": high_positions,
             "pipe": child_hh,
             "time": time,
+            **args,
         })
         process_hh.start()
 
@@ -268,6 +265,7 @@ class ONIOMCalculator(Calculator):
             "positions": high_positions,
             "pipe": child_hl,
             "time": time,
+            **args,
         })
         process_hl.start()
 
@@ -278,12 +276,13 @@ class ONIOMCalculator(Calculator):
             "pipe": child_ll,
             "time": time,
             "scale_factor": scale_factor,
+            **args,
         })
         process_ll.start()
 
-        e_hh, f_hh = parent_hh.recv()
-        e_hl, f_hl = parent_hl.recv()
-        e_ll, f_ll = parent_ll.recv()
+        e_hh, f_hh, p_hh = parent_hh.recv()
+        e_hl, f_hl, _ = parent_hl.recv()
+        e_ll, f_ll, _ = parent_ll.recv()
 
         # 1 hour is the limit, we're not waiting any longer than that!
         process_hh.join(3600)
@@ -300,7 +299,7 @@ class ONIOMCalculator(Calculator):
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
-        return self.return_energy_and_forces(energy, forces, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, p_hh, pipe=pipe)
 
 def build_calculator(settings, checkpoint_filename, constraints=list(), potential=None):
     """

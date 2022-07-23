@@ -7,6 +7,9 @@ import presto
 
 logger = logging.getLogger(__name__)
 
+# list of allowed properties to compute for each frame
+ALLOWED_PROPERTIES = ["dipole"]
+
 class Trajectory():
     """
 
@@ -40,6 +43,8 @@ class Trajectory():
 
         target_pressure (float): desired pressure for NPT simulation, or ``None`` for NVT simulation. in atm.
         barostat_time_constant (float): desired time constant for NPT simulation barostat coupling. in fs.
+
+        properties (list of str): what properties to calculate. for now, only ``dipole`` is allowed.
     """
 
     def __init__(
@@ -180,6 +185,20 @@ class Trajectory():
             self.target_pressure = None
         self.barostat_time_constant = barostat_time_constant
 
+        # properties
+        self.properties = list()
+        if "properties" in kwargs:
+            assert isinstance(kwargs["properties"], list), "properties must be list of str"
+            for prop in kwargs["properties"]:
+                assert prop in ALLOWED_PROPERTIES, "unknown property!"
+            self.properties = kwargs["properties"]
+
+            # autospawn reporter
+            # todo - enable interval customization
+            for prop in self.properties:
+                reporters.append(presto.reporters.PropertyReporter(interval=1, prop=prop))
+
+
     def __str__(self):
         return f"Trajectory({len(self.frames)} frames)"
 
@@ -231,7 +250,7 @@ class Trajectory():
 
         return self
 
-    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, init_atoms=None, remove_atoms=None, **kwargs):
+    def initialize(self, frame=None, positions=None, velocities=None, accelerations=None, init_atoms=None, remove_idxs=None, **kwargs):
         """
         Adds first frame with randomly-initialized velocities.
         Velocities are taken from the Maxwell–Boltzmann distribution for the given temperature.
@@ -245,7 +264,7 @@ class Trajectory():
             accelerations (cctk.OneIndexedArray): starting accelerations, optional.
             init_atoms (list of int): atoms to randomly give starting velocity. can be a list of indices.
                 if velocity is ``None`` all active atoms will be given a starting velocity.
-            remove_atoms (list of int): atoms to remove. these indices will be deleted!
+            remove_idxs (list of int): atoms to remove. these indices will be deleted!
 
         Returns:
             frame
@@ -270,6 +289,10 @@ class Trajectory():
 
         # remove certain atoms, as desired
         if remove_idxs is not None:
+            if isinstance(remove_idxs, int):
+                remove_idxs = [remove_idxs]
+            assert isinstance(remove_idxs, list), "remove_idxs must be list"
+
             positions = np.delete(positions, [i - 1 for i in remove_idxs], axis=0).view(cctk.OneIndexedArray)
             if velocities is not None:
                 velocities = np.delete(velocities, [i - 1 for i in remove_idxs], axis=0).view(cctk.OneIndexedArray)

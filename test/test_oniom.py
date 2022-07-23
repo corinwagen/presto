@@ -19,7 +19,7 @@ class TestONIOM(unittest.TestCase):
         xtb_calculator = calculators.XTBCalculator()
         oniom_calculator = calculators.ONIOMCalculator(high_calculator=xtb_calculator, low_calculator=xtb_calculator)
 
-        energy, forces = oniom_calculator.evaluate(atomic_numbers, positions, high_atoms)
+        energy, forces, _ = oniom_calculator.evaluate(atomic_numbers, positions, high_atoms)
         self.assertLessEqual(abs(energy+0.90379671599), 0.00000001)
         expected_forces = [[ 0.21688017, 0, 0],[-0.21688017, 0, 0]]
         actual_forces = [ list(i) for i in forces ]
