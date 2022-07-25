@@ -208,10 +208,18 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         with open(f"{manager.workdir}/xtb-out.out", "r") as f:
             output_lines = f.read().splitlines()
             for linenum in range(len(output_lines)):
-                if "molecular dipole:" in output_lines[linenum]:
-                    dipole_pieces = output_lines[linenum+3].split()
-                    properties["dipole"] = np.array([float(d) for d in dipole_pieces[1:4]])
-                    break
+                if gfn == 2:
+                    if "molecular dipole:" in output_lines[linenum]:
+                        dipole_pieces = output_lines[linenum+3].split()
+                        properties["dipole"] = np.array([float(d) for d in dipole_pieces[1:4]])
+                        break
+                elif gfn == 0:
+                    if "dipole moment from electron density (au)" in output_lines[linenum]:
+                        dipole_pieces = output_lines[linenum+2].split()
+                        properties["dipole"] = np.array([float(d) for d in dipole_pieces[:3]])
+                        break
+                else:
+                    raise ValueError(f"can't predict IR from this level of theory!\ngfn = {gfn}")
 
     # save topology
     if gfn == "ff" and not os.path.exists(topo_path):

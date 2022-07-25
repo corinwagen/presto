@@ -265,7 +265,7 @@ class ONIOMCalculator(Calculator):
             "positions": high_positions,
             "pipe": child_hl,
             "time": time,
-            **args,
+        #    **args,
         })
         process_hl.start()
 
@@ -276,7 +276,7 @@ class ONIOMCalculator(Calculator):
             "pipe": child_ll,
             "time": time,
             "scale_factor": scale_factor,
-            **args,
+        #    **args,
         })
         process_ll.start()
 

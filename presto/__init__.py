@@ -1,4 +1,4 @@
-from presto.build import build
+from presto.build import build, build_from_dict
 import presto.config
 import presto.constants
 import presto.calculators
