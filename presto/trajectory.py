@@ -51,8 +51,8 @@ class Trajectory():
         self,
         calculator=None,
         integrator=None,
-        reporters=list(),
-        checks=list(),
+        reporters=None,
+        checks=None,
         timestep=None,
         atomic_numbers=None,
         high_atoms=None,
@@ -109,11 +109,17 @@ class Trajectory():
             assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
         self.integrator = integrator
 
-        assert all([isinstance(c, presto.checks.Check) for c in checks])
-        self.checks = checks
+        if checks is not None:
+            assert all([isinstance(c, presto.checks.Check) for c in checks])
+            self.checks = checks
+        else:
+            self.checks = list()
 
-        assert all([isinstance(r, presto.reporters.Reporter) for r in reporters])
-        self.reporters = reporters
+        if reporters is not None:
+            assert all([isinstance(r, presto.reporters.Reporter) for r in reporters])
+            self.reporters = reporters
+        else:
+            self.reporters = list()
 
         if atomic_numbers is not None:
             assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
@@ -196,7 +202,7 @@ class Trajectory():
             # autospawn reporter
             # todo - enable interval customization
             for prop in self.properties:
-                reporters.append(presto.reporters.PropertyReporter(interval=1, prop=prop))
+                self.reporters.append(presto.reporters.PropertyReporter(interval=1, prop=prop))
 
 
     def __str__(self):

@@ -44,10 +44,16 @@ class ExternalProgramManager():
            shutil.rmtree(self.workdir)
 
     def copy_to_work(self, from_filename, to_filename):
-        shutil.copyfile(f"{self.homedir}/{from_filename}", f"{self.workdir}/{to_filename}")
+        if from_filename[0] == '/':
+            shutil.copyfile(f"{from_filename}", f"{self.workdir}/{to_filename}")
+        else:
+            shutil.copyfile(f"{self.homedir}/{from_filename}", f"{self.workdir}/{to_filename}")
 
     def copy_to_home(self, from_filename, to_filename):
-        shutil.copyfile(f"{self.workdir}/{from_filename}", f"{self.homedir}/{to_filename}")
+        if to_filename[0] == '/':
+            shutil.copyfile(f"{self.workdir}/{from_filename}", f"{to_filename}")
+        else:
+            shutil.copyfile(f"{self.workdir}/{from_filename}", f"{self.homedir}/{to_filename}")
 
 def run_gaussian(gaussian_file, chk_file=None, directory=None):
     """
