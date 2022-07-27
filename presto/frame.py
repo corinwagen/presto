@@ -17,13 +17,10 @@ class Frame():
         positions (cctk.OneIndexedArray):
         velocities (cctk.OneIndexedArray):
         accelerations (cctk.OneIndexedArray):
-
         time (float): time of current frame within trajectory, in fs
         energy (float):
         bath_temperature (float):
-
         dipole (np.ndarray):
-
         elapsed (float): wallclock time to run frame
         scale_factor (float): amount positions have been scaled by
     """
@@ -191,7 +188,6 @@ class Frame():
         Returns:
             nothing
         """
-
         # build boolean array of which atoms to zero out
         if atoms is None:
             inactive_mask = self.inactive_mask()
@@ -200,9 +196,8 @@ class Frame():
             inactive_mask[atoms] = 1
             inactive_mask = inactive_mask.astype(bool)
 
-        masses = self.trajectory.masses
-
         # add random velocity to everything
+        masses = self.trajectory.masses
         sigma = np.sqrt(self.trajectory.bath_scheduler(0) * presto.constants.BOLTZMANN_CONSTANT / masses.reshape(-1,1))
         velocities = np.random.normal(scale=sigma, size=self.positions.shape).view(cctk.OneIndexedArray)
         velocities[inactive_mask] = 0

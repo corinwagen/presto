@@ -20,7 +20,6 @@ class Controller():
     def run(self, end_time=None, runtime=None, time_after_finished=10, forwards=True, **kwargs):
         """
         Run a given trajectory.
-
         The default runtime behavior is mostly good and follows ``trajectory.stop_time.``
         The arguments here are just for fine-tuning in tricky cases.
 

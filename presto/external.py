@@ -72,7 +72,6 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
         elapsed time
         properties_dict
     """
-
     properties = dict()
 
     # check that g16 is even on this system

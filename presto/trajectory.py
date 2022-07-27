@@ -12,38 +12,29 @@ ALLOWED_PROPERTIES = ["dipole"]
 
 class Trajectory():
     """
-
     Attributes:
         timestep (float): in fs
         frames (list of presto.Frame):
         stop_time (float): how long to run for
-
         high_atoms (np.ndarray): to calculate at high level of theory, list of 1-indexed atom numbers
         active_atoms (np.ndarray): non-frozen atoms, list of 1-indexed atom numbers
-
         atomic_numbers (cctk.OneIndexedArray): list of atomic numbers
         masses (cctk.OneIndexedArray): list of masses
-
         calculator (presto.calculators.Calculator):
         integrator (presto.integrators.Integrator):
         reporters (list of presto.reporters.Reporter):
         checks (list of presto.checks.Check):
-
         finished (bool):
         forwards (bool):
-
         checkpoint_filename (str):
         checkpoint_interval (int):
         lock (fasteners.InterProcessLock): lock object
         save_interval (int): how many frames to save
         buffer (int): how many frames to keep in memory
-
         bath_scheduler (function): maps time to desired temperature, in K.
         termination_function (function): determines if the trajectory is finished or not
-
         target_pressure (float): desired pressure for NPT simulation, or ``None`` for NVT simulation. in atm.
         barostat_time_constant (float): desired time constant for NPT simulation barostat coupling. in fs.
-
         properties (list of str): what properties to calculate. for now, only ``dipole`` is allowed.
     """
 
@@ -109,17 +100,15 @@ class Trajectory():
             assert isinstance(integrator, presto.integrators.Integrator), "need a valid integrator!"
         self.integrator = integrator
 
+        self.checks = list()
         if checks is not None:
             assert all([isinstance(c, presto.checks.Check) for c in checks])
             self.checks = checks
-        else:
-            self.checks = list()
 
+        self.reporters = list()
         if reporters is not None:
             assert all([isinstance(r, presto.reporters.Reporter) for r in reporters])
             self.reporters = reporters
-        else:
-            self.reporters = list()
 
         if atomic_numbers is not None:
             assert isinstance(atomic_numbers, cctk.OneIndexedArray), "atomic numbers must be cctk 1-indexed array!"
@@ -156,7 +145,7 @@ class Trajectory():
         if not hasattr(self, "stop_time"):
             assert (isinstance(stop_time, float)) or (isinstance(stop_time, int)), "stop_time needs to be numeric!"
             assert stop_time > 0, "stop_time needs to be positive!"
-            self.stop_time = stop_time
+            self.stop_time = int(stop_time)
 
         assert isinstance(buffer, int), "buffer needs to be positive"
         assert buffer > 0, "buffer needs to be positive"
@@ -184,11 +173,10 @@ class Trajectory():
             self.termination_function = term
 
         # build barostat
+        self.target_pressure = None
         if target_pressure is not None:
             assert isinstance(target_pressure, (int, float)), "target_pressure must be ``None`` or numeric"
             self.target_pressure = target_pressure
-        else:
-            self.target_pressure = None
         self.barostat_time_constant = barostat_time_constant
 
         # properties
@@ -275,7 +263,6 @@ class Trajectory():
         Returns:
             frame
         """
-
         # have we already initialized things?
         if len(self.frames):
             return
@@ -283,7 +270,6 @@ class Trajectory():
             self.load_from_checkpoint(slice(-1,None,None))
             assert len(self.frames), "didn't load frames properly!"
             return
-
         logger.info("Initializing new trajectory...")
 
         # if we get given a frame, we'll just copy everything from that
@@ -308,8 +294,7 @@ class Trajectory():
         # initialize with zero velocity and acceleration
         assert isinstance(positions, cctk.OneIndexedArray), "positions must be a one-indexed array!"
         zeros = np.zeros_like(positions, dtype="float").view(cctk.OneIndexedArray)
-        # horrible bugfix - need to not pass the same object to velocities and accelerations!!
-        # ccw 7.6.22
+        # horrible bugfix - need to not pass the same object to velocities and accelerations!! (ccw 7.6.22)
         frame = presto.frame.Frame(self, positions, copy.deepcopy(zeros), copy.deepcopy(zeros), bath_temperature=self.bath_scheduler(0), time=0.0)
 
         # then adjust velocity and acceleration after-the-fact
@@ -334,11 +319,10 @@ class Trajectory():
 
     def has_checkpoint(self):
         if self.checkpoint_filename is None:
-            return False
-        if os.path.exists(self.checkpoint_filename):
-            return True
-        else:
-            return False
+            if os.path.exists(self.checkpoint_filename):
+                return True
+
+        return False
 
     def load_from_checkpoint(self, frames="all"):
         """
@@ -369,15 +353,15 @@ class Trajectory():
         self.lock.acquire()
 
         with h5py.File(self.checkpoint_filename, "r") as h5:
+            # load hdf5 attrs
             atomic_numbers = h5.attrs["atomic_numbers"]
             self.atomic_numbers = cctk.OneIndexedArray(atomic_numbers)
-
             masses = h5.attrs["masses"]
             self.masses = cctk.OneIndexedArray(masses)
-
             self.finished = h5.attrs['finished']
             self.forwards = h5.attrs['forwards']
 
+            # load frames from hdf5 datasets
             self.frames = []
             if len(h5.get("all_energies")):
                 all_energies = h5.get("all_energies")[frames]
@@ -385,15 +369,7 @@ class Trajectory():
                 all_velocities= h5.get("all_velocities")[frames]
                 all_accels = h5.get("all_accelerations")[frames]
                 temperatures = h5.get("bath_temperatures")[frames]
-
-                # v0.2.2 - provisionally removing this
-                all_times = None
-                try:
-                    all_times = h5.get("all_times")[frames]
-                except Exception as e:
-                    all_times = np.arange(0, self.timestep*len(all_energies)*self.save_interval, self.timestep*self.save_interval)
-                    # this was added recently, so may be some backwards compatibility issues.
-#                    pass
+                all_times = h5.get("all_times")[frames]
 
                 # v0.2.6 - adding barostat support, working on backwards compatibility
                 all_scales = None
@@ -596,7 +572,7 @@ class Trajectory():
         if re.search("pdb$", filename):
             cctk.PDBFile.write_ensemble_to_trajectory(filename, ensemble)
         elif re.search("mol2$", filename):
-            #### connectivity matters
+            # connectivity matters
             ensemble.assign_connectivity()
             cctk.MOL2File.write_ensemble_to_file(filename, ensemble)
         elif re.search("molden$", filename) or re.search("xyz$", filename):
@@ -648,10 +624,6 @@ def join(traj1, traj2, check=True):
     assert traj1.forwards == True, "First trajectory must be forwards!"
     assert traj2.forwards == False, "Second trajectory must be reverse!"
 
-    # Eugene edit: there doesn't seem to be a need to have the trajectories be finished
-    #assert traj1.finished, "First trajectory must be finished!"
-    #assert traj2.finished, "Second trajectory must be finished!"
-
     # load all frames
     traj1.load_from_checkpoint()
     traj2.load_from_checkpoint()
@@ -677,17 +649,15 @@ def join(traj1, traj2, check=True):
     r_frames = copy.deepcopy(traj2.frames)
     r_frames.reverse()
 
-    # Eugene edit: make reverse reverse frame times negative
+    # make reverse reverse frame times negative
     for frame in r_frames:
         frame.time = -frame.time
 
     new_traj.frames = r_frames + f_frames[1:] # don't double-count middle frame
 
     if traj1.finished == 2 and traj2.finished == 1:
-        #### if the first traj finished with the reverse condition, reverse order
+        # if the first traj finished with the reverse condition, reverse order and reverse all times
         new_traj.frames = new_traj.frames[::-1]
-
-        # Eugene edit: if this happens, reverse all times
         for frame in new_traj.frames:
             frame.time = -frame.time
 
