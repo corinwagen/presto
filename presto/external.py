@@ -55,7 +55,7 @@ class ExternalProgramManager():
         else:
             shutil.copyfile(f"{self.workdir}/{from_filename}", f"{self.homedir}/{to_filename}")
 
-def run_gaussian(gaussian_file, chk_file=None, directory=None):
+def run_gaussian(gaussian_file, chk_file=None, directory=None, **args):
     """
     Run a Gaussian job.
 
@@ -124,7 +124,7 @@ def run_gaussian(gaussian_file, chk_file=None, directory=None):
     del manager
     return energy, forces, elapsed, properties
 
-def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None, calc_dipole=False):
+def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, directory=None, calc_dipole=False, point_charges=None, **args):
     """
     Run an xtb job.
 
@@ -136,6 +136,7 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         topo_path (str):
         directory (str):
         calc_dipole (bool):
+        point_charges (list of cctk.PointCharge):
 
     Returns:
         energy
@@ -165,6 +166,9 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
         command += f" --input {xcontrol_path}"
     if calc_dipole:
         command += " --dipole"
+    if point_charges is not None:
+        assert not xcontrol_path, "currently, can't support xcontrol file with point charges!"
+        command += f" -I point_charges.input"
     command += " --grad xtb-in.xyz &> xtb-out.out"
 
     # set system params
@@ -179,6 +183,17 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
     cctk.XYZFile.write_molecule_to_file(f"{manager.workdir}/xtb-in.xyz", molecule)
     if topo_path and os.path.exists(topo_path):
         manager.copy_to_work(topo_path, "gfnff_topo")
+
+    # write point charges files
+    if point_charges is not None:
+        with open("f{manager.workdir}/point_charges.input", "w+") as f:
+            f.write(r"\$embedding\n\tinput=point_charges.pc\n$end")
+
+        with open("f{manager.workdir}/point_charges.pc", "w+") as f:
+            f.write(f"{len(point_charges)}\n")
+            for pc in point_charges:
+                assert isinstance(pc, cctk.PointCharge)
+                f.write(f"{pc.charge:.5f} {pc.coordinates[0]:>13.8f} {pc.coordinates[1]:>13.8f} {pc.coordinates[2]:>13.8f} 99\n")
 
     # run xtb
     start = time.time()
@@ -209,6 +224,10 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
     forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
     assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
+    # parse charges
+    properties["charges"] = np.genfromtxt(f"{manager.workdir}/charges")
+
+    # parse dipole
     if calc_dipole:
         with open(f"{manager.workdir}/xtb-out.out", "r") as f:
             output_lines = f.read().splitlines()

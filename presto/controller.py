@@ -44,7 +44,6 @@ class Controller():
             assert isinstance(end_time, (int, float)), "end_time must be numeric"
 
         assert end_time >= current_time, f"error: end_time {end_time} must be greater than or equal to current_time {current_time}"
-
         if end_time == current_time:
             return
 
