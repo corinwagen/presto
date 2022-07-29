@@ -224,8 +224,11 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
     forces = forces * presto.constants.AMU_A2_FS2_PER_HARTREE_BOHR
     assert len(forces) == molecule.get_n_atoms(), "unexpected number of atoms"
 
-    # parse charges
-    properties["charges"] = np.genfromtxt(f"{manager.workdir}/charges")
+    # parse charges - i do not understand why the files have divergent names...
+    if gfn == "ff":
+        properties["charges"] = np.genfromtxt(f"{manager.workdir}/gfnff_charges")
+    else:
+        properties["charges"] = np.genfromtxt(f"{manager.workdir}/charges")
 
     # parse dipole
     if calc_dipole:
