@@ -24,7 +24,7 @@ class Calculator():
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, frame, pipe=None, time=None, **args):
+    def evaluate(self, frame, positions=None, pipe=None, time=None, **args):
         """
         Ordinarily there would be a call to an external program here.
 
@@ -34,7 +34,8 @@ class Calculator():
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
         atomic_numbers = frame.trajectory.atomic_numbers
-        positions = frame.positions
+        if positions is None:
+            positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
@@ -114,7 +115,7 @@ class XTBCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, frame, pipe=None, time=None, directory=None, **args):
+    def evaluate(self, frame, positions=None, pipe=None, time=None, directory=None, **args):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -131,7 +132,8 @@ class XTBCalculator(Calculator):
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
         atomic_numbers = frame.trajectory.atomic_numbers
-        positions = frame.positions
+        if positions is None:
+            positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
@@ -185,7 +187,7 @@ class GaussianCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, frame, pipe=None, qc=False, time=None, **args):
+    def evaluate(self, frame, positions=None, pipe=None, qc=False, time=None, **args):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -201,7 +203,8 @@ class GaussianCalculator(Calculator):
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
         atomic_numbers = frame.trajectory.atomic_numbers
-        positions = frame.positions
+        if positions is None:
+            positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
@@ -257,13 +260,14 @@ class ONIOMCalculator(Calculator):
         self.full_calculator.constraints = constraints
         self.constraints = constraints
 
-    def evaluate(self, frame, pipe=None, time=None, **args):
+    def evaluate(self, frame, positions=None, pipe=None, time=None, **args):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
         atomic_numbers = frame.trajectory.atomic_numbers
-        positions = frame.positions
+        if positions is None:
+            positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
