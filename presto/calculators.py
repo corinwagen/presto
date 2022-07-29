@@ -24,7 +24,7 @@ class Calculator():
             assert isinstance(c, presto.constraints.Constraint), "{c} is not a valid constraint!"
         self.constraints = constraints
 
-    def evaluate(self, frame, positions=None, pipe=None, time=None, **args):
+    def evaluate(self, frame, atomic_numbers=None, positions=None, pipe=None, time=None, **args):
         """
         Ordinarily there would be a call to an external program here.
 
@@ -33,7 +33,8 @@ class Calculator():
             forces
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
-        atomic_numbers = frame.trajectory.atomic_numbers
+        if atomic_numbers is None:
+            atomic_numbers = frame.trajectory.atomic_numbers
         if positions is None:
             positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
@@ -115,7 +116,7 @@ class XTBCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, frame, positions=None, pipe=None, time=None, directory=None, **args):
+    def evaluate(self, frame, atomic_numbers=None, positions=None, pipe=None, time=None, directory=None, **args):
         """
         Gets the electronic energy and cartesian forces for the specified geometry.
 
@@ -131,10 +132,10 @@ class XTBCalculator(Calculator):
             time (float): in seconds
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
-        atomic_numbers = frame.trajectory.atomic_numbers
+        if atomic_numbers is None:
+            atomic_numbers = frame.trajectory.atomic_numbers
         if positions is None:
             positions = frame.positions
-        high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
         molecule = cctk.Molecule(atomic_numbers, positions, charge=self.charge, multiplicity=self.multiplicity)
@@ -187,7 +188,7 @@ class GaussianCalculator(Calculator):
         # call Calculator.__init__() for potential and constraints
         super().__init__(potential=potential, constraints=constraints)
 
-    def evaluate(self, frame, positions=None, pipe=None, qc=False, time=None, **args):
+    def evaluate(self, frame, atomic_numbers=None, positions=None, pipe=None, qc=False, time=None, **args):
         """
         Gets the electronic energy and Cartesian forces for the specified geometry.
 
@@ -202,10 +203,10 @@ class GaussianCalculator(Calculator):
             forces (cctk.OneIndexedArray): in amu Å per fs**2
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
-        atomic_numbers = frame.trajectory.atomic_numbers
+        if atomic_numbers is None:
+            atomic_numbers = frame.trajectory.atomic_numbers
         if positions is None:
             positions = frame.positions
-        high_atoms = frame.trajectory.high_atoms
         scale_factor = frame.scale_factor
 
         gaussian_file_args = dict()
@@ -260,7 +261,7 @@ class ONIOMCalculator(Calculator):
         self.full_calculator.constraints = constraints
         self.constraints = constraints
 
-    def evaluate(self, frame, positions=None, pipe=None, time=None, **args):
+    def evaluate(self, frame, atomic_numbers=None, positions=None, pipe=None, time=None, **args):
         """
         Evaluates the forces according to the ONIOM embedding scheme.
         """
@@ -280,15 +281,20 @@ class ONIOMCalculator(Calculator):
 
         # add point charges corresponding to low level of theory
         low_point_charges = None
-        if include_low_point_charges:
+        if self.include_low_point_charges:
             low_point_charges = list()
-            charges = frame.charges.view(cctk.OneIndexedArray)
-            for idx in range(1, len(positions)+1):
-                if idx not in high_atoms:
-                    low_point_charges.append(cctk.PointCharge(high_positions[idx], charges[idx]))
+
+            # we don't have charges yet for the first frame
+            if frame.time:
+                assert frame.charges is not None, "charges shouldn't be None for previous frame"
+
+                charges = frame.charges.view(cctk.OneIndexedArray)
+                for idx in range(1, len(positions)+1):
+                    if idx not in high_atoms:
+                        low_point_charges.append(cctk.PointCharge(high_positions[idx], charges[idx]))
 
         parent_hh, child_hh = mp.Pipe()
-        process_hh = mp.Process(target=self.high_calculator.evaluate, kwargs={
+        process_hh = mp.Process(target=self.high_calculator.evaluate, args=[frame], kwargs={
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hh,
@@ -299,7 +305,7 @@ class ONIOMCalculator(Calculator):
         process_hh.start()
 
         parent_hl, child_hl = mp.Pipe()
-        process_hl = mp.Process(target=self.low_calculator.evaluate, kwargs={
+        process_hl = mp.Process(target=self.low_calculator.evaluate, args=[frame], kwargs={
             "atomic_numbers": high_atomic_numbers,
             "positions": high_positions,
             "pipe": child_hl,
@@ -309,12 +315,9 @@ class ONIOMCalculator(Calculator):
         process_hl.start()
 
         parent_ll, child_ll = mp.Pipe()
-        process_ll = mp.Process(target=self.full_calculator.evaluate, kwargs={
-            "atomic_numbers": atomic_numbers,
-            "positions": positions,
+        process_ll = mp.Process(target=self.full_calculator.evaluate, args=[frame], kwargs={
             "pipe": child_ll,
             "time": time,
-            "scale_factor": scale_factor,
         #    **args,
         })
         process_ll.start()
