@@ -186,10 +186,10 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
 
     # write point charges files
     if point_charges is not None:
-        with open("f{manager.workdir}/point_charges.input", "w+") as f:
+        with open(f"{manager.workdir}/point_charges.input", "w+") as f:
             f.write(r"\$embedding\n\tinput=point_charges.pc\n$end")
 
-        with open("f{manager.workdir}/point_charges.pc", "w+") as f:
+        with open(f"{manager.workdir}/point_charges.pc", "w+") as f:
             f.write(f"{len(point_charges)}\n")
             for pc in point_charges:
                 assert isinstance(pc, cctk.PointCharge)
@@ -197,6 +197,7 @@ def run_xtb(molecule, gfn=2, parallel=8, xcontrol_path=None, topo_path=None, dir
 
     # run xtb
     start = time.time()
+    print(command)
     result = sp.run(command, cwd=manager.workdir, shell=True, capture_output=True)
     end = time.time()
     elapsed = end - start

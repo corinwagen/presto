@@ -23,7 +23,7 @@ class Frame():
         dipole (np.ndarray):
         elapsed (float): wallclock time to run frame
         scale_factor (float): amount positions have been scaled by
-        charges (np.ndarray): charges on the atoms. typically computed by low level of theory.
+        charges (np.ndarray): charges on the high-layer atoms. typically computed by low level of theory.
     """
 
     def __init__(self, trajectory, x, v, a, time=0, bath_temperature=298, energy=0.0, elapsed=0, scale_factor=1.0, **args):
@@ -67,8 +67,8 @@ class Frame():
         self.charges = None
         if "charges" in args:
             assert isinstance(args["charges"], np.ndarray), "charges must be ndarray"
-            assert len(args["charges"]) == len(x), "len(charges) must match num atoms"
-            self.charges = args["charges"]
+            assert len(args["charges"]) == len(x), "wrong number of charges"
+            self.charges = args["charges"].view(cctk.OneIndexedArray)
 
     def __str__(self):
         return f"Frame({len(self.positions)} atoms, time={self.time:.1f})"

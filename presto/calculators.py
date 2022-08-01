@@ -236,7 +236,7 @@ class ONIOMCalculator(Calculator):
     """
     Composes two other calculators, and computes forces according to the ONIOM embedding scheme.
     """
-    def __init__(self, high_calculator, low_calculator, constraints=list(), potential=None, include_low_point_charges=True):
+    def __init__(self, high_calculator, low_calculator, constraints=list(), potential=None, include_low_point_charges=False):
         assert isinstance(high_calculator, Calculator), "high calculator isn't a proper Calculator!"
         assert isinstance(low_calculator, Calculator), "low calculator isn't a proper Calculator!"
         self.high_calculator = high_calculator
@@ -282,16 +282,15 @@ class ONIOMCalculator(Calculator):
         # add point charges corresponding to low level of theory
         low_point_charges = None
         if self.include_low_point_charges:
-            low_point_charges = list()
-
             # we don't have charges yet for the first frame
             if frame.time:
                 assert frame.charges is not None, "charges shouldn't be None for previous frame"
 
+                low_point_charges = list()
                 charges = frame.charges.view(cctk.OneIndexedArray)
                 for idx in range(1, len(positions)+1):
                     if idx not in high_atoms:
-                        low_point_charges.append(cctk.PointCharge(high_positions[idx], charges[idx]))
+                        low_point_charges.append(cctk.PointCharge(positions[idx], charges[idx]))
 
         parent_hh, child_hh = mp.Pipe()
         process_hh = mp.Process(target=self.high_calculator.evaluate, args=[frame], kwargs={
@@ -324,7 +323,7 @@ class ONIOMCalculator(Calculator):
 
         e_hh, f_hh, p_hh = parent_hh.recv()
         e_hl, f_hl, _ = parent_hl.recv()
-        e_ll, f_ll, _ = parent_ll.recv()
+        e_ll, f_ll, p_ll = parent_ll.recv()
 
         # 1 hour is the limit, we're not waiting any longer than that!
         process_hh.join(3600)
@@ -336,12 +335,19 @@ class ONIOMCalculator(Calculator):
         assert process_hl.exitcode == 0, f"process_hl exited not-ok with exit code {process_hl.exitcode}"
         assert process_ll.exitcode == 0, f"process_ll exited not-ok with exit code {process_ll.exitcode}"
 
+        # combine properties properly - for now, just hard-coding everything
+        properties = dict()
+        if "dipole" in p_hh:
+            properties["dipole"] = p_hh["dipole"]
+        if "charges" in p_ll:
+            properties["charges"] = p_ll["charges"]
+
         # do the ONIOM combination
         energy = e_hh + e_ll - e_hl
         forces = f_ll
         forces[high_atoms] = f_hh + f_ll[high_atoms] - f_hl
 
-        return self.return_energy_and_forces(energy, forces, p_hh, pipe=pipe)
+        return self.return_energy_and_forces(energy, forces, properties, pipe=pipe)
 
 def build_calculator(settings, checkpoint_filename, constraints=list(), potential=None):
     """
