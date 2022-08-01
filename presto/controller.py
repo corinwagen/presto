@@ -1,7 +1,5 @@
 import presto, cctk, logging, time
 import numpy as np
-import pandas as pd
-from pandas import DataFrame, Series
 
 logger = logging.getLogger(__name__)
 
