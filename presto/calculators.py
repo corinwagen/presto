@@ -266,7 +266,8 @@ class ONIOMCalculator(Calculator):
         Evaluates the forces according to the ONIOM embedding scheme.
         """
         assert isinstance(frame, presto.frame.Frame), "need frame!"
-        atomic_numbers = frame.trajectory.atomic_numbers
+        if atomic_numbers is None:
+            atomic_numbers = frame.trajectory.atomic_numbers
         if positions is None:
             positions = frame.positions
         high_atoms = frame.trajectory.high_atoms
@@ -282,6 +283,7 @@ class ONIOMCalculator(Calculator):
         # add point charges corresponding to low level of theory
         low_point_charges = None
         if self.include_low_point_charges:
+            print("WE OUGHT NOT TO BE HERE")
             # we don't have charges yet for the first frame
             if frame.time:
                 assert frame.charges is not None, "charges shouldn't be None for previous frame"
