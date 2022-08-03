@@ -27,7 +27,7 @@ class VelocityVerletIntegrator(Integrator):
         try:
             x_full = frame.positions + frame.velocities * timestep + 0.5 * frame.accelerations * (timestep ** 2)
 
-            energy, forces, properties = calculator.evaluate(frame, positions=x_full, time=time, **args)
+            energy, forces, properties = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor, **args)
             forces[frame.inactive_mask()] = 0
 
             a_full = forces / frame.masses()
@@ -85,7 +85,7 @@ class LangevinIntegrator(VelocityVerletIntegrator):
         x_full[frame.inactive_mask()] = frame.positions[frame.inactive_mask()] # stay still!
 
         # compute forces with Calculator
-        energy, forces, properties = calculator.evaluate(frame, positions=x_full, time=time, **args)
+        energy, forces, properties = calculator.evaluate(frame.trajectory.atomic_numbers, x_full, frame.trajectory.high_atoms, time=time, scale_factor=frame.scale_factor, **args)
         forces[frame.inactive_mask()] = 0
 
         a_full = forces / frame.masses()
