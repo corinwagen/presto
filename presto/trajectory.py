@@ -318,7 +318,7 @@ class Trajectory():
         self.save()
 
     def has_checkpoint(self):
-        if self.checkpoint_filename is None:
+        if self.checkpoint_filename is not None:
             if os.path.exists(self.checkpoint_filename):
                 return True
 
