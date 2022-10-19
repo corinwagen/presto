@@ -4,7 +4,7 @@ import presto
 
 logger = logging.getLogger(__name__)
 
-def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="quasiclassical", temperature=298, mode_options=None, high_atoms=None):
+def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="quasiclassical", temperature=298, mode_options=None, high_atoms=None, do_rotation=True):
     """
     Initializes a trajectory based on a Gaussian output file.
 
@@ -34,13 +34,14 @@ def initialize(calc, output_file, tolerance=1, max_attempts=50, init_method="qua
             return_velocities=True,
             which=init_method,
             mode_options=mode_options,
+            do_rotation=do_rotation,
         )
 
         # check that we're close to expected additional PE, and that our perturbation hasn't done anything wild.
         # if so we just try again.
         logger.info(f"\n=== Initialization Attempt {idx+1} of {max_attempts} ===")
         logger.info(f"Excitation details:\n{text}")
-        actual_PE, _ = calc.evaluate(mol.atomic_numbers, excited.geometry, high_atoms)
+        actual_PE, _, _ = calc.evaluate(mol.atomic_numbers, excited.geometry, high_atoms)
         extra_PE = (actual_PE - qcf.ensemble[-1, "energy"]) * presto.constants.KCAL_PER_HARTREE
         diff = expected_PE - extra_PE
 
